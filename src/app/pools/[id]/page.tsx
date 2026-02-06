@@ -82,6 +82,9 @@ export default function PoolDetailPage() {
     return `${hours}h ${mins}m`;
   };
 
+  // Top 5 players for compact standings
+  const topPlayers = standings.players.slice(0, 5);
+
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-4xl mx-auto px-4 py-6 sm:py-8">
@@ -133,6 +136,11 @@ export default function PoolDetailPage() {
                   <span className="text-sm text-gray-600">
                     {yourStatus.picks_count} pick{yourStatus.picks_count !== 1 ? 's' : ''} made
                   </span>
+                  {yourStatus.survival_streak > 1 && (
+                    <span className="text-sm text-orange-600 font-medium">
+                      🔥 {yourStatus.survival_streak}
+                    </span>
+                  )}
                 </div>
 
                 {yourStatus.is_eliminated && yourStatus.elimination_reason && (
@@ -201,12 +209,20 @@ export default function PoolDetailPage() {
           </div>
         )}
 
-        {/* Standings Table */}
+        {/* Compact Standings (top 5) + link to full standings */}
         <div className="bg-white rounded-lg shadow-sm p-6">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">Standings</h2>
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg font-semibold text-gray-900">Standings</h2>
+            <button
+              onClick={() => router.push(`/pools/${poolId}/standings`)}
+              className="text-blue-600 hover:text-blue-800 text-sm font-medium"
+            >
+              View Full Standings →
+            </button>
+          </div>
 
           <div className="space-y-2">
-            {standings.players.map((player, index) => {
+            {topPlayers.map((player, index) => {
               const isYou = player.pool_player_id === yourStatus?.pool_player_id;
               return (
                 <div
@@ -266,6 +282,35 @@ export default function PoolDetailPage() {
           {standings.players.length === 0 && (
             <p className="text-center text-gray-500 py-8">No players in this pool yet.</p>
           )}
+
+          {standings.players.length > 5 && (
+            <button
+              onClick={() => router.push(`/pools/${poolId}/standings`)}
+              className="w-full mt-3 py-2.5 text-center text-sm font-medium text-blue-600 hover:text-blue-800 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors"
+            >
+              See all {standings.players.length} players →
+            </button>
+          )}
+        </div>
+
+        {/* Quick Actions */}
+        <div className="mt-6 grid grid-cols-2 gap-3">
+          <button
+            onClick={() => router.push(`/pools/${poolId}/standings`)}
+            className="bg-white rounded-lg shadow-sm p-4 text-center hover:shadow-md transition-shadow"
+          >
+            <span className="text-2xl mb-1 block">📊</span>
+            <span className="text-sm font-medium text-gray-900">Full Standings</span>
+            <span className="text-xs text-gray-500 block">Round grid & history</span>
+          </button>
+          <button
+            onClick={() => router.push('/tournament')}
+            className="bg-white rounded-lg shadow-sm p-4 text-center hover:shadow-md transition-shadow"
+          >
+            <span className="text-2xl mb-1 block">🏀</span>
+            <span className="text-sm font-medium text-gray-900">Tournament</span>
+            <span className="text-xs text-gray-500 block">Bracket & scores</span>
+          </button>
         </div>
       </div>
     </div>

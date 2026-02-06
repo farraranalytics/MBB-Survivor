@@ -36,9 +36,9 @@ https://github.com/farraranalytics/MBB-Survivor.git
 2. ~~Set up Supabase schema~~ — DONE (8 tables, RLS, triggers, functions applied via SQL Editor)
 3. ~~Auth flow (sign up, login, join pool via code/link)~~ — DONE
 4. ~~Pool creation + join with group code~~ — DONE
-5. ~~**Tournament data integration** (bracket, schedule, scores)~~ — **DONE** (Step 5 complete)
-6. **Daily pick submission screen (mobile-first)** — NEXT
-7. Standings & leaderboard
+5. ~~Tournament data integration (bracket, schedule, scores)~~ — DONE
+6. ~~**Daily pick submission screen (mobile-first)**~~ — **DONE**
+7. **Standings & leaderboard** — NEXT
 8. Bracket visualization
 9. Analyze tab (team inventory, comparative analysis, pick recommendations)
 10. Notifications (deadline reminders, survival/elimination alerts)
@@ -52,7 +52,7 @@ https://github.com/farraranalytics/MBB-Survivor.git
 - **Survivor rules:** one pick/day, each team used once, miss = eliminated, wrong = eliminated
 
 ## Current Status (Updated 2026-02-05)
-**Step 5 COMPLETED** — Tournament data integration implemented.
+**Step 6 COMPLETED** — Pick submission screen fully implemented and deployed.
 
 ### Completed Files (all under `src/`):
 - `lib/supabase/client.ts` — browser client with `supabase` singleton export
@@ -69,30 +69,55 @@ https://github.com/farraranalytics/MBB-Survivor.git
 - `app/pools/create/page.tsx` — pool creation form
 - `app/pools/join/page.tsx` — join pool by code (authenticated)
 - `app/join/page.tsx` — join pool by code (unauthenticated, redirects to auth)
-
-### NEW in Step 5:
 - `types/tournament.ts` — TypeScript types for teams, games, brackets, ESPN API responses
-- `lib/espn.ts` — ESPN API client with functions to fetch tournament data, live scores, team info
-- `app/tournament/page.tsx` — Tournament bracket/schedule view with live updates, round selector, game cards
+- `lib/espn.ts` — ESPN API client with caching, error handling, live scores
+
+### Step 6 Files (Pick Submission):
+- `types/picks.ts` — Pool, PoolPlayer, Round, Pick, Game, PickableTeam, PlayerStatus, PickDeadline, PickSubmission, PickValidation, PoolStandings types
+- `lib/picks.ts` — Full pick logic: getActiveRound, getTodaysGames, getPoolPlayer, getUsedTeams, getPlayerPick, getPlayerPicks, getPickableTeams (with risk levels), getPickDeadline, validatePick (5-rule validation), submitPick, getPoolStandings
+- `app/pools/[id]/page.tsx` — Pool detail page: standings table, your status badge (alive/eliminated), make-pick CTA button, deadline countdown, survival streaks
+- `app/pools/[id]/pick/page.tsx` — **The pick screen (most important screen in the app)**:
+  - Sticky countdown timer (color-coded urgency: blue → orange → red → pulse)
+  - Team cards grouped by game time with big tap targets
+  - Seed badges, opponent info, risk level indicators (Safe/Toss-up/Risky)
+  - Used-team filtering toggle (show/hide already-picked teams)
+  - Fixed bottom submit bar that appears when a team is selected
+  - Full-screen confirmation modal (slides up from bottom on mobile)
+  - Warning about one-time team usage
+  - Loading spinner during submission
+  - Success screen after pick locks in
+  - Error states for: eliminated, no active round, deadline passed, not a member
+- `app/tournament/page.tsx` — Tournament bracket/schedule view with live updates
+
+### Routes (10 total):
+- `/` — Landing page
+- `/auth/login` — Login
+- `/auth/signup` — Sign up
+- `/dashboard` — Main dashboard
+- `/join` — Join pool (unauthenticated entry point)
+- `/pools/create` — Create pool
+- `/pools/join` — Join pool by code
+- `/pools/[id]` — Pool detail with standings (**dynamic**)
+- `/pools/[id]/pick` — Pick screen (**dynamic**)
+- `/tournament` — Tournament view
 
 ### IMPORTANT Conventions:
 - Project uses **`src/` directory** — all files go under `src/app/`, NOT `app/` at project root
 - Supabase client: `import { supabase } from '@/lib/supabase/client'`
 - Auth context: `import { useAuth } from '@/components/auth/AuthProvider'`
+- Pick types: `import { ... } from '@/types/picks'`
+- Pick logic: `import { ... } from '@/lib/picks'`
 
-### Step 5 Implementation Details:
-- **ESPN API Integration:** Full ESPN API client with caching, error handling, and live score updates
-- **Tournament Types:** Comprehensive TypeScript types for teams, games, rounds, brackets, regions
-- **Tournament Page:** Mobile-responsive UI with schedule/bracket views, live scores, round navigation
-- **Real-time Updates:** Auto-refreshes scores every 30 seconds during active tournament
-- **Error Handling:** Robust error handling with user-friendly messages and retry functionality
-
-### System Status Note:
-- npm and git commands currently failing with system error 3221225794
-- Code written successfully but cannot test build or commit/push until system issue resolved
-- All files verified written to correct locations under src/
+### Architecture Decisions:
+- **Pick validation:** 5-rule client-side validation (player exists, not eliminated, deadline not passed, team not used, no existing pick) PLUS server-side DB trigger on `picks` table
+- **Risk levels:** Based on seed differential — ≤-6 = Safe, ≥6 = Risky, else Toss-up
+- **Deadline countdown:** Real-time (updates every second), color-coded urgency bands
+- **Confirmation modal:** Bottom-sheet style on mobile, centered modal on desktop
+- **Pick privacy:** RLS policy only shows other players' picks after round deadline
 
 ### Next Steps:
-- Step 6: Daily pick submission screen (mobile-first)
-- Need to commit and push Step 5 work when system commands restored
+- Step 7: Standings & leaderboard (more detailed than current standings: pick history, streak tracking, head-to-head)
+- Step 8: Bracket visualization
+- Step 9: Analyze tab
+- Dashboard enhancement: Show "My Pools" list with status from actual Supabase data
 - Supabase seed.sql not yet run (sample data for dev)
