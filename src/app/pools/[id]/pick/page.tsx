@@ -206,12 +206,12 @@ function TeamCard({
       onClick={() => !disabled && !isUsed && onSelect(team)}
       disabled={disabled || isUsed}
       className={`
-        w-full text-left rounded-xl p-4 border-2 transition-all
+        w-full text-left p-4 transition-all
         ${isSelected
-          ? 'border-blue-500 bg-blue-50 shadow-md ring-2 ring-blue-200'
+          ? 'bg-blue-50 ring-2 ring-inset ring-blue-400'
           : isUsed
-          ? 'border-gray-200 bg-gray-100 opacity-60 cursor-not-allowed'
-          : 'border-gray-200 bg-white hover:border-blue-300 hover:shadow-sm active:scale-[0.98]'
+          ? 'bg-gray-100 opacity-60 cursor-not-allowed'
+          : 'bg-white hover:bg-blue-50 active:bg-blue-100'
         }
       `}
     >
@@ -227,12 +227,7 @@ function TeamCard({
             </span>
           </div>
           <p className="text-sm text-gray-500 ml-9">
-            vs ({team.opponent.seed}) {team.opponent.abbreviation}
-            {' · '}
-            {new Date(team.game_datetime).toLocaleTimeString([], {
-              hour: 'numeric',
-              minute: '2-digit'
-            })}
+            {team.mascot}
           </p>
         </div>
 
@@ -325,19 +320,29 @@ export default function PickPage() {
       const dl = await getPickDeadline(activeRound.id);
       setDeadline(dl);
 
-      // 4. Check existing pick
+      // 4. Check existing pick — if deadline hasn't passed, allow changing
       const existing = await getPlayerPick(poolPlayer.id, activeRound.id);
       if (existing) {
         setExistingPick(existing);
-        setSubmittedPick(existing);
-        setLoading(false);
-        return;
+        if (dl.is_expired) {
+          // Deadline passed, show as locked in
+          setSubmittedPick(existing);
+          setLoading(false);
+          return;
+        }
+        // Deadline still open — pre-select current pick but allow changing
       }
 
       // 5. Get pickable teams
       const pickable = await getPickableTeams(poolPlayer.id, activeRound.id);
       setTeams(pickable);
       setUsedCount(pickable.filter(t => t.already_used).length);
+
+      // Pre-select existing pick if changing
+      if (existing) {
+        const currentTeam = pickable.find(t => t.id === existing.team_id);
+        if (currentTeam) setSelectedTeam(currentTeam);
+      }
     } catch (err) {
       console.error('Failed to load pick data:', err);
       setError(err instanceof Error ? err.message : 'Failed to load data');
@@ -438,15 +443,34 @@ export default function PickPage() {
   const displayTeams = filterUsed ? teams.filter(t => !t.already_used) : teams;
   const availableCount = teams.filter(t => !t.already_used).length;
 
-  // Group by game time for visual separation
-  const gameGroups = new Map<string, PickableTeam[]>();
+  // Group by game (matchup pairs), then order by game time
+  const gameMatchups = new Map<string, { teams: PickableTeam[]; time: string }>();
   for (const team of displayTeams) {
-    const timeKey = new Date(team.game_datetime).toLocaleTimeString([], {
-      hour: 'numeric',
-      minute: '2-digit'
-    });
-    if (!gameGroups.has(timeKey)) gameGroups.set(timeKey, []);
-    gameGroups.get(timeKey)!.push(team);
+    if (!gameMatchups.has(team.game_id)) {
+      gameMatchups.set(team.game_id, {
+        teams: [],
+        time: new Date(team.game_datetime).toLocaleTimeString([], {
+          hour: 'numeric',
+          minute: '2-digit'
+        })
+      });
+    }
+    gameMatchups.get(team.game_id)!.teams.push(team);
+  }
+  // Sort matchups by game time, then by lower seed (favorites first)
+  const sortedMatchups = Array.from(gameMatchups.entries()).sort((a, b) => {
+    const timeA = new Date(a[1].teams[0].game_datetime).getTime();
+    const timeB = new Date(b[1].teams[0].game_datetime).getTime();
+    if (timeA !== timeB) return timeA - timeB;
+    return Math.min(...a[1].teams.map(t => t.seed)) - Math.min(...b[1].teams.map(t => t.seed));
+  });
+  // Group matchups by time slot for section headers
+  const timeSlots = new Map<string, { gameId: string; teams: PickableTeam[] }[]>();
+  for (const [gameId, matchup] of sortedMatchups) {
+    if (!timeSlots.has(matchup.time)) timeSlots.set(matchup.time, []);
+    // Sort teams within matchup: lower seed (favorite) on top
+    matchup.teams.sort((a, b) => a.seed - b.seed);
+    timeSlots.get(matchup.time)!.push({ gameId, teams: matchup.teams });
   }
 
   return (
@@ -475,6 +499,15 @@ export default function PickPage() {
 
       {/* Content */}
       <div className="max-w-lg mx-auto px-4 py-4">
+        {/* Existing pick banner */}
+        {existingPick && existingPick.team && (
+          <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 mb-4">
+            <p className="text-sm text-amber-800 text-center">
+              Current pick: <strong>({existingPick.team.seed}) {existingPick.team.name}</strong> — select a different team to change
+            </p>
+          </div>
+        )}
+
         {/* Stats bar */}
         <div className="flex items-center justify-between mb-4">
           <p className="text-sm text-gray-600">
@@ -497,27 +530,40 @@ export default function PickPage() {
           )}
         </div>
 
-        {/* Team list grouped by game time */}
+        {/* Team list grouped by matchup */}
         {displayTeams.length === 0 ? (
           <div className="text-center py-12">
             <p className="text-gray-500">No games available for today.</p>
           </div>
         ) : (
           <div className="space-y-6">
-            {Array.from(gameGroups.entries()).map(([time, groupTeams]) => (
+            {Array.from(timeSlots.entries()).map(([time, matchups]) => (
               <div key={time}>
-                <p className="text-xs font-medium text-gray-400 uppercase tracking-wider mb-2 px-1">
+                <p className="text-xs font-medium text-gray-400 uppercase tracking-wider mb-3 px-1">
                   {time}
                 </p>
-                <div className="space-y-2">
-                  {groupTeams.map(team => (
-                    <TeamCard
-                      key={team.id}
-                      team={team}
-                      isSelected={selectedTeam?.id === team.id}
-                      disabled={deadline?.is_expired ?? false}
-                      onSelect={setSelectedTeam}
-                    />
+                <div className="space-y-3">
+                  {matchups.map(({ gameId, teams: matchupTeams }) => (
+                    <div key={gameId} className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+                      {matchupTeams.map((team, idx) => (
+                        <div key={team.id}>
+                          {idx > 0 && (
+                            <div className="relative px-4">
+                              <div className="border-t border-gray-100" />
+                              <span className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 bg-gray-100 text-gray-400 text-[10px] font-bold px-2 py-0.5 rounded-full">
+                                VS
+                              </span>
+                            </div>
+                          )}
+                          <TeamCard
+                            team={team}
+                            isSelected={selectedTeam?.id === team.id}
+                            disabled={deadline?.is_expired ?? false}
+                            onSelect={setSelectedTeam}
+                          />
+                        </div>
+                      ))}
+                    </div>
                   ))}
                 </div>
               </div>
@@ -534,7 +580,7 @@ export default function PickPage() {
               onClick={() => setShowConfirm(true)}
               className="w-full py-4 rounded-xl bg-blue-600 text-white text-lg font-bold hover:bg-blue-700 active:scale-[0.98] transition-all shadow-md"
             >
-              Pick ({selectedTeam.seed}) {selectedTeam.name}
+              {existingPick ? 'Change to' : 'Pick'} ({selectedTeam.seed}) {selectedTeam.name}
             </button>
           </div>
         </div>

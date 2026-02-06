@@ -34,7 +34,6 @@ export default function JoinPool() {
         .from('pools')
         .select(`
           *,
-          creator:creator_id(display_name),
           pool_players(count)
         `)
         .eq('join_code', joinCode.trim().toUpperCase())

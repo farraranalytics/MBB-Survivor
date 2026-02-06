@@ -24,136 +24,121 @@ export async function getPoolLeaderboard(poolId: string): Promise<PoolLeaderboar
     throw new Error(`Failed to fetch pool: ${poolError?.message || 'Not found'}`);
   }
 
-  // 2. All rounds (completed + active), ordered by date
+  // 2. All rounds ordered by date
   const { data: rounds } = await supabase
     .from('rounds')
-    .select('id, round_name, start_date, pick_deadline')
-    .order('start_date', { ascending: true });
+    .select('id, name, date, deadline_datetime, is_active')
+    .order('date', { ascending: true });
 
   const allRounds = rounds || [];
 
   // 3. Active round
-  const activeRound = allRounds.find(r => {
-    const deadline = new Date(r.pick_deadline);
-    const now = new Date();
-    // A round is "active" if its deadline hasn't passed or it's the most recent
-    return deadline > now;
-  }) || null;
+  const activeRound = allRounds.find(r => r.is_active) || null;
 
   // 4. All players in pool
   const { data: players, error: playersError } = await supabase
     .from('pool_players')
-    .select(`
-      id,
-      user_id,
-      status,
-      elimination_date,
-      elimination_round,
-      joined_at,
-      profiles:user_id(display_name)
-    `)
+    .select('id, user_id, display_name, is_eliminated, elimination_round_id, elimination_reason, joined_at')
     .eq('pool_id', poolId);
 
   if (playersError) {
     throw new Error(`Failed to fetch players: ${playersError.message}`);
   }
 
-  // 5. All picks in this pool with game data
-  const { data: allPicks } = await supabase
-    .from('picks')
+  // 5. All picks for players in this pool, with team data
+  const playerIds = (players || []).map(p => p.id);
+  const { data: allPicks } = playerIds.length > 0
+    ? await supabase
+        .from('picks')
+        .select(`
+          id,
+          pool_player_id,
+          round_id,
+          team_id,
+          is_correct,
+          submitted_at,
+          team:team_id(id, name, abbreviation, seed)
+        `)
+        .in('pool_player_id', playerIds)
+    : { data: [] };
+
+  // 6. All games with team data (for opponent lookup)
+  const { data: allGames } = await supabase
+    .from('games')
     .select(`
       id,
-      user_id,
       round_id,
-      team_name,
-      is_correct,
-      game_id,
-      games:game_id(
-        status,
-        home_team,
-        away_team,
-        home_seed,
-        away_seed,
-        home_score,
-        away_score,
-        winner
-      )
-    `)
-    .eq('pool_id', poolId);
+      team1_id,
+      team2_id,
+      status,
+      team1_score,
+      team2_score,
+      winner_id,
+      team1:team1_id(id, name, abbreviation, seed),
+      team2:team2_id(id, name, abbreviation, seed)
+    `);
 
   const picks = allPicks || [];
-
-  // 6. Build round lookup
+  const games = allGames || [];
   const roundMap = new Map(allRounds.map(r => [r.id, r]));
+
+  // Find the game for a given pick
+  function findGame(roundId: string, teamId: string) {
+    return games.find(g => g.round_id === roundId && (g.team1_id === teamId || g.team2_id === teamId));
+  }
 
   // 7. Build per-player standings
   const standingsPlayers: StandingsPlayer[] = (players || []).map(player => {
-    // Type-safe profile access
-    const profile = player.profiles as unknown as { display_name: string } | null;
-    const displayName = profile?.display_name || 'Unknown';
-    const isEliminated = player.status === 'eliminated';
+    const playerPicks = picks.filter(p => p.pool_player_id === player.id);
 
-    // Player's picks
-    const playerPicks = picks.filter(p => p.user_id === player.user_id);
-
-    // Build round results
     const roundResults: RoundResult[] = playerPicks
       .map(pick => {
         const round = roundMap.get(pick.round_id);
         if (!round) return null;
 
-        // Game data
-        const game = pick.games as unknown as {
-          status: string;
-          home_team: string;
-          away_team: string;
-          home_seed: number;
-          away_seed: number;
-          home_score: number;
-          away_score: number;
-          winner: string;
-        } | null;
+        const team = pick.team as unknown as { id: string; name: string; abbreviation: string; seed: number } | null;
+        const game = findGame(pick.round_id, pick.team_id);
 
-        // Determine opponent
         let opponentName: string | null = null;
         let opponentSeed: number | null = null;
-        let teamSeed = 0;
         let gameScore: string | null = null;
+        let gameStatus: 'scheduled' | 'in_progress' | 'final' = 'scheduled';
 
         if (game) {
-          if (game.home_team === pick.team_name) {
-            opponentName = game.away_team;
-            opponentSeed = game.away_seed;
-            teamSeed = game.home_seed;
+          gameStatus = game.status as 'scheduled' | 'in_progress' | 'final';
+          const t1 = game.team1 as unknown as { id: string; name: string; abbreviation: string; seed: number } | null;
+          const t2 = game.team2 as unknown as { id: string; name: string; abbreviation: string; seed: number } | null;
+
+          if (game.team1_id === pick.team_id) {
+            opponentName = t2?.name || null;
+            opponentSeed = t2?.seed || null;
           } else {
-            opponentName = game.home_team;
-            opponentSeed = game.home_seed;
-            teamSeed = game.away_seed;
+            opponentName = t1?.name || null;
+            opponentSeed = t1?.seed || null;
           }
 
-          if (game.status === 'completed' || game.status === 'in_progress') {
-            gameScore = `${game.home_score}-${game.away_score}`;
+          if (game.team1_score != null && game.team2_score != null) {
+            gameScore = `${game.team1_score}-${game.team2_score}`;
           }
         }
 
         return {
           round_id: pick.round_id,
-          round_name: round.round_name,
-          round_date: round.start_date,
-          team_name: pick.team_name,
-          team_seed: teamSeed,
-          team_abbreviation: pick.team_name.substring(0, 4).toUpperCase(),
+          round_name: round.name,
+          round_date: round.date,
+          team_name: team?.name || 'Unknown',
+          team_seed: team?.seed || 0,
+          team_abbreviation: team?.abbreviation || '???',
           opponent_name: opponentName,
           opponent_seed: opponentSeed,
           is_correct: pick.is_correct,
-          game_status: (game?.status || 'scheduled') as 'scheduled' | 'in_progress' | 'final',
+          game_status: gameStatus,
           game_score: gameScore,
         } as RoundResult;
       })
       .filter((r): r is RoundResult => r !== null)
       .sort((a, b) => new Date(a.round_date).getTime() - new Date(b.round_date).getTime());
 
-    // Correct picks count
     const correctPicks = roundResults.filter(r => r.is_correct === true).length;
 
     // Survival streak (consecutive correct from most recent backward)
@@ -177,32 +162,25 @@ export async function getPoolLeaderboard(poolId: string): Promise<PoolLeaderboar
       }
     }
 
-    // Teams used
     const teamsUsed = roundResults.map(r => r.team_name);
 
-    // Current round pick
     const currentRoundPick = activeRound
       ? roundResults.find(r => r.round_id === activeRound.id) || null
       : null;
 
     // Elimination round name
     let eliminationRoundName: string | null = null;
-    if (isEliminated && player.elimination_round) {
-      const elimRound = allRounds.find(r => {
-        // Match by round_number if stored as integer
-        return true; // We'll use the last incorrect pick's round instead
-      });
-      // More reliable: find the round where the player got eliminated
-      const wrongPick = roundResults.find(r => r.is_correct === false);
-      eliminationRoundName = wrongPick?.round_name || null;
+    if (player.is_eliminated && player.elimination_round_id) {
+      const elimRound = roundMap.get(player.elimination_round_id);
+      eliminationRoundName = elimRound?.name || null;
     }
 
     return {
       pool_player_id: player.id,
       user_id: player.user_id,
-      display_name: displayName,
-      is_eliminated: isEliminated,
-      elimination_reason: isEliminated ? 'wrong_pick' : null,
+      display_name: player.display_name,
+      is_eliminated: player.is_eliminated,
+      elimination_reason: player.elimination_reason as 'wrong_pick' | 'missed_pick' | 'manual' | null,
       elimination_round_name: eliminationRoundName,
       picks_count: playerPicks.length,
       correct_picks: correctPicks,
@@ -226,7 +204,7 @@ export async function getPoolLeaderboard(poolId: string): Promise<PoolLeaderboar
   const roundsWithPicks = new Set(picks.map(p => p.round_id));
   const roundsPlayed = allRounds
     .filter(r => roundsWithPicks.has(r.id))
-    .map(r => ({ id: r.id, name: r.round_name, date: r.start_date }));
+    .map(r => ({ id: r.id, name: r.name, date: r.date }));
 
   return {
     pool_id: poolId,
@@ -238,9 +216,9 @@ export async function getPoolLeaderboard(poolId: string): Promise<PoolLeaderboar
     current_round: activeRound
       ? {
           id: activeRound.id,
-          name: activeRound.round_name,
-          date: activeRound.start_date,
-          deadline_datetime: activeRound.pick_deadline,
+          name: activeRound.name,
+          date: activeRound.date,
+          deadline_datetime: activeRound.deadline_datetime,
         }
       : null,
     rounds_played: roundsPlayed,
@@ -261,7 +239,7 @@ export async function getMyPools(userId: string): Promise<MyPool[]> {
       id,
       pool_id,
       user_id,
-      status,
+      is_eliminated,
       pools:pool_id(
         id,
         name,
@@ -278,16 +256,13 @@ export async function getMyPools(userId: string): Promise<MyPool[]> {
   if (!memberships || memberships.length === 0) return [];
 
   // 2. Get active round
-  const { data: rounds } = await supabase
+  const { data: activeRounds } = await supabase
     .from('rounds')
-    .select('id, round_name, pick_deadline')
-    .order('start_date', { ascending: false })
+    .select('id, name, deadline_datetime')
+    .eq('is_active', true)
     .limit(1);
 
-  const currentRound = rounds?.[0] || null;
-  const deadlinePassed = currentRound
-    ? new Date(currentRound.pick_deadline) < new Date()
-    : true;
+  const currentRound = activeRounds?.[0] || null;
 
   // 3. Build pool data
   const myPools: MyPool[] = [];
@@ -312,18 +287,17 @@ export async function getMyPools(userId: string): Promise<MyPool[]> {
       .from('pool_players')
       .select('*', { count: 'exact', head: true })
       .eq('pool_id', pool.id)
-      .eq('status', 'active');
+      .eq('is_eliminated', false);
 
-    // User's picks count
+    // User's picks (through pool_player_id)
     const { data: userPicks } = await supabase
       .from('picks')
       .select('id, is_correct, round_id')
-      .eq('pool_id', pool.id)
-      .eq('user_id', userId);
+      .eq('pool_player_id', membership.id);
 
     const picksCount = userPicks?.length || 0;
 
-    // Check if picked today
+    // Check if picked for current round
     const hasPicked = currentRound
       ? userPicks?.some(p => p.round_id === currentRound.id) || false
       : false;
@@ -345,12 +319,12 @@ export async function getMyPools(userId: string): Promise<MyPool[]> {
       join_code: pool.join_code,
       total_players: totalPlayers || 0,
       alive_players: alivePlayers || 0,
-      your_status: membership.status as 'active' | 'eliminated',
+      your_status: membership.is_eliminated ? 'eliminated' : 'active',
       your_picks_count: picksCount,
       your_streak: streak,
-      current_round_name: currentRound?.round_name || null,
+      current_round_name: currentRound?.name || null,
       has_picked_today: hasPicked,
-      deadline_datetime: currentRound?.pick_deadline || null,
+      deadline_datetime: currentRound?.deadline_datetime || null,
     });
   }
 

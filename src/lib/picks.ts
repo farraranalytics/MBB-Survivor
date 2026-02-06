@@ -85,13 +85,20 @@ export async function getPoolPlayer(poolId: string, userId: string): Promise<Poo
 }
 
 /**
- * Get team IDs already used by a player in this pool
+ * Get team IDs already used by a player in this pool.
+ * Optionally exclude a round (so current round's pick isn't marked as used).
  */
-export async function getUsedTeams(poolPlayerId: string): Promise<string[]> {
-  const { data, error } = await supabase
+export async function getUsedTeams(poolPlayerId: string, excludeRoundId?: string): Promise<string[]> {
+  let query = supabase
     .from('picks')
     .select('team_id')
     .eq('pool_player_id', poolPlayerId);
+
+  if (excludeRoundId) {
+    query = query.neq('round_id', excludeRoundId);
+  }
+
+  const { data, error } = await query;
 
   if (error) {
     throw new PickError(`Failed to fetch used teams: ${error.message}`, 'FETCH_ERROR');
@@ -162,7 +169,7 @@ function calculateRiskLevel(teamSeed: number, opponentSeed: number): 'low' | 'me
 export async function getPickableTeams(poolPlayerId: string, roundId: string): Promise<PickableTeam[]> {
   const [games, usedTeamIds] = await Promise.all([
     getTodaysGames(roundId),
-    getUsedTeams(poolPlayerId)
+    getUsedTeams(poolPlayerId, roundId)
   ]);
 
   const pickableTeams: PickableTeam[] = [];
@@ -290,19 +297,19 @@ export async function validatePick(submission: PickSubmission): Promise<PickVali
       warnings.push('Less than 5 minutes remaining!');
     }
 
-    // 3. Team not already used by this player
-    const usedTeams = await getUsedTeams(submission.pool_player_id);
-    if (usedTeams.includes(submission.team_id)) {
+    // 3. Team not already used in a PREVIOUS round (exclude current round's pick)
+    const { data: previousPicks } = await supabase
+      .from('picks')
+      .select('team_id, round_id')
+      .eq('pool_player_id', submission.pool_player_id)
+      .neq('round_id', submission.round_id);
+    const previouslyUsedTeams = (previousPicks || []).map(p => p.team_id);
+    if (previouslyUsedTeams.includes(submission.team_id)) {
       errors.push('You have already picked this team in a previous round');
       return { valid: false, errors, warnings };
     }
 
-    // 4. No existing pick for this round
-    const existingPick = await getPlayerPick(submission.pool_player_id, submission.round_id);
-    if (existingPick) {
-      errors.push('You have already made a pick for this round');
-      return { valid: false, errors, warnings };
-    }
+    // 4. (Picks can be changed before deadline — no block on existing pick)
 
     // 5. Team must be playing in today's games
     const games = await getTodaysGames(submission.round_id);
@@ -324,12 +331,25 @@ export async function validatePick(submission: PickSubmission): Promise<PickVali
 // ─── Submit Pick ──────────────────────────────────────────────────
 
 /**
- * Submit a pick (validates first, then inserts)
+ * Submit or change a pick (validates first, replaces existing if needed)
  */
 export async function submitPick(submission: PickSubmission): Promise<Pick> {
   const validation = await validatePick(submission);
   if (!validation.valid) {
     throw new PickError(validation.errors.join('. '), 'VALIDATION_ERROR');
+  }
+
+  // Delete existing pick for this round if changing
+  const existingPick = await getPlayerPick(submission.pool_player_id, submission.round_id);
+  if (existingPick) {
+    const { error: deleteError } = await supabase
+      .from('picks')
+      .delete()
+      .eq('id', existingPick.id);
+
+    if (deleteError) {
+      throw new PickError(`Failed to change pick: ${deleteError.message}`, 'SUBMIT_ERROR');
+    }
   }
 
   const { data, error } = await supabase
@@ -348,7 +368,6 @@ export async function submitPick(submission: PickSubmission): Promise<Pick> {
     .single();
 
   if (error) {
-    // DB-level deadline trigger may also reject
     if (error.message.includes('deadline')) {
       throw new PickError('Pick deadline has passed', 'DEADLINE_ERROR');
     }

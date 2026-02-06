@@ -168,7 +168,16 @@ export default function PoolDetailPage() {
                 </button>
               )}
 
-              {hasMadePick && (
+              {hasMadePick && !deadline?.is_expired && (
+                <button
+                  onClick={() => router.push(`/pools/${poolId}/pick`)}
+                  className="bg-amber-500 text-white px-6 py-3 rounded-lg font-semibold hover:bg-amber-600 transition-colors shadow-sm"
+                >
+                  Change Pick
+                </button>
+              )}
+
+              {hasMadePick && deadline?.is_expired && (
                 <span className="text-green-600 font-medium text-sm">Pick locked ✓</span>
               )}
             </div>
@@ -182,7 +191,11 @@ export default function PoolDetailPage() {
                       {standings.current_round.name}
                     </p>
                     <p className="text-sm text-gray-600">
-                      {hasMadePick ? 'Pick submitted ✓' : 'Pick needed'}
+                      {hasMadePick
+                        ? deadline?.is_expired
+                          ? 'Pick locked ✓'
+                          : 'Pick submitted — change before deadline'
+                        : 'Pick needed'}
                     </p>
                   </div>
                   <div className="text-right">
