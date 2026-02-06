@@ -3,7 +3,10 @@ import { Inter } from 'next/font/google'
 import './globals.css'
 import { AuthProvider } from '@/components/auth/AuthProvider'
 
-const inter = Inter({ subsets: ['latin'] })
+const inter = Inter({
+  subsets: ['latin'],
+  variable: '--font-inter',
+})
 
 export const metadata: Metadata = {
   title: 'MBB Survivor Pool',
@@ -16,8 +19,8 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="en">
-      <body className={inter.className}>
+    <html lang="en" className="dark">
+      <body className={`${inter.className} bg-dark-base text-text-primary antialiased`}>
         <AuthProvider>
           {children}
         </AuthProvider>

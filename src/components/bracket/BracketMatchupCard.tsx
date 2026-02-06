@@ -21,10 +21,10 @@ function TeamRow({
 }) {
   if (!team) {
     return (
-      <div className="flex items-center justify-between px-2 py-1.5 bg-gray-50">
+      <div className="flex items-center justify-between px-2.5 py-2 bg-dark-surface">
         <div className="flex items-center gap-1.5">
-          <span className="text-xs text-gray-400 w-5 text-center">-</span>
-          <span className="text-xs text-gray-400 italic">TBD</span>
+          <span className="text-xs text-text-muted w-5 text-center">-</span>
+          <span className="text-xs text-text-muted italic">TBD</span>
         </div>
       </div>
     );
@@ -32,17 +32,27 @@ function TeamRow({
 
   return (
     <div
-      className={`flex items-center justify-between px-2 py-1.5 ${
-        isWinner ? 'bg-green-50' : isLoser ? 'bg-gray-100' : 'bg-white'
+      className={`flex items-center justify-between px-2.5 py-2 transition-colors ${
+        isWinner
+          ? 'bg-alive/10'
+          : isLoser
+            ? 'bg-dark-surface'
+            : 'bg-dark-card'
       }`}
     >
       <div className="flex items-center gap-1.5 min-w-0">
-        <span className="text-xs font-semibold text-gray-500 w-5 text-center flex-shrink-0">
+        <span className={`text-[10px] font-bold w-5 text-center flex-shrink-0 rounded py-0.5 ${
+          isWinner ? 'bg-alive/20 text-alive' : 'text-text-muted'
+        }`}>
           {team.seed}
         </span>
         <span
           className={`text-xs truncate ${
-            isWinner ? 'font-bold text-gray-900' : isLoser ? 'text-gray-400' : 'font-medium text-gray-800'
+            isWinner
+              ? 'font-bold text-white'
+              : isLoser
+                ? 'text-text-muted'
+                : 'font-medium text-text-secondary'
           }`}
         >
           {team.name}
@@ -50,8 +60,8 @@ function TeamRow({
       </div>
       {score !== null && (
         <span
-          className={`text-xs ml-2 flex-shrink-0 ${
-            isWinner ? 'font-bold text-gray-900' : 'text-gray-500'
+          className={`text-xs font-mono ml-2 flex-shrink-0 ${
+            isWinner ? 'font-bold text-white' : 'text-text-muted'
           }`}
         >
           {score}
@@ -68,29 +78,25 @@ export default function BracketMatchupCard({ game, compact }: BracketMatchupCard
   const team1Wins = hasWinner && game.winner_id === game.team1_id;
   const team2Wins = hasWinner && game.winner_id === game.team2_id;
 
-  // Status badge
   let statusText = '';
   let statusColor = '';
   if (game.status === 'final') {
     statusText = 'Final';
-    statusColor = 'text-green-600';
+    statusColor = 'text-alive bg-alive/10';
   } else if (game.status === 'in_progress') {
-    statusText = 'Live';
-    statusColor = 'text-red-600 animate-pulse';
-  } else {
-    statusText = '';
-    statusColor = 'text-gray-500';
+    statusText = 'LIVE';
+    statusColor = 'text-eliminated bg-eliminated/10 animate-pulse';
   }
 
   return (
-    <div className={`w-48 border border-gray-300 rounded overflow-hidden bg-white shadow-sm ${compact ? 'text-xs' : ''}`}>
+    <div className={`w-52 border border-dark-border rounded-xl overflow-hidden bg-dark-card shadow-sm hover:border-accent/30 transition-colors ${compact ? 'text-xs' : ''}`}>
       <TeamRow
         team={team1}
         score={game.team1_score}
         isWinner={team1Wins}
         isLoser={team2Wins}
       />
-      <div className="border-t border-gray-200" />
+      <div className="border-t border-dark-border-subtle" />
       <TeamRow
         team={team2}
         score={game.team2_score}
@@ -98,7 +104,7 @@ export default function BracketMatchupCard({ game, compact }: BracketMatchupCard
         isLoser={team1Wins}
       />
       {statusText && (
-        <div className={`text-center text-[10px] py-0.5 border-t border-gray-200 ${statusColor}`}>
+        <div className={`text-center text-[10px] font-semibold py-1 border-t border-dark-border-subtle ${statusColor}`}>
           {statusText}
         </div>
       )}

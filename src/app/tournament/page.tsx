@@ -46,7 +46,6 @@ export default function TournamentPage() {
     loadData();
   }, [loadData]);
 
-  // Build bracket data for the selected region
   const regionBracket: RegionBracket | null =
     REGIONS.includes(selectedRegion) && rounds.length > 0
       ? buildRegionBracket(selectedRegion, games, rounds)
@@ -55,16 +54,15 @@ export default function TournamentPage() {
   const finalFourRounds: BracketRound[] =
     selectedRegion === 'Final Four' ? buildFinalFour(games, rounds) : [];
 
-  // Schedule view: games for the selected round
   const scheduleGames = games.filter(g => g.round_id === selectedRound);
 
   if (loading) {
     return (
       <ProtectedRoute>
-        <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="min-h-screen bg-dark-base flex items-center justify-center">
           <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-            <p className="mt-4 text-gray-600">Loading tournament data...</p>
+            <div className="animate-spin rounded-full h-12 w-12 border-2 border-dark-border border-t-accent mx-auto" />
+            <p className="mt-4 text-text-muted">Loading tournament data...</p>
           </div>
         </div>
       </ProtectedRoute>
@@ -74,15 +72,14 @@ export default function TournamentPage() {
   if (error) {
     return (
       <ProtectedRoute>
-        <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-          <div className="text-center max-w-md">
-            <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
-              <strong className="font-bold">Error: </strong>
-              <span>{error}</span>
+        <div className="min-h-screen bg-dark-base flex items-center justify-center">
+          <div className="text-center max-w-md px-5">
+            <div className="bg-eliminated/10 border border-eliminated/30 text-eliminated px-4 py-3 rounded-xl text-sm mb-4">
+              {error}
             </div>
             <button
               onClick={loadData}
-              className="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700 transition-colors"
+              className="btn-accent text-white px-6 py-3 rounded-xl font-semibold"
             >
               Try Again
             </button>
@@ -94,46 +91,46 @@ export default function TournamentPage() {
 
   return (
     <ProtectedRoute>
-      <div className="min-h-screen bg-gray-50">
+      <div className="min-h-screen bg-dark-base">
         {/* Header */}
-        <div className="bg-white shadow">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="py-6">
-              <div className="flex items-center justify-between flex-wrap gap-4">
+        <header className="bg-dark-surface border-b border-dark-border">
+          <div className="max-w-7xl mx-auto px-5">
+            <div className="py-4">
+              <div className="flex items-center justify-between flex-wrap gap-3">
                 <div className="flex items-center gap-3">
                   <Link
                     href="/dashboard"
-                    className="text-gray-400 hover:text-gray-600 transition-colors"
+                    className="text-text-muted hover:text-text-secondary transition-colors"
                     aria-label="Back to dashboard"
                   >
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                     </svg>
                   </Link>
-                  <h1 className="text-3xl font-bold text-gray-900">
+                  <h1 className="text-xl font-bold text-white">
                     NCAA Tournament
                   </h1>
                 </div>
 
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2">
                   {/* View toggle */}
-                  <div className="flex bg-gray-100 rounded-lg p-1">
+                  <div className="flex bg-dark-base rounded-xl p-1">
                     <button
                       onClick={() => setViewMode('schedule')}
-                      className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
+                      className={`px-4 py-2 text-sm font-semibold rounded-lg transition-colors ${
                         viewMode === 'schedule'
-                          ? 'bg-white text-blue-600 shadow-sm'
-                          : 'text-gray-700 hover:text-gray-900'
+                          ? 'bg-dark-card text-white shadow-sm'
+                          : 'text-text-muted hover:text-text-secondary'
                       }`}
                     >
                       Schedule
                     </button>
                     <button
                       onClick={() => setViewMode('bracket')}
-                      className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
+                      className={`px-4 py-2 text-sm font-semibold rounded-lg transition-colors ${
                         viewMode === 'bracket'
-                          ? 'bg-white text-blue-600 shadow-sm'
-                          : 'text-gray-700 hover:text-gray-900'
+                          ? 'bg-dark-card text-white shadow-sm'
+                          : 'text-text-muted hover:text-text-secondary'
                       }`}
                     >
                       Bracket
@@ -142,18 +139,20 @@ export default function TournamentPage() {
 
                   <button
                     onClick={loadData}
-                    className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors text-sm font-medium"
+                    className="bg-dark-card border border-dark-border text-text-secondary hover:text-white hover:border-accent/30 px-4 py-2 rounded-xl text-sm font-semibold transition-colors"
                   >
-                    Refresh
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                    </svg>
                   </button>
                 </div>
               </div>
             </div>
           </div>
-        </div>
+        </header>
 
         {/* Content */}
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="max-w-7xl mx-auto px-5 py-6">
           {viewMode === 'schedule' ? (
             <ScheduleView
               rounds={rounds}
@@ -190,15 +189,15 @@ function ScheduleView({ rounds, games, selectedRound, onRoundChange }: ScheduleV
   return (
     <div>
       {/* Round selector */}
-      <div className="flex space-x-2 mb-8 overflow-x-auto pb-2">
+      <div className="flex space-x-2 mb-6 overflow-x-auto pb-2 scrollbar-hide">
         {rounds.map(round => (
           <button
             key={round.id}
             onClick={() => onRoundChange(round.id)}
-            className={`flex-shrink-0 px-4 py-2 rounded-lg font-medium transition-colors ${
+            className={`flex-shrink-0 px-4 py-2.5 rounded-xl text-sm font-semibold transition-colors ${
               selectedRound === round.id
-                ? 'bg-blue-600 text-white'
-                : 'bg-white text-gray-700 hover:bg-gray-50 border border-gray-300'
+                ? 'bg-accent text-white'
+                : 'bg-dark-card border border-dark-border text-text-muted hover:text-white hover:border-accent/30'
             }`}
           >
             {round.name}
@@ -208,8 +207,8 @@ function ScheduleView({ rounds, games, selectedRound, onRoundChange }: ScheduleV
 
       {/* Games list */}
       {games.length === 0 ? (
-        <div className="text-center py-12 bg-white rounded-lg">
-          <p className="text-gray-500">
+        <div className="text-center py-12 bg-dark-card border border-dark-border rounded-2xl">
+          <p className="text-text-muted">
             No games scheduled{currentRound ? ` for ${currentRound.name}` : ''}
           </p>
         </div>
@@ -233,16 +232,20 @@ function ScheduleGameCard({ game }: { game: BracketGame }) {
 
   let statusText: string;
   let statusColor: string;
+  let statusBg: string;
   if (game.status === 'final') {
     statusText = 'Final';
-    statusColor = 'text-green-600';
+    statusColor = 'text-alive';
+    statusBg = 'bg-alive/10';
   } else if (game.status === 'in_progress') {
-    statusText = 'Live';
-    statusColor = 'text-red-600 animate-pulse';
+    statusText = 'LIVE';
+    statusColor = 'text-eliminated font-bold';
+    statusBg = 'bg-eliminated/10 animate-pulse';
   } else {
     const dt = new Date(game.game_datetime);
     statusText = dt.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
-    statusColor = 'text-gray-600';
+    statusColor = 'text-text-muted';
+    statusBg = 'bg-dark-surface';
   }
 
   const formatDate = (dt: string) =>
@@ -253,21 +256,27 @@ function ScheduleGameCard({ game }: { game: BracketGame }) {
     });
 
   return (
-    <div className="bg-white rounded-lg shadow border border-gray-200 p-4">
+    <div className="bg-dark-card border border-dark-border rounded-2xl p-4 hover:border-accent/20 transition-colors">
       <div className="flex items-center justify-between">
-        <div className="flex-1 space-y-2">
+        <div className="flex-1 space-y-2.5">
           {/* Team 1 */}
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <span className="text-sm font-semibold text-gray-500 w-6 text-center">
+              <span className={`text-xs font-bold w-6 text-center rounded-md py-0.5 ${
+                team1Wins ? 'bg-alive/15 text-alive' : 'bg-dark-surface text-text-muted'
+              }`}>
                 {team1?.seed ?? '-'}
               </span>
-              <span className={`font-medium ${team1Wins ? 'text-gray-900 font-bold' : team2Wins ? 'text-gray-400' : 'text-gray-900'}`}>
+              <span className={`font-medium text-sm ${
+                team1Wins ? 'text-white font-bold' : team2Wins ? 'text-text-muted' : 'text-white'
+              }`}>
                 {team1?.name ?? 'TBD'}
               </span>
             </div>
             {game.team1_score !== null && (
-              <span className={`text-lg font-bold ${team1Wins ? 'text-gray-900' : 'text-gray-500'}`}>
+              <span className={`text-lg font-bold font-mono ${
+                team1Wins ? 'text-white' : 'text-text-muted'
+              }`}>
                 {game.team1_score}
               </span>
             )}
@@ -275,24 +284,32 @@ function ScheduleGameCard({ game }: { game: BracketGame }) {
           {/* Team 2 */}
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <span className="text-sm font-semibold text-gray-500 w-6 text-center">
+              <span className={`text-xs font-bold w-6 text-center rounded-md py-0.5 ${
+                team2Wins ? 'bg-alive/15 text-alive' : 'bg-dark-surface text-text-muted'
+              }`}>
                 {team2?.seed ?? '-'}
               </span>
-              <span className={`font-medium ${team2Wins ? 'text-gray-900 font-bold' : team1Wins ? 'text-gray-400' : 'text-gray-900'}`}>
+              <span className={`font-medium text-sm ${
+                team2Wins ? 'text-white font-bold' : team1Wins ? 'text-text-muted' : 'text-white'
+              }`}>
                 {team2?.name ?? 'TBD'}
               </span>
             </div>
             {game.team2_score !== null && (
-              <span className={`text-lg font-bold ${team2Wins ? 'text-gray-900' : 'text-gray-500'}`}>
+              <span className={`text-lg font-bold font-mono ${
+                team2Wins ? 'text-white' : 'text-text-muted'
+              }`}>
                 {game.team2_score}
               </span>
             )}
           </div>
         </div>
 
-        <div className="ml-6 text-right">
-          <div className={`font-medium ${statusColor}`}>{statusText}</div>
-          <div className="text-sm text-gray-500 mt-1">{formatDate(game.game_datetime)}</div>
+        <div className="ml-5 text-right flex-shrink-0">
+          <div className={`inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-semibold ${statusBg} ${statusColor}`}>
+            {statusText}
+          </div>
+          <div className="text-[11px] text-text-muted mt-1.5">{formatDate(game.game_datetime)}</div>
         </div>
       </div>
     </div>
@@ -312,15 +329,15 @@ function BracketView({ selectedRegion, onRegionChange, regionBracket, finalFourR
   return (
     <div>
       {/* Region tabs */}
-      <div className="flex gap-2 mb-6 overflow-x-auto pb-2">
+      <div className="flex gap-2 mb-6 overflow-x-auto pb-2 scrollbar-hide">
         {REGION_TABS.map(tab => (
           <button
             key={tab}
             onClick={() => onRegionChange(tab)}
-            className={`flex-shrink-0 px-4 py-2 rounded-full text-sm font-medium transition-colors ${
+            className={`flex-shrink-0 px-4 py-2.5 rounded-xl text-sm font-semibold transition-colors ${
               selectedRegion === tab
-                ? 'bg-blue-600 text-white'
-                : 'bg-white text-gray-700 hover:bg-gray-50 border border-gray-300'
+                ? 'bg-accent text-white shadow-lg shadow-accent-dim'
+                : 'bg-dark-card border border-dark-border text-text-muted hover:text-white hover:border-accent/30'
             }`}
           >
             {tab}
@@ -334,8 +351,8 @@ function BracketView({ selectedRegion, onRegionChange, regionBracket, finalFourR
       ) : regionBracket ? (
         <RegionBracketComponent bracket={regionBracket} />
       ) : (
-        <div className="text-center py-12 bg-white rounded-lg">
-          <p className="text-gray-500">No bracket data available.</p>
+        <div className="text-center py-12 bg-dark-card border border-dark-border rounded-2xl">
+          <p className="text-text-muted">No bracket data available.</p>
         </div>
       )}
     </div>
@@ -347,9 +364,14 @@ function FinalFourBracket({ rounds }: { rounds: BracketRound[] }) {
 
   if (!hasGames) {
     return (
-      <div className="text-center py-12 bg-white rounded-lg">
-        <p className="text-lg font-medium text-gray-500">Final Four</p>
-        <p className="text-gray-400 mt-2">Games TBD</p>
+      <div className="text-center py-12 bg-dark-card border border-dark-border rounded-2xl">
+        <div className="w-12 h-12 bg-accent/10 rounded-2xl flex items-center justify-center mx-auto mb-3">
+          <svg className="w-6 h-6 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+          </svg>
+        </div>
+        <p className="text-lg font-bold text-white">Final Four</p>
+        <p className="text-text-muted mt-1 text-sm">Games TBD</p>
       </div>
     );
   }
@@ -358,8 +380,8 @@ function FinalFourBracket({ rounds }: { rounds: BracketRound[] }) {
     <div className="overflow-x-auto pb-4">
       <div className="flex gap-8 min-w-max px-2 items-center" style={{ minHeight: '300px' }}>
         {rounds.map(bracketRound => (
-          <div key={bracketRound.round.id} className="flex flex-col flex-shrink-0" style={{ width: '208px' }}>
-            <div className="text-xs font-semibold text-gray-500 uppercase tracking-wide text-center mb-3">
+          <div key={bracketRound.round.id} className="flex flex-col flex-shrink-0" style={{ width: '220px' }}>
+            <div className="text-xs font-semibold text-text-muted uppercase tracking-widest text-center mb-3">
               {bracketRound.round.name}
             </div>
             <div className="flex flex-col justify-around flex-1 gap-4">

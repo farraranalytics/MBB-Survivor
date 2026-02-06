@@ -45,23 +45,23 @@ export default function PoolDetailPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600" />
+      <div className="min-h-screen bg-dark-base flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-2 border-dark-border border-t-accent" />
       </div>
     );
   }
 
   if (error || !standings) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center px-4">
-          <h1 className="text-2xl font-bold text-gray-900 mb-2">Pool Not Found</h1>
-          <p className="text-gray-600 mb-4">
+      <div className="min-h-screen bg-dark-base flex items-center justify-center">
+        <div className="text-center px-5">
+          <h1 className="text-2xl font-bold text-white mb-2">Pool Not Found</h1>
+          <p className="text-text-secondary mb-6">
             {error || 'This pool does not exist or you don\u2019t have access.'}
           </p>
           <button
             onClick={() => router.push('/dashboard')}
-            className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700"
+            className="btn-accent text-white px-6 py-3 rounded-xl font-semibold"
           >
             Back to Dashboard
           </button>
@@ -82,136 +82,147 @@ export default function PoolDetailPage() {
     return `${hours}h ${mins}m`;
   };
 
-  // Top 5 players for compact standings
   const topPlayers = standings.players.slice(0, 5);
 
+  // Deadline urgency color
+  const getDeadlineColor = () => {
+    if (!deadline || deadline.is_expired) return 'text-eliminated';
+    if (deadline.minutes_remaining < 30) return 'text-eliminated';
+    if (deadline.minutes_remaining < 120) return 'text-warning';
+    return 'text-alive';
+  };
+
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="max-w-4xl mx-auto px-4 py-6 sm:py-8">
+    <div className="min-h-screen bg-dark-base">
+      <div className="max-w-lg mx-auto px-5 py-6">
         {/* Header */}
-        <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
+        <div className="bg-dark-card border border-dark-border rounded-2xl p-5 mb-4">
           <div className="flex items-center justify-between mb-4">
-            <h1 className="text-2xl font-bold text-gray-900">{standings.pool_name}</h1>
+            <h1 className="text-xl font-bold text-white truncate mr-3">{standings.pool_name}</h1>
             <button
               onClick={() => router.push('/dashboard')}
-              className="text-gray-500 hover:text-gray-800 text-sm"
+              className="text-text-muted hover:text-text-secondary text-sm flex-shrink-0 transition-colors"
             >
-              ← Dashboard
+              <svg className="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7" /></svg>
+              Back
             </button>
           </div>
 
-          <div className="grid grid-cols-3 gap-4 text-center">
-            <div>
-              <p className="text-2xl font-bold text-green-600">{standings.alive_players}</p>
-              <p className="text-sm text-gray-500">Alive</p>
+          <div className="grid grid-cols-3 gap-3 text-center">
+            <div className="bg-alive/10 rounded-xl p-3">
+              <p className="text-2xl font-bold text-alive">{standings.alive_players}</p>
+              <p className="text-[11px] text-alive/70 font-medium uppercase tracking-wide">Alive</p>
             </div>
-            <div>
-              <p className="text-2xl font-bold text-red-600">{standings.eliminated_players}</p>
-              <p className="text-sm text-gray-500">Eliminated</p>
+            <div className="bg-eliminated/10 rounded-xl p-3">
+              <p className="text-2xl font-bold text-eliminated">{standings.eliminated_players}</p>
+              <p className="text-[11px] text-eliminated/70 font-medium uppercase tracking-wide">Out</p>
             </div>
-            <div>
-              <p className="text-2xl font-bold text-gray-900">{standings.total_players}</p>
-              <p className="text-sm text-gray-500">Total</p>
+            <div className="bg-dark-surface rounded-xl p-3">
+              <p className="text-2xl font-bold text-white">{standings.total_players}</p>
+              <p className="text-[11px] text-text-muted font-medium uppercase tracking-wide">Total</p>
             </div>
           </div>
         </div>
 
         {/* Your Status & Pick Action */}
         {yourStatus && (
-          <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">Your Status</h2>
+          <div className="bg-dark-card border border-dark-border rounded-2xl p-5 mb-4">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-sm font-semibold text-text-muted uppercase tracking-wide">Your Status</h2>
+              <span
+                className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wide ${
+                  yourStatus.is_eliminated
+                    ? 'bg-eliminated/15 text-eliminated'
+                    : 'bg-alive/15 text-alive'
+                }`}
+              >
+                {yourStatus.is_eliminated ? 'ELIMINATED' : 'ALIVE'}
+              </span>
+            </div>
 
             <div className="flex items-center justify-between">
               <div>
-                <div className="flex items-center space-x-2 mb-2">
-                  <span
-                    className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                      yourStatus.is_eliminated
-                        ? 'bg-red-100 text-red-800'
-                        : 'bg-green-100 text-green-800'
-                    }`}
-                  >
-                    {yourStatus.is_eliminated ? '💀 Eliminated' : '✅ Alive'}
-                  </span>
-                  <span className="text-sm text-gray-600">
-                    {yourStatus.picks_count} pick{yourStatus.picks_count !== 1 ? 's' : ''} made
+                <div className="flex items-center gap-3 mb-2">
+                  <span className="text-sm text-text-secondary">
+                    {yourStatus.picks_count} pick{yourStatus.picks_count !== 1 ? 's' : ''}
                   </span>
                   {yourStatus.survival_streak > 1 && (
-                    <span className="text-sm text-orange-600 font-medium">
-                      🔥 {yourStatus.survival_streak}
+                    <span className="text-sm text-accent font-bold">
+                      {yourStatus.survival_streak} streak
                     </span>
                   )}
                 </div>
 
                 {yourStatus.is_eliminated && yourStatus.elimination_reason && (
-                  <p className="text-sm text-red-600">
-                    Eliminated: {yourStatus.elimination_reason.replace('_', ' ')}
+                  <p className="text-sm text-eliminated">
+                    {yourStatus.elimination_reason.replace('_', ' ')}
                   </p>
                 )}
 
                 {yourStatus.current_pick?.team && (
-                  <p className="text-sm text-gray-600">
-                    Today&apos;s pick:{' '}
-                    <span className="font-medium">
+                  <p className="text-sm text-text-secondary">
+                    Pick:{' '}
+                    <span className="font-semibold text-white">
                       ({yourStatus.current_pick.team.seed}) {yourStatus.current_pick.team.name}
                     </span>
                   </p>
                 )}
               </div>
 
-              {canMakePick && !hasMadePick && (
-                <button
-                  onClick={() => router.push(`/pools/${poolId}/pick`)}
-                  className="bg-blue-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-blue-700 transition-colors shadow-sm"
-                >
-                  Make Pick
-                </button>
-              )}
+              <div className="flex-shrink-0 ml-3">
+                {canMakePick && !hasMadePick && (
+                  <button
+                    onClick={() => router.push(`/pools/${poolId}/pick`)}
+                    className="btn-accent text-white px-5 py-3 rounded-xl font-bold text-sm shadow-lg shadow-accent-dim"
+                  >
+                    Make Pick
+                  </button>
+                )}
 
-              {hasMadePick && !deadline?.is_expired && (
-                <button
-                  onClick={() => router.push(`/pools/${poolId}/pick`)}
-                  className="bg-amber-500 text-white px-6 py-3 rounded-lg font-semibold hover:bg-amber-600 transition-colors shadow-sm"
-                >
-                  Change Pick
-                </button>
-              )}
+                {hasMadePick && !deadline?.is_expired && (
+                  <button
+                    onClick={() => router.push(`/pools/${poolId}/pick`)}
+                    className="bg-warning/15 text-warning border border-warning/30 px-5 py-3 rounded-xl font-bold text-sm hover:bg-warning/25 transition-colors"
+                  >
+                    Change
+                  </button>
+                )}
 
-              {hasMadePick && deadline?.is_expired && (
-                <span className="text-green-600 font-medium text-sm">Pick locked ✓</span>
-              )}
+                {hasMadePick && deadline?.is_expired && (
+                  <span className="text-alive font-semibold text-sm">Locked</span>
+                )}
+              </div>
             </div>
 
             {/* Deadline */}
             {standings.current_round && deadline && (
-              <div className="mt-4 p-4 bg-gray-50 rounded-lg">
+              <div className="mt-4 p-4 bg-dark-surface border border-dark-border-subtle rounded-xl">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm font-medium text-gray-900">
+                    <p className="text-sm font-semibold text-white">
                       {standings.current_round.name}
                     </p>
-                    <p className="text-sm text-gray-600">
+                    <p className="text-xs text-text-muted mt-0.5">
                       {hasMadePick
                         ? deadline?.is_expired
-                          ? 'Pick locked ✓'
-                          : 'Pick submitted — change before deadline'
+                          ? 'Pick locked'
+                          : 'Change before deadline'
                         : 'Pick needed'}
                     </p>
                   </div>
                   <div className="text-right">
                     {deadline.is_expired ? (
-                      <p className="text-sm font-medium text-red-600">Deadline passed</p>
+                      <p className="text-sm font-bold text-eliminated">Passed</p>
                     ) : (
                       <>
-                        <p className="text-sm font-medium text-gray-900">
-                          {formatTimeRemaining(deadline.minutes_remaining)} left
+                        <p className={`text-lg font-mono font-bold ${getDeadlineColor()}`}>
+                          {formatTimeRemaining(deadline.minutes_remaining)}
                         </p>
-                        <p className="text-xs text-gray-500">
+                        <p className="text-[10px] text-text-muted">
                           {new Date(deadline.deadline_datetime).toLocaleTimeString([], {
                             hour: '2-digit',
                             minute: '2-digit'
-                          })}{' '}
-                          deadline
+                          })}
                         </p>
                       </>
                     )}
@@ -222,15 +233,15 @@ export default function PoolDetailPage() {
           </div>
         )}
 
-        {/* Compact Standings (top 5) + link to full standings */}
-        <div className="bg-white rounded-lg shadow-sm p-6">
+        {/* Compact Standings */}
+        <div className="bg-dark-card border border-dark-border rounded-2xl p-5">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-semibold text-gray-900">Standings</h2>
+            <h2 className="text-sm font-semibold text-text-muted uppercase tracking-wide">Standings</h2>
             <button
               onClick={() => router.push(`/pools/${poolId}/standings`)}
-              className="text-blue-600 hover:text-blue-800 text-sm font-medium"
+              className="text-accent hover:text-accent-hover text-xs font-semibold transition-colors"
             >
-              View Full Standings →
+              View All
             </button>
           </div>
 
@@ -240,37 +251,33 @@ export default function PoolDetailPage() {
               return (
                 <div
                   key={player.pool_player_id}
-                  className={`flex items-center justify-between p-3 rounded-lg ${
-                    isYou ? 'bg-blue-50 border border-blue-200' : 'bg-gray-50'
+                  className={`flex items-center justify-between p-3 rounded-xl ${
+                    isYou ? 'bg-accent/8 border border-accent/20' : 'bg-dark-surface'
                   }`}
                 >
                   <div className="flex items-center space-x-3">
-                    <span className="text-sm font-medium text-gray-400 w-6">
-                      #{index + 1}
+                    <span className="text-xs font-bold text-text-muted w-5 text-right">
+                      {index + 1}
                     </span>
                     <div>
-                      <p className="font-medium text-gray-900">
+                      <p className="font-semibold text-white text-sm">
                         {player.display_name}
                         {isYou && (
-                          <span className="text-blue-600 text-sm ml-1">(You)</span>
+                          <span className="text-accent text-xs ml-1.5">You</span>
                         )}
                       </p>
-                      <div className="flex items-center space-x-2">
+                      <div className="flex items-center gap-2 mt-0.5">
                         <span
-                          className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
-                            player.is_eliminated
-                              ? 'bg-red-100 text-red-800'
-                              : 'bg-green-100 text-green-800'
+                          className={`inline-flex items-center w-2 h-2 rounded-full ${
+                            player.is_eliminated ? 'bg-eliminated' : 'bg-alive'
                           }`}
-                        >
-                          {player.is_eliminated ? 'Eliminated' : 'Alive'}
-                        </span>
-                        <span className="text-xs text-gray-500">
+                        />
+                        <span className="text-[11px] text-text-muted">
                           {player.picks_count} pick{player.picks_count !== 1 ? 's' : ''}
                         </span>
                         {player.survival_streak > 1 && (
-                          <span className="text-xs text-orange-600">
-                            🔥 {player.survival_streak}
+                          <span className="text-[11px] text-accent font-medium">
+                            {player.survival_streak}x
                           </span>
                         )}
                       </div>
@@ -279,10 +286,10 @@ export default function PoolDetailPage() {
 
                   {player.current_pick?.team && (
                     <div className="text-right">
-                      <p className="text-sm font-medium text-gray-900">
+                      <p className="text-xs font-semibold text-white">
                         {player.current_pick.team.name}
                       </p>
-                      <p className="text-xs text-gray-500">
+                      <p className="text-[10px] text-text-muted">
                         {player.current_pick.team.seed} seed
                       </p>
                     </div>
@@ -293,36 +300,40 @@ export default function PoolDetailPage() {
           </div>
 
           {standings.players.length === 0 && (
-            <p className="text-center text-gray-500 py-8">No players in this pool yet.</p>
+            <p className="text-center text-text-muted py-8">No players in this pool yet.</p>
           )}
 
           {standings.players.length > 5 && (
             <button
               onClick={() => router.push(`/pools/${poolId}/standings`)}
-              className="w-full mt-3 py-2.5 text-center text-sm font-medium text-blue-600 hover:text-blue-800 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors"
+              className="w-full mt-3 py-3 text-center text-sm font-semibold text-accent bg-accent/8 rounded-xl hover:bg-accent/15 transition-colors"
             >
-              See all {standings.players.length} players →
+              See all {standings.players.length} players
             </button>
           )}
         </div>
 
         {/* Quick Actions */}
-        <div className="mt-6 grid grid-cols-2 gap-3">
+        <div className="mt-4 grid grid-cols-2 gap-3">
           <button
             onClick={() => router.push(`/pools/${poolId}/standings`)}
-            className="bg-white rounded-lg shadow-sm p-4 text-center hover:shadow-md transition-shadow"
+            className="bg-dark-card border border-dark-border rounded-2xl p-4 text-center hover:border-accent/30 transition-colors"
           >
-            <span className="text-2xl mb-1 block">📊</span>
-            <span className="text-sm font-medium text-gray-900">Full Standings</span>
-            <span className="text-xs text-gray-500 block">Round grid & history</span>
+            <div className="w-10 h-10 bg-electric/10 rounded-xl flex items-center justify-center mx-auto mb-2">
+              <svg className="w-5 h-5 text-electric" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg>
+            </div>
+            <span className="text-xs font-semibold text-white block">Full Standings</span>
+            <span className="text-[10px] text-text-muted block mt-0.5">Grid & history</span>
           </button>
           <button
             onClick={() => router.push('/tournament')}
-            className="bg-white rounded-lg shadow-sm p-4 text-center hover:shadow-md transition-shadow"
+            className="bg-dark-card border border-dark-border rounded-2xl p-4 text-center hover:border-accent/30 transition-colors"
           >
-            <span className="text-2xl mb-1 block">🏀</span>
-            <span className="text-sm font-medium text-gray-900">Tournament</span>
-            <span className="text-xs text-gray-500 block">Bracket & scores</span>
+            <div className="w-10 h-10 bg-accent/10 rounded-xl flex items-center justify-center mx-auto mb-2">
+              <svg className="w-5 h-5 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
+            </div>
+            <span className="text-xs font-semibold text-white block">Tournament</span>
+            <span className="text-[10px] text-text-muted block mt-0.5">Bracket & scores</span>
           </button>
         </div>
       </div>

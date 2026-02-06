@@ -7,29 +7,27 @@ interface RegionBracketProps {
   bracket: RegionBracketType;
 }
 
-/** Placeholder card for TBD matchups in later rounds */
 function TBDMatchupCard() {
   return (
-    <div className="w-48 border border-dashed border-gray-300 rounded overflow-hidden bg-gray-50 shadow-sm">
-      <div className="flex items-center justify-between px-2 py-1.5">
+    <div className="w-52 border border-dashed border-dark-border rounded-xl overflow-hidden bg-dark-surface">
+      <div className="flex items-center justify-between px-2.5 py-2">
         <div className="flex items-center gap-1.5">
-          <span className="text-xs text-gray-400 w-5 text-center">-</span>
-          <span className="text-xs text-gray-400 italic">TBD</span>
+          <span className="text-xs text-text-muted w-5 text-center">-</span>
+          <span className="text-xs text-text-muted italic">TBD</span>
         </div>
       </div>
-      <div className="border-t border-gray-200" />
-      <div className="flex items-center justify-between px-2 py-1.5">
+      <div className="border-t border-dark-border-subtle" />
+      <div className="flex items-center justify-between px-2.5 py-2">
         <div className="flex items-center gap-1.5">
-          <span className="text-xs text-gray-400 w-5 text-center">-</span>
-          <span className="text-xs text-gray-400 italic">TBD</span>
+          <span className="text-xs text-text-muted w-5 text-center">-</span>
+          <span className="text-xs text-text-muted italic">TBD</span>
         </div>
       </div>
     </div>
   );
 }
 
-/** Expected number of games per round in a region */
-const EXPECTED_GAMES = [8, 4, 2, 1]; // R1, R2, Sweet 16, Elite 8
+const EXPECTED_GAMES = [8, 4, 2, 1];
 
 function RoundColumn({
   bracketRound,
@@ -44,15 +42,14 @@ function RoundColumn({
   const label = bracketRound?.round.name || roundLabels[roundIndex] || `Round ${roundIndex + 1}`;
   const games = bracketRound?.games || [];
 
-  // Fill with actual games + TBD placeholders
   const slots: (BracketGame | null)[] = [];
   for (let i = 0; i < expectedGames; i++) {
     slots.push(games[i] ?? null);
   }
 
   return (
-    <div className="flex flex-col flex-shrink-0" style={{ width: '208px' }}>
-      <div className="text-xs font-semibold text-gray-500 uppercase tracking-wide text-center mb-3 px-1 truncate">
+    <div className="flex flex-col flex-shrink-0" style={{ width: '220px' }}>
+      <div className="text-xs font-semibold text-text-muted uppercase tracking-widest text-center mb-3 px-1 truncate">
         {label}
       </div>
       <div className="flex flex-col justify-around flex-1 gap-2">
