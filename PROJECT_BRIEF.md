@@ -39,8 +39,8 @@ https://github.com/farraranalytics/MBB-Survivor.git
 5. ~~Tournament data integration (bracket, schedule, scores)~~ — DONE
 6. ~~Daily pick submission screen (mobile-first)~~ — DONE
 7. ~~**Standings & leaderboard**~~ — **DONE**
-8. **Bracket visualization** — NEXT
-9. Analyze tab (team inventory, comparative analysis, pick recommendations)
+8. ~~**Bracket visualization**~~ — **DONE**
+9. **Analyze tab** (team inventory, comparative analysis, pick recommendations) — NEXT
 10. Notifications (deadline reminders, survival/elimination alerts)
 11. Admin panel (pool management, manual overrides)
 
@@ -52,7 +52,7 @@ https://github.com/farraranalytics/MBB-Survivor.git
 - **Survivor rules:** one pick/day, each team used once, miss = eliminated, wrong = eliminated
 
 ## Current Status (Updated 2026-02-05)
-**Step 7 COMPLETED** — Standings & leaderboard fully implemented.
+**Step 8 COMPLETED** — Bracket visualization fully implemented.
 
 ### Completed Files (all under `src/`):
 - `lib/supabase/client.ts` — browser client with `supabase` singleton export
@@ -96,6 +96,13 @@ https://github.com/farraranalytics/MBB-Survivor.git
   - Grouped by active vs eliminated pools
   - Quick action buttons: Create, Join, Tournament
 
+### Step 8 Files (Bracket Visualization):
+- `types/bracket.ts` — BracketGame, BracketRound, RegionBracket types
+- `lib/bracket.ts` — Data layer: getAllRounds, getAllGamesWithTeams, buildRegionBracket (with NCAA seed ordering), buildFinalFour
+- `components/bracket/BracketMatchupCard.tsx` — Compact matchup card: seed badge, team name, score, winner/loser styling, status badge (Final/Live)
+- `components/bracket/RegionBracket.tsx` — 4-column region bracket (R1→Elite 8), TBD placeholders for later rounds, horizontal scroll on mobile
+- `app/tournament/page.tsx` — **Complete rewrite:** removed ESPN API, Supabase-powered bracket + schedule views, region tabs (East/West/South/Midwest/Final Four), round selector for schedule view
+
 ### Routes (12 total):
 - `/` — Landing page
 - `/auth/login` — Login
@@ -118,6 +125,8 @@ https://github.com/farraranalytics/MBB-Survivor.git
 - Pick logic: `import { ... } from '@/lib/picks'`
 - Standings types: `import { ... } from '@/types/standings'`
 - Standings logic: `import { ... } from '@/lib/standings'`
+- Bracket types: `import { ... } from '@/types/bracket'`
+- Bracket logic: `import { ... } from '@/lib/bracket'`
 
 ### Architecture Decisions:
 - **Pick validation:** 5-rule client-side validation + server-side DB trigger
@@ -137,7 +146,7 @@ https://github.com/farraranalytics/MBB-Survivor.git
 - **NOTE:** There may be schema mismatches between the code (lib/picks.ts) and actual DB. The picks.ts lib was built against a normalized FK schema while the actual DB uses denormalized string fields. Step 7 (lib/standings.ts) queries against the actual DB schema.
 
 ### Next Steps:
-- Step 8: Bracket visualization
-- Step 9: Analyze tab
+- Step 9: Analyze tab (team inventory, comparative analysis, pick recommendations)
+- Step 10: Notifications (deadline reminders, survival/elimination alerts)
 - Schema alignment: reconcile lib/picks.ts queries with actual DB field names
 - Supabase seed.sql not yet run (sample data for dev)
