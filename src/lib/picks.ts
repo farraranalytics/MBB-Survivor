@@ -386,7 +386,7 @@ export async function getPoolStandings(poolId: string, currentUserId?: string): 
   // Pool info
   const { data: pool, error: poolError } = await supabase
     .from('pools')
-    .select('id, name')
+    .select('id, name, creator_id, join_code')
     .eq('id', poolId)
     .single();
 
@@ -459,6 +459,8 @@ export async function getPoolStandings(poolId: string, currentUserId?: string): 
   return {
     pool_id: poolId,
     pool_name: pool.name,
+    creator_id: pool.creator_id,
+    join_code: pool.join_code,
     total_players: players?.length || 0,
     alive_players: players?.filter(p => !p.is_eliminated).length || 0,
     eliminated_players: players?.filter(p => p.is_eliminated).length || 0,

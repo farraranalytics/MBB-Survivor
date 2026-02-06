@@ -192,7 +192,7 @@ export default function StandingsPage() {
   const hasRounds = leaderboard.rounds_played.length > 0;
 
   return (
-    <div className="min-h-screen bg-[#0D1B2A]">
+    <div className="min-h-screen bg-[#0D1B2A] pb-24">
       {/* Sticky Header */}
       <div className="sticky top-0 z-40 bg-[#111118] border-b border-[rgba(255,255,255,0.05)]">
         <div className="max-w-4xl mx-auto px-5 py-3">

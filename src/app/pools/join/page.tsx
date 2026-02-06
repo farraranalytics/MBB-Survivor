@@ -92,7 +92,7 @@ export default function JoinPool() {
   }
 
   return (
-    <div className="min-h-screen bg-[#0D1B2A]">
+    <div className="min-h-screen bg-[#0D1B2A] pb-24">
       <header className="bg-[#111118] border-b border-[rgba(255,255,255,0.05)]">
         <div className="max-w-lg mx-auto px-5">
           <div className="flex items-center justify-between py-4">

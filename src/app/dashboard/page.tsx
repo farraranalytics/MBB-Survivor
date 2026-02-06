@@ -72,7 +72,7 @@ function PoolCard({ pool }: { pool: MyPool }) {
 }
 
 export default function Dashboard() {
-  const { user, signOut } = useAuth();
+  const { user } = useAuth();
   const [pools, setPools] = useState<MyPool[]>([]);
   const [loadingPools, setLoadingPools] = useState(true);
 
@@ -104,7 +104,7 @@ export default function Dashboard() {
 
   return (
     <ProtectedRoute>
-      <div className="min-h-screen bg-[#0D1B2A]">
+      <div className="min-h-screen bg-[#0D1B2A] pb-24">
         {/* Header */}
         <header className="bg-[#111118] border-b border-[rgba(255,255,255,0.05)]">
           <div className="max-w-lg mx-auto px-5">
@@ -113,13 +113,6 @@ export default function Dashboard() {
                 <h1 className="text-xl font-bold text-[#E8E6E1]" style={{ fontFamily: "'Oswald', sans-serif", textTransform: 'uppercase' }}>Survive the Dance</h1>
                 <p className="text-[#8A8694] text-xs mt-0.5" style={{ fontFamily: "'DM Sans', sans-serif" }}>{user?.email}</p>
               </div>
-              <button
-                onClick={signOut}
-                className="text-[#8A8694] hover:text-[#E8E6E1] px-3 py-2 rounded-[8px] text-sm font-medium transition-colors"
-                style={{ fontFamily: "'DM Sans', sans-serif" }}
-              >
-                Sign Out
-              </button>
             </div>
           </div>
         </header>

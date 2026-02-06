@@ -92,7 +92,7 @@ export default function TournamentPage() {
 
   return (
     <ProtectedRoute>
-      <div className="min-h-screen bg-[#0D1B2A]">
+      <div className="min-h-screen bg-[#0D1B2A] pb-24">
         {/* Header */}
         <header className="bg-[#111118] border-b border-[rgba(255,255,255,0.05)]">
           <div className="max-w-7xl mx-auto px-5">

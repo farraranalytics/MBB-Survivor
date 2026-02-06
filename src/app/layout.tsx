@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import './globals.css'
 import { AuthProvider } from '@/components/auth/AuthProvider'
+import BottomNav from '@/components/BottomNav'
 
 export const metadata: Metadata = {
   title: 'Survive the Dance',
@@ -25,6 +26,7 @@ export default function RootLayout({
       <body className="bg-[#0D1B2A] text-[#E8E6E1] antialiased" style={{ fontFamily: "'DM Sans', sans-serif" }}>
         <AuthProvider>
           {children}
+          <BottomNav />
         </AuthProvider>
       </body>
     </html>

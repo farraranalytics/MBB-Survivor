@@ -135,6 +135,8 @@ export interface PickValidation {
 export interface PoolStandings {
   pool_id: string;
   pool_name: string;
+  creator_id: string;
+  join_code: string;
   total_players: number;
   alive_players: number;
   eliminated_players: number;

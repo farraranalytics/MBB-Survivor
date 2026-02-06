@@ -6,6 +6,92 @@ import { useAuth } from '@/components/auth/AuthProvider';
 import { getPoolStandings, getPickDeadline } from '@/lib/picks';
 import { PoolStandings, PickDeadline } from '@/types/picks';
 
+function JoinCodeCard({ joinCode, poolName }: { joinCode: string; poolName: string }) {
+  const [copied, setCopied] = useState(false);
+
+  const handleCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(joinCode);
+    } catch {
+      const textarea = document.createElement('textarea');
+      textarea.value = joinCode;
+      document.body.appendChild(textarea);
+      textarea.select();
+      document.execCommand('copy');
+      document.body.removeChild(textarea);
+    }
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  const handleShare = async () => {
+    const shareData = {
+      title: `Join ${poolName} on Survive the Dance`,
+      text: `Join my March Madness Survivor pool! Use code: ${joinCode}`,
+      url: `${window.location.origin}/join`,
+    };
+
+    if (navigator.share) {
+      try {
+        await navigator.share(shareData);
+        return;
+      } catch {
+        // User cancelled
+      }
+    }
+    handleCopy();
+  };
+
+  return (
+    <div className="bg-[#111118] border border-[rgba(255,255,255,0.05)] rounded-[12px] p-5 mb-4">
+      <p className="label mb-2">Join Code</p>
+      <div className="flex items-center justify-between">
+        <span
+          className="text-2xl font-bold text-[#FF5722] tracking-[0.2em]"
+          style={{ fontFamily: "'Space Mono', monospace" }}
+        >
+          {joinCode}
+        </span>
+        <div className="flex gap-2">
+          <button
+            onClick={handleCopy}
+            className={`px-3 py-2 rounded-[8px] text-xs font-semibold transition-all ${
+              copied
+                ? 'bg-[rgba(76,175,80,0.15)] text-[#4CAF50]'
+                : 'bg-[#1A1A24] border border-[rgba(255,255,255,0.05)] text-[#8A8694] hover:text-[#E8E6E1] hover:border-[rgba(255,87,34,0.3)]'
+            }`}
+            style={{ fontFamily: "'DM Sans', sans-serif" }}
+          >
+            <span className="flex items-center gap-1">
+              {copied ? (
+                <>
+                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M5 13l4 4L19 7" /></svg>
+                  Copied
+                </>
+              ) : (
+                <>
+                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
+                  Copy
+                </>
+              )}
+            </span>
+          </button>
+          <button
+            onClick={handleShare}
+            className="px-3 py-2 rounded-[8px] text-xs font-semibold bg-[#1A1A24] border border-[rgba(255,255,255,0.05)] text-[#8A8694] hover:text-[#E8E6E1] hover:border-[rgba(255,87,34,0.3)] transition-all"
+            style={{ fontFamily: "'DM Sans', sans-serif" }}
+          >
+            <span className="flex items-center gap-1">
+              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" /></svg>
+              Share
+            </span>
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function PoolDetailPage() {
   const params = useParams();
   const router = useRouter();
@@ -88,7 +174,7 @@ export default function PoolDetailPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#0D1B2A]">
+    <div className="min-h-screen bg-[#0D1B2A] pb-24">
       <div className="max-w-lg mx-auto px-5 py-6">
         {/* Header */}
         <div className="bg-[#111118] border border-[rgba(255,255,255,0.05)] rounded-[12px] p-5 mb-4">
@@ -122,6 +208,11 @@ export default function PoolDetailPage() {
             </div>
           </div>
         </div>
+
+        {/* Creator Join Code */}
+        {standings.creator_id === user?.id && standings.join_code && (
+          <JoinCodeCard joinCode={standings.join_code} poolName={standings.pool_name} />
+        )}
 
         {/* Your Status */}
         {yourStatus && (
