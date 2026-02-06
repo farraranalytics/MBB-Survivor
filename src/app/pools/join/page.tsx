@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { useAuth } from '@/components/auth/AuthProvider';
 import { supabase } from '@/lib/supabase/client';
 
-const inputClass = "w-full px-4 py-3 bg-dark-surface border border-dark-border rounded-xl text-white placeholder-text-muted focus:outline-none focus:ring-2 focus:ring-accent focus:border-transparent transition-colors";
+const inputClass = "w-full px-4 py-3 bg-[#1A1A24] border border-[rgba(255,255,255,0.05)] rounded-[12px] text-[#E8E6E1] placeholder-[#8A8694] focus:outline-none focus:ring-2 focus:ring-[#FF5722] focus:border-transparent transition-colors";
 
 export default function JoinPool() {
   const { user } = useAuth();
@@ -85,19 +85,19 @@ export default function JoinPool() {
   if (!user) {
     router.push('/auth/login');
     return (
-      <div className="min-h-screen bg-dark-base flex items-center justify-center">
-        <p className="text-text-muted">Redirecting to login...</p>
+      <div className="min-h-screen bg-[#0D1B2A] flex items-center justify-center">
+        <p className="text-[#8A8694]" style={{ fontFamily: "'DM Sans', sans-serif" }}>Redirecting to login...</p>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-dark-base">
-      <header className="bg-dark-surface border-b border-dark-border">
+    <div className="min-h-screen bg-[#0D1B2A]">
+      <header className="bg-[#111118] border-b border-[rgba(255,255,255,0.05)]">
         <div className="max-w-lg mx-auto px-5">
           <div className="flex items-center justify-between py-4">
-            <h1 className="text-xl font-bold text-white">Join Pool</h1>
-            <Link href="/dashboard" className="text-text-muted hover:text-text-secondary text-sm font-medium transition-colors">
+            <h1 className="text-xl font-bold text-[#E8E6E1]" style={{ fontFamily: "'Oswald', sans-serif", textTransform: 'uppercase' }}>Join Pool</h1>
+            <Link href="/dashboard" className="text-[#8A8694] hover:text-[#E8E6E1] text-sm font-medium transition-colors" style={{ fontFamily: "'DM Sans', sans-serif" }}>
               <svg className="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7" /></svg>
               Back
             </Link>
@@ -106,18 +106,16 @@ export default function JoinPool() {
       </header>
 
       <main className="max-w-lg mx-auto px-5 py-6">
-        <div className="bg-dark-card border border-dark-border rounded-2xl p-6">
+        <div className="bg-[#111118] border border-[rgba(255,255,255,0.05)] rounded-[12px] p-6">
           {error && (
-            <div className="bg-eliminated/10 border border-eliminated/30 text-eliminated px-4 py-3 rounded-xl text-sm mb-6">
+            <div className="bg-[rgba(239,83,80,0.1)] border border-[rgba(239,83,80,0.3)] text-[#EF5350] px-4 py-3 rounded-[8px] text-sm mb-6" style={{ fontFamily: "'DM Sans', sans-serif" }}>
               {error}
             </div>
           )}
 
           <div className="space-y-5">
             <div>
-              <label htmlFor="joinCode" className="block text-sm font-medium text-text-secondary mb-2">
-                Pool Join Code *
-              </label>
+              <label htmlFor="joinCode" className="block text-sm font-medium text-[#8A8694] mb-2" style={{ fontFamily: "'DM Sans', sans-serif" }}>Pool Join Code *</label>
               <div className="flex gap-3">
                 <input
                   id="joinCode"
@@ -125,46 +123,46 @@ export default function JoinPool() {
                   value={joinCode}
                   onChange={(e) => setJoinCode(e.target.value.toUpperCase())}
                   maxLength={10}
-                  className={`${inputClass} flex-1 font-mono text-center text-lg tracking-widest`}
+                  className={`${inputClass} flex-1 text-center text-lg tracking-widest`}
                   placeholder="ABC123"
+                  style={{ fontFamily: "'Space Mono', monospace" }}
                 />
                 <button
                   onClick={handleLookupPool}
                   disabled={loading || !joinCode.trim()}
-                  className="px-5 py-3 btn-accent text-white font-semibold rounded-xl disabled:opacity-50 disabled:cursor-not-allowed flex-shrink-0"
+                  className="px-5 py-3 btn-orange font-semibold rounded-[12px] disabled:opacity-50 disabled:cursor-not-allowed flex-shrink-0"
+                  style={{ fontFamily: "'DM Sans', sans-serif" }}
                 >
                   {loading && !poolInfo ? 'Finding...' : 'Find'}
                 </button>
               </div>
-              <p className="text-xs text-text-muted mt-1.5">
-                Ask the pool creator for the join code
-              </p>
+              <p className="text-xs text-[#8A8694] mt-1.5" style={{ fontFamily: "'DM Sans', sans-serif" }}>Ask the pool creator for the join code</p>
             </div>
 
             {poolInfo && (
-              <div className="bg-alive/10 border border-alive/25 rounded-xl p-4 animate-fade-in">
-                <h3 className="font-semibold text-alive text-sm mb-3 uppercase tracking-wide">Pool Found</h3>
-                <div className="space-y-2 text-sm">
+              <div className="bg-[rgba(76,175,80,0.1)] border border-[rgba(76,175,80,0.25)] rounded-[8px] p-4 animate-fade-in">
+                <p className="label mb-3">Pool Found</p>
+                <div className="space-y-2 text-sm" style={{ fontFamily: "'DM Sans', sans-serif" }}>
                   <div className="flex justify-between">
-                    <span className="text-text-muted">Name</span>
-                    <span className="text-white font-medium">{poolInfo.name}</span>
+                    <span className="text-[#8A8694]">Name</span>
+                    <span className="text-[#E8E6E1] font-medium">{poolInfo.name}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-text-muted">Players</span>
-                    <span className="text-white font-medium">
+                    <span className="text-[#8A8694]">Players</span>
+                    <span className="text-[#E8E6E1] font-medium">
                       {poolInfo.pool_players?.length || 0}
                       {poolInfo.max_players ? ` / ${poolInfo.max_players}` : ''}
                     </span>
                   </div>
                   {poolInfo.entry_fee > 0 && (
                     <div className="flex justify-between">
-                      <span className="text-text-muted">Entry Fee</span>
-                      <span className="text-accent font-bold">${poolInfo.entry_fee}</span>
+                      <span className="text-[#8A8694]">Entry Fee</span>
+                      <span className="text-[#FF5722] font-bold">${poolInfo.entry_fee}</span>
                     </div>
                   )}
                   <div className="flex justify-between">
-                    <span className="text-text-muted">Tournament</span>
-                    <span className="text-white font-medium">{poolInfo.tournament_year} March Madness</span>
+                    <span className="text-[#8A8694]">Tournament</span>
+                    <span className="text-[#E8E6E1] font-medium">{poolInfo.tournament_year} March Madness</span>
                   </div>
                 </div>
               </div>
@@ -172,22 +170,9 @@ export default function JoinPool() {
 
             {poolInfo && (
               <div>
-                <label htmlFor="displayName" className="block text-sm font-medium text-text-secondary mb-2">
-                  Your Display Name *
-                </label>
-                <input
-                  id="displayName"
-                  type="text"
-                  value={displayName}
-                  onChange={(e) => setDisplayName(e.target.value)}
-                  required
-                  maxLength={50}
-                  className={inputClass}
-                  placeholder="How you'll appear in the pool"
-                />
-                <p className="text-xs text-text-muted mt-1.5">
-                  This is how other players will see you
-                </p>
+                <label htmlFor="displayName" className="block text-sm font-medium text-[#8A8694] mb-2" style={{ fontFamily: "'DM Sans', sans-serif" }}>Your Display Name *</label>
+                <input id="displayName" type="text" value={displayName} onChange={(e) => setDisplayName(e.target.value)} required maxLength={50} className={inputClass} placeholder="How you'll appear in the pool" style={{ fontFamily: "'DM Sans', sans-serif" }} />
+                <p className="text-xs text-[#8A8694] mt-1.5" style={{ fontFamily: "'DM Sans', sans-serif" }}>This is how other players will see you</p>
               </div>
             )}
 
@@ -195,15 +180,16 @@ export default function JoinPool() {
               <button
                 onClick={handleJoinPool}
                 disabled={loading || !displayName.trim()}
-                className="w-full btn-accent text-white font-bold py-4 px-4 rounded-xl disabled:opacity-50 disabled:cursor-not-allowed text-base"
+                className="w-full btn-orange font-bold py-4 px-4 rounded-[12px] disabled:opacity-50 disabled:cursor-not-allowed text-base"
+                style={{ fontFamily: "'DM Sans', sans-serif" }}
               >
                 {loading ? 'Joining Pool...' : 'Join Pool'}
               </button>
             )}
 
-            <div className="bg-dark-surface border border-dark-border-subtle rounded-xl p-4">
-              <h3 className="font-semibold text-accent text-sm mb-2 uppercase tracking-wide">How to Join</h3>
-              <ol className="text-xs text-text-secondary space-y-1.5 list-decimal list-inside">
+            <div className="bg-[#1A1A24] border border-[rgba(255,255,255,0.05)] rounded-[8px] p-4">
+              <h3 className="label mb-2">How to Join</h3>
+              <ol className="text-xs text-[#8A8694] space-y-1.5 list-decimal list-inside" style={{ fontFamily: "'DM Sans', sans-serif" }}>
                 <li>Get the join code from the pool creator</li>
                 <li>Enter the code above and tap &ldquo;Find&rdquo;</li>
                 <li>Confirm your display name</li>

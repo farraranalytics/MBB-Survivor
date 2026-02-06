@@ -1,58 +1,41 @@
 @import "tailwindcss";
 
 /* ═══════════════════════════════════════════════════════════════
-   MBB SURVIVOR POOL — Design System
-   Dark, Bold, Electric. March Madness energy.
+   SURVIVE THE DANCE — Brand Design System
+   "Every pick could be your last."
    ═══════════════════════════════════════════════════════════════ */
 
 @theme {
-  /* ── Background Tiers ────────────────────────────────────── */
-  --color-dark-base: #0a0e1a;
-  --color-dark-surface: #111827;
-  --color-dark-card: #1a1f2e;
-  --color-dark-card-alt: #151926;
-  --color-dark-elevated: #1e2a3a;
-  --color-dark-border: #2a3349;
-  --color-dark-border-subtle: #1f2737;
+  /* ── Primary ───────────────────────────────────────────────── */
+  --color-orange: #FF5722;
+  --color-navy: #0D1B2A;
+  --color-court-white: #E8E6E1;
 
-  /* ── Primary Accent — Tournament Orange ──────────────────── */
-  --color-accent: #FF6B2B;
-  --color-accent-hover: #FF8147;
-  --color-accent-dim: #FF6B2B40;
-  --color-accent-glow: #FF6B2B20;
+  /* ── Surfaces ──────────────────────────────────────────────── */
+  --color-deep-blue: #1B3A5C;
+  --color-surface: #111118;
+  --color-surface-2: #1A1A24;
 
-  /* ── Secondary Accent — Electric Blue ────────────────────── */
-  --color-electric: #3B82F6;
-  --color-electric-hover: #60A5FA;
-  --color-electric-dim: #3B82F620;
+  /* ── Status ────────────────────────────────────────────────── */
+  --color-alive: #4CAF50;
+  --color-eliminated: #EF5350;
+  --color-warning: #FFB300;
 
-  /* ── Status Colors ───────────────────────────────────────── */
-  --color-alive: #10B981;
-  --color-alive-dim: #10B98120;
-  --color-eliminated: #EF4444;
-  --color-eliminated-dim: #EF444420;
-  --color-warning: #F59E0B;
-  --color-warning-dim: #F59E0B20;
-  --color-live: #EF4444;
-  --color-pending: #3B82F6;
+  /* ── Text ──────────────────────────────────────────────────── */
+  --color-text: #E8E6E1;
+  --color-text-dim: #8A8694;
 
-  /* ── Text Hierarchy ──────────────────────────────────────── */
-  --color-text-primary: #FFFFFF;
-  --color-text-secondary: #94A3B8;
-  --color-text-muted: #64748B;
-  --color-text-faint: #475569;
+  /* ── Font Families ─────────────────────────────────────────── */
+  --font-headline: 'Oswald', sans-serif;
+  --font-body: 'DM Sans', sans-serif;
+  --font-data: 'Space Mono', monospace;
 
-  /* ── Font Families ───────────────────────────────────────── */
-  --font-sans: "Inter", ui-sans-serif, system-ui, -apple-system, sans-serif;
-  --font-mono: "JetBrains Mono", "SF Mono", "Fira Code", ui-monospace, monospace;
+  /* ── Radius ────────────────────────────────────────────────── */
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
 
-  /* ── Radius ──────────────────────────────────────────────── */
-  --radius-card: 16px;
-  --radius-button: 12px;
-  --radius-badge: 9999px;
-  --radius-input: 10px;
-
-  /* ── Animations ──────────────────────────────────────────── */
+  /* ── Animations ────────────────────────────────────────────── */
   --animate-glow-pulse: glow-pulse 2s ease-in-out infinite;
   --animate-slide-up: slide-up 0.3s ease-out;
   --animate-fade-in: fade-in 0.2s ease-out;
@@ -60,11 +43,37 @@
   --animate-bounce-in: bounce-in 0.4s cubic-bezier(0.36, 0.07, 0.19, 0.97);
 }
 
+/* ── CSS Custom Properties ───────────────────────────────────── */
+
+:root {
+  --color-orange: #FF5722;
+  --color-navy: #0D1B2A;
+  --color-white: #E8E6E1;
+  --color-deep-blue: #1B3A5C;
+  --color-surface: #111118;
+  --color-surface-2: #1A1A24;
+  --color-alive: #4CAF50;
+  --color-eliminated: #EF5350;
+  --color-warning: #FFB300;
+  --color-text: #E8E6E1;
+  --color-text-dim: #8A8694;
+  --border-subtle: rgba(255, 255, 255, 0.05);
+  --border-medium: rgba(255, 255, 255, 0.08);
+  --border-accent: rgba(255, 87, 34, 0.3);
+  --font-headline: 'Oswald', sans-serif;
+  --font-body: 'DM Sans', sans-serif;
+  --font-data: 'Space Mono', monospace;
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-icon: 22%;
+}
+
 /* ── Keyframes ───────────────────────────────────────────────── */
 
 @keyframes glow-pulse {
-  0%, 100% { box-shadow: 0 0 8px var(--color-accent-dim); }
-  50% { box-shadow: 0 0 24px var(--color-accent-dim), 0 0 48px var(--color-accent-glow); }
+  0%, 100% { box-shadow: 0 0 8px rgba(255, 87, 34, 0.25); }
+  50% { box-shadow: 0 0 24px rgba(255, 87, 34, 0.25), 0 0 48px rgba(255, 87, 34, 0.12); }
 }
 
 @keyframes slide-up {
@@ -102,88 +111,137 @@
 /* ── Base Styles ─────────────────────────────────────────────── */
 
 html {
-  background-color: var(--color-dark-base);
-  color: var(--color-text-primary);
+  background-color: #0D1B2A;
+  color: #E8E6E1;
 }
 
 body {
+  font-family: var(--font-body);
   min-height: 100vh;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  line-height: 1.6;
 }
 
-/* Scrollbar styling for dark theme */
-::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
-}
-::-webkit-scrollbar-track {
-  background: var(--color-dark-surface);
-}
-::-webkit-scrollbar-thumb {
-  background: var(--color-dark-border);
-  border-radius: 3px;
-}
-::-webkit-scrollbar-thumb:hover {
-  background: var(--color-text-muted);
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-headline);
+  text-transform: uppercase;
+  line-height: 1.2;
 }
 
-/* Focus ring for accessibility */
+/* Scrollbar */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: var(--color-surface); }
+::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.08); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.15); }
+
 :focus-visible {
-  outline: 2px solid var(--color-accent);
+  outline: 2px solid var(--color-orange);
   outline-offset: 2px;
 }
 
-/* ── Utility Classes ─────────────────────────────────────────── */
+/* ── Section Divider ─────────────────────────────────────────── */
 
-/* Glass card effect */
-.glass-card {
-  background: linear-gradient(135deg, rgba(26, 31, 46, 0.8), rgba(30, 42, 58, 0.6));
-  backdrop-filter: blur(12px);
-  border: 1px solid var(--color-dark-border);
+.section-divider {
+  height: 1px;
+  background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.08) 50%, transparent 100%);
 }
 
-/* Skeleton shimmer loading */
-.skeleton {
-  background: linear-gradient(
-    90deg,
-    var(--color-dark-card) 25%,
-    var(--color-dark-elevated) 50%,
-    var(--color-dark-card) 75%
-  );
-  background-size: 200% 100%;
-  animation: shimmer 1.5s infinite;
+/* ── Card ────────────────────────────────────────────────────── */
+
+.card {
+  background: var(--color-surface);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 12px;
+  transition: border-color 0.3s;
+}
+.card:hover {
+  border-color: rgba(255, 87, 34, 0.3);
 }
 
-/* Safe area bottom padding (for mobile notch/home indicator) */
-.safe-area-bottom {
-  padding-bottom: env(safe-area-inset-bottom, 0px);
+/* ── Label / Tag ─────────────────────────────────────────────── */
+
+.label {
+  font-family: 'Space Mono', monospace;
+  font-size: 0.65rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: #FF5722;
 }
 
-/* Card hover glow effect */
-.card-glow:hover {
-  box-shadow: 0 0 0 1px var(--color-accent-dim), 0 4px 20px var(--color-accent-glow);
+/* ── Ambient Glow ────────────────────────────────────────────── */
+
+.ambient-glow {
+  background: radial-gradient(ellipse at 30% 50%, rgba(21, 101, 192, 0.08) 0%, transparent 50%),
+              radial-gradient(ellipse at 70% 50%, rgba(255, 87, 34, 0.06) 0%, transparent 50%);
 }
 
-/* Accent gradient button */
-.btn-accent {
-  background: linear-gradient(135deg, var(--color-accent), #FF8147);
+/* ── Court Lines ─────────────────────────────────────────────── */
+
+.court-circle {
+  border: 2px solid rgba(255, 87, 34, 0.15);
+  border-radius: 50%;
+}
+.court-line {
+  border-top: 2px solid rgba(255, 87, 34, 0.1);
+}
+
+/* ── Strikethrough Motif ─────────────────────────────────────── */
+
+.strikethrough {
+  position: relative;
+}
+.strikethrough::after {
+  content: '';
+  position: absolute;
+  bottom: 40%;
+  left: -5%;
+  width: 110%;
+  height: 2px;
+  background: rgba(255, 87, 34, 0.25);
+  transform: rotate(-5deg);
+  pointer-events: none;
+}
+
+/* ── Button — Tournament Orange ──────────────────────────────── */
+
+.btn-orange {
+  background: #FF5722;
+  color: #E8E6E1;
+  font-family: var(--font-body);
+  font-weight: 700;
   transition: all 0.2s ease;
 }
-.btn-accent:hover {
-  background: linear-gradient(135deg, #FF8147, var(--color-accent));
-  box-shadow: 0 4px 16px var(--color-accent-dim);
+.btn-orange:hover {
+  background: #E64A19;
+  box-shadow: 0 4px 16px rgba(255, 87, 34, 0.3);
 }
-.btn-accent:active {
+.btn-orange:active {
   transform: scale(0.98);
 }
 
-/* Countdown urgent animation */
+/* ── Countdown Urgent ────────────────────────────────────────── */
+
 .countdown-urgent {
   animation: countdown-urgent 1s ease-in-out infinite;
 }
 
-/* Tab bar fixed bottom */
+/* ── Skeleton Shimmer ────────────────────────────────────────── */
+
+.skeleton {
+  background: linear-gradient(90deg, var(--color-surface) 25%, var(--color-surface-2) 50%, var(--color-surface) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}
+
+/* ── Safe Area ───────────────────────────────────────────────── */
+
+.safe-area-bottom {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+/* ── Tab Bar ─────────────────────────────────────────────────── */
+
 .tab-bar-shadow {
-  box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.4);
+  box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.5);
 }

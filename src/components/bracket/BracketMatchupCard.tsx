@@ -21,10 +21,10 @@ function TeamRow({
 }) {
   if (!team) {
     return (
-      <div className="flex items-center justify-between px-2.5 py-2 bg-dark-surface">
+      <div className="flex items-center justify-between px-2.5 py-2 bg-[#1A1A24]">
         <div className="flex items-center gap-1.5">
-          <span className="text-xs text-text-muted w-5 text-center">-</span>
-          <span className="text-xs text-text-muted italic">TBD</span>
+          <span className="text-xs text-[#8A8694] w-5 text-center" style={{ fontFamily: "'Space Mono', monospace" }}>-</span>
+          <span className="text-xs text-[#8A8694] italic" style={{ fontFamily: "'DM Sans', sans-serif" }}>TBD</span>
         </div>
       </div>
     );
@@ -34,35 +34,37 @@ function TeamRow({
     <div
       className={`flex items-center justify-between px-2.5 py-2 transition-colors ${
         isWinner
-          ? 'bg-alive/10'
+          ? 'bg-[rgba(76,175,80,0.1)]'
           : isLoser
-            ? 'bg-dark-surface'
-            : 'bg-dark-card'
+            ? 'bg-[#1A1A24]'
+            : 'bg-[#111118]'
       }`}
     >
       <div className="flex items-center gap-1.5 min-w-0">
         <span className={`text-[10px] font-bold w-5 text-center flex-shrink-0 rounded py-0.5 ${
-          isWinner ? 'bg-alive/20 text-alive' : 'text-text-muted'
-        }`}>
+          isWinner ? 'bg-[rgba(76,175,80,0.2)] text-[#4CAF50]' : 'text-[#8A8694]'
+        }`} style={{ fontFamily: "'Space Mono', monospace" }}>
           {team.seed}
         </span>
         <span
           className={`text-xs truncate ${
             isWinner
-              ? 'font-bold text-white'
+              ? 'font-bold text-[#E8E6E1]'
               : isLoser
-                ? 'text-text-muted'
-                : 'font-medium text-text-secondary'
+                ? 'text-[#8A8694]'
+                : 'font-medium text-[#E8E6E1]'
           }`}
+          style={{ fontFamily: "'Oswald', sans-serif", textTransform: 'uppercase' }}
         >
           {team.name}
         </span>
       </div>
       {score !== null && (
         <span
-          className={`text-xs font-mono ml-2 flex-shrink-0 ${
-            isWinner ? 'font-bold text-white' : 'text-text-muted'
+          className={`text-xs ml-2 flex-shrink-0 ${
+            isWinner ? 'font-bold text-[#E8E6E1]' : 'text-[#8A8694]'
           }`}
+          style={{ fontFamily: "'Space Mono', monospace" }}
         >
           {score}
         </span>
@@ -82,21 +84,21 @@ export default function BracketMatchupCard({ game, compact }: BracketMatchupCard
   let statusColor = '';
   if (game.status === 'final') {
     statusText = 'Final';
-    statusColor = 'text-alive bg-alive/10';
+    statusColor = 'text-[#4CAF50] bg-[rgba(76,175,80,0.1)]';
   } else if (game.status === 'in_progress') {
     statusText = 'LIVE';
-    statusColor = 'text-eliminated bg-eliminated/10 animate-pulse';
+    statusColor = 'text-[#EF5350] bg-[rgba(239,83,80,0.1)] animate-pulse';
   }
 
   return (
-    <div className={`w-52 border border-dark-border rounded-xl overflow-hidden bg-dark-card shadow-sm hover:border-accent/30 transition-colors ${compact ? 'text-xs' : ''}`}>
+    <div className={`w-52 border border-[rgba(255,255,255,0.05)] rounded-[12px] overflow-hidden bg-[#111118] shadow-sm hover:border-[rgba(255,87,34,0.3)] transition-colors ${compact ? 'text-xs' : ''}`}>
       <TeamRow
         team={team1}
         score={game.team1_score}
         isWinner={team1Wins}
         isLoser={team2Wins}
       />
-      <div className="border-t border-dark-border-subtle" />
+      <div className="border-t border-[rgba(255,255,255,0.05)]" />
       <TeamRow
         team={team2}
         score={game.team2_score}
@@ -104,7 +106,7 @@ export default function BracketMatchupCard({ game, compact }: BracketMatchupCard
         isLoser={team1Wins}
       />
       {statusText && (
-        <div className={`text-center text-[10px] font-semibold py-1 border-t border-dark-border-subtle ${statusColor}`}>
+        <div className={`text-center text-[10px] font-semibold py-1 border-t border-[rgba(255,255,255,0.05)] ${statusColor}`} style={{ fontFamily: "'Space Mono', monospace" }}>
           {statusText}
         </div>
       )}

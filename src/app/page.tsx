@@ -17,10 +17,10 @@ export default function HomePage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-dark-base flex items-center justify-center">
+      <div className="min-h-screen bg-[#0D1B2A] flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-2 border-dark-border border-t-accent mx-auto mb-4"></div>
-          <p className="text-text-secondary text-lg">Loading...</p>
+          <div className="animate-spin rounded-full h-12 w-12 border-2 border-[rgba(255,255,255,0.08)] border-t-[#FF5722] mx-auto mb-4" />
+          <p className="text-[#8A8694] text-sm" style={{ fontFamily: "'DM Sans', sans-serif" }}>Loading...</p>
         </div>
       </div>
     );
@@ -31,81 +31,100 @@ export default function HomePage() {
   }
 
   return (
-    <div className="min-h-screen bg-dark-base relative overflow-hidden">
-      {/* Background glow effects */}
-      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[600px] bg-accent/5 rounded-full blur-[120px] pointer-events-none" />
-      <div className="absolute bottom-0 right-0 w-[400px] h-[400px] bg-electric/5 rounded-full blur-[100px] pointer-events-none" />
+    <div className="min-h-screen bg-[#0D1B2A] relative overflow-hidden">
+      {/* Ambient glow backgrounds */}
+      <div className="absolute inset-0 ambient-glow pointer-events-none" />
+
+      {/* Court circle background element */}
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] court-circle opacity-30 pointer-events-none" />
+      <div className="absolute top-1/2 left-0 right-0 court-line opacity-20 pointer-events-none" />
 
       {/* Hero */}
-      <div className="flex items-center justify-center min-h-screen px-5">
+      <div className="flex items-center justify-center min-h-screen px-5 relative z-10">
         <div className="text-center max-w-md w-full animate-fade-in">
-          {/* Logo mark */}
-          <div className="w-20 h-20 mx-auto mb-6 rounded-2xl bg-gradient-to-br from-accent to-accent-hover flex items-center justify-center shadow-lg shadow-accent-dim">
-            <svg className="w-10 h-10 text-white" viewBox="0 0 24 24" fill="currentColor">
-              <circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" strokeWidth="2" />
-              <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z" fill="none"/>
-              <path d="M8.5 9.5l3 3 5-5" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
-            </svg>
+          {/* Wordmark */}
+          <div className="mb-10">
+            <p
+              className="text-[0.7rem] tracking-[0.5em] text-[rgba(255,255,255,0.5)] mb-1"
+              style={{ fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 800 }}
+            >
+              SURVIVE
+            </p>
+            <p
+              className="text-[1.8rem] tracking-[0.15em] text-[#FF5722] leading-none mb-0"
+              style={{ fontFamily: "'Oswald', sans-serif", fontWeight: 700 }}
+            >
+              THE
+            </p>
+            <p
+              className="text-[4.5rem] tracking-[-0.02em] text-[#E8E6E1] leading-none"
+              style={{ fontFamily: "'Oswald', sans-serif", fontWeight: 700 }}
+            >
+              DANCE
+            </p>
           </div>
 
-          <h1 className="text-4xl font-extrabold text-white mb-3 tracking-tight">
-            MBB Survivor
-          </h1>
-          <p className="text-lg text-text-secondary mb-8 leading-relaxed">
-            The ultimate March Madness challenge.<br />
-            Pick one team per day. Survive to win it all.
+          {/* Sub-tagline */}
+          <p
+            className="text-[0.55rem] tracking-[0.35em] text-[#FF5722] uppercase mb-10"
+            style={{ fontFamily: "'Space Mono', monospace" }}
+          >
+            EVERY PICK COULD BE YOUR LAST
           </p>
 
-          <div className="flex flex-col gap-3 mb-10">
+          {/* CTAs */}
+          <div className="flex flex-col gap-3 mb-12">
             <Link
               href="/auth/signup"
-              className="btn-accent w-full py-4 text-white text-lg font-bold rounded-xl text-center shadow-lg shadow-accent-dim"
+              className="btn-orange w-full py-4 text-lg font-bold rounded-[12px] text-center"
+              style={{ fontFamily: "'DM Sans', sans-serif" }}
             >
               Get Started
             </Link>
             <Link
               href="/auth/login"
-              className="w-full py-4 bg-dark-card border border-dark-border text-white text-lg font-semibold rounded-xl hover:bg-dark-elevated transition-colors text-center"
+              className="w-full py-4 bg-[#111118] border border-[rgba(255,255,255,0.05)] text-[#E8E6E1] text-lg font-semibold rounded-[12px] hover:border-[rgba(255,87,34,0.3)] transition-colors text-center"
+              style={{ fontFamily: "'DM Sans', sans-serif" }}
             >
               Sign In
             </Link>
           </div>
 
           {/* Features */}
-          <div className="grid grid-cols-1 gap-4 mt-8">
-            <div className="bg-dark-card border border-dark-border-subtle rounded-2xl p-5 text-left flex items-start gap-4">
-              <div className="w-11 h-11 rounded-xl bg-alive/10 flex items-center justify-center flex-shrink-0">
-                <svg className="w-6 h-6 text-alive" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+          <div className="grid grid-cols-1 gap-4">
+            <div className="bg-[#111118] border border-[rgba(255,255,255,0.05)] rounded-[12px] p-5 text-left flex items-start gap-4 hover:border-[rgba(255,87,34,0.3)] transition-colors">
+              <div className="w-11 h-11 rounded-[8px] bg-[rgba(76,175,80,0.1)] flex items-center justify-center flex-shrink-0">
+                <svg className="w-6 h-6 text-[#4CAF50]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
               </div>
               <div>
-                <h3 className="text-base font-semibold text-white mb-1">Simple Rules</h3>
-                <p className="text-sm text-text-secondary leading-relaxed">Pick one team per tournament day. Each team can only be used once.</p>
+                <h3 className="text-base font-semibold text-[#E8E6E1] mb-1" style={{ fontFamily: "'Oswald', sans-serif", textTransform: 'uppercase', letterSpacing: '0.02em' }}>Simple Rules</h3>
+                <p className="text-sm text-[#8A8694] leading-relaxed" style={{ fontFamily: "'DM Sans', sans-serif" }}>Pick one team per tournament day. Each team can only be used once.</p>
               </div>
             </div>
 
-            <div className="bg-dark-card border border-dark-border-subtle rounded-2xl p-5 text-left flex items-start gap-4">
-              <div className="w-11 h-11 rounded-xl bg-electric/10 flex items-center justify-center flex-shrink-0">
-                <svg className="w-6 h-6 text-electric" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
+            <div className="bg-[#111118] border border-[rgba(255,255,255,0.05)] rounded-[12px] p-5 text-left flex items-start gap-4 hover:border-[rgba(255,87,34,0.3)] transition-colors">
+              <div className="w-11 h-11 rounded-[8px] bg-[rgba(27,58,92,0.3)] flex items-center justify-center flex-shrink-0">
+                <svg className="w-6 h-6 text-[#1B3A5C]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
                 </svg>
               </div>
               <div>
-                <h3 className="text-base font-semibold text-white mb-1">Compete with Friends</h3>
-                <p className="text-sm text-text-secondary leading-relaxed">Create private pools or join existing ones with unique codes.</p>
+                <h3 className="text-base font-semibold text-[#E8E6E1] mb-1" style={{ fontFamily: "'Oswald', sans-serif", textTransform: 'uppercase', letterSpacing: '0.02em' }}>Compete with Friends</h3>
+                <p className="text-sm text-[#8A8694] leading-relaxed" style={{ fontFamily: "'DM Sans', sans-serif" }}>Create private pools or join existing ones with unique codes.</p>
               </div>
             </div>
 
-            <div className="bg-dark-card border border-dark-border-subtle rounded-2xl p-5 text-left flex items-start gap-4">
-              <div className="w-11 h-11 rounded-xl bg-accent/10 flex items-center justify-center flex-shrink-0">
-                <svg className="w-6 h-6 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+            <div className="bg-[#111118] border border-[rgba(255,255,255,0.05)] rounded-[12px] p-5 text-left flex items-start gap-4 hover:border-[rgba(255,87,34,0.3)] transition-colors">
+              <div className="w-11 h-11 rounded-[8px] bg-[rgba(255,87,34,0.08)] flex items-center justify-center flex-shrink-0">
+                <svg className="w-6 h-6 text-[#FF5722]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
                 </svg>
               </div>
               <div>
-                <h3 className="text-base font-semibold text-white mb-1">Live Updates</h3>
-                <p className="text-sm text-text-secondary leading-relaxed">Real-time scores, standings, and elimination updates.</p>
+                <h3 className="text-base font-semibold text-[#E8E6E1] mb-1" style={{ fontFamily: "'Oswald', sans-serif", textTransform: 'uppercase', letterSpacing: '0.02em' }}>Live Updates</h3>
+                <p className="text-sm text-[#8A8694] leading-relaxed" style={{ fontFamily: "'DM Sans', sans-serif" }}>Real-time scores, standings, and elimination updates.</p>
               </div>
             </div>
           </div>
@@ -113,8 +132,8 @@ export default function HomePage() {
       </div>
 
       {/* Footer */}
-      <footer className="py-6 text-center text-text-muted text-sm">
-        <p>&copy; 2026 MBB Survivor Pool</p>
+      <footer className="py-6 text-center text-[#8A8694] text-sm" style={{ fontFamily: "'DM Sans', sans-serif" }}>
+        <p>&copy; 2026 Survive the Dance</p>
       </footer>
     </div>
   );

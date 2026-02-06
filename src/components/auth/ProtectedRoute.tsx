@@ -21,17 +21,17 @@ export default function ProtectedRoute({ children, redirectTo = '/auth/login' }:
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-dark-base flex items-center justify-center">
+      <div className="min-h-screen bg-[#0D1B2A] flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-2 border-dark-border border-t-accent mx-auto mb-4"></div>
-          <p className="text-text-secondary text-lg">Loading...</p>
+          <div className="animate-spin rounded-full h-12 w-12 border-2 border-[rgba(255,255,255,0.08)] border-t-[#FF5722] mx-auto mb-4" />
+          <p className="text-[#8A8694] text-lg" style={{ fontFamily: "'DM Sans', sans-serif" }}>Loading...</p>
         </div>
       </div>
     );
   }
 
   if (!user) {
-    return null; // Will redirect via useEffect
+    return null;
   }
 
   return <>{children}</>;

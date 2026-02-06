@@ -20,52 +20,51 @@ function PoolCard({ pool }: { pool: MyPool }) {
   return (
     <button
       onClick={() => router.push(`/pools/${pool.pool_id}`)}
-      className="w-full text-left bg-dark-card border border-dark-border rounded-2xl p-5 hover:border-dark-elevated transition-all card-glow"
+      className="w-full text-left bg-[#111118] border border-[rgba(255,255,255,0.05)] rounded-[12px] p-5 hover:border-[rgba(255,87,34,0.3)] transition-all"
     >
       <div className="flex items-start justify-between mb-3">
         <div className="min-w-0">
-          <h3 className="font-bold text-white truncate text-base">{pool.pool_name}</h3>
-          <p className="text-xs text-text-muted mt-1">
+          <h3 className="font-bold text-[#E8E6E1] truncate text-base" style={{ fontFamily: "'Oswald', sans-serif", textTransform: 'uppercase' }}>{pool.pool_name}</h3>
+          <p className="text-xs text-[#8A8694] mt-1" style={{ fontFamily: "'DM Sans', sans-serif" }}>
             {pool.alive_players} alive / {pool.total_players} total
           </p>
         </div>
         <span
           className={`flex-shrink-0 inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wide ${
             pool.your_status === 'eliminated'
-              ? 'bg-eliminated/15 text-eliminated'
-              : 'bg-alive/15 text-alive'
+              ? 'bg-[rgba(239,83,80,0.15)] text-[#EF5350]'
+              : 'bg-[rgba(76,175,80,0.15)] text-[#4CAF50]'
           }`}
+          style={{ fontFamily: "'Space Mono', monospace", letterSpacing: '0.1em' }}
         >
           {pool.your_status === 'eliminated' ? 'OUT' : 'ALIVE'}
         </span>
       </div>
 
-      {/* Stats row */}
-      <div className="flex items-center space-x-4 text-xs text-text-muted mb-3">
+      <div className="flex items-center space-x-4 text-xs text-[#8A8694] mb-3" style={{ fontFamily: "'DM Sans', sans-serif" }}>
         <span>{pool.your_picks_count} picks</span>
         {pool.your_streak > 0 && (
-          <span className="text-accent font-medium">{pool.your_streak} streak</span>
+          <span className="text-[#FF5722] font-medium">{pool.your_streak} streak</span>
         )}
         {pool.current_round_name && (
-          <span className="truncate text-text-faint">{pool.current_round_name}</span>
+          <span className="truncate opacity-60">{pool.current_round_name}</span>
         )}
       </div>
 
-      {/* Action prompt */}
       {needsPick && (
-        <div className="bg-accent/10 border border-accent/25 rounded-xl px-3 py-2.5 flex items-center justify-between">
-          <span className="text-sm font-semibold text-accent">Pick needed today!</span>
-          <svg className="w-4 h-4 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" /></svg>
+        <div className="bg-[rgba(255,87,34,0.1)] border border-[rgba(255,87,34,0.25)] rounded-[8px] px-3 py-2.5 flex items-center justify-between">
+          <span className="text-sm font-semibold text-[#FF5722]" style={{ fontFamily: "'DM Sans', sans-serif" }}>Pick needed today!</span>
+          <svg className="w-4 h-4 text-[#FF5722]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" /></svg>
         </div>
       )}
       {pool.has_picked_today && pool.your_status === 'active' && (
-        <div className="bg-alive/10 border border-alive/25 rounded-xl px-3 py-2.5">
-          <span className="text-sm font-medium text-alive">Pick locked in</span>
+        <div className="bg-[rgba(76,175,80,0.1)] border border-[rgba(76,175,80,0.25)] rounded-[8px] px-3 py-2.5">
+          <span className="text-sm font-medium text-[#4CAF50]" style={{ fontFamily: "'DM Sans', sans-serif" }}>Pick locked in</span>
         </div>
       )}
       {pool.your_status === 'eliminated' && (
-        <div className="bg-dark-surface border border-dark-border-subtle rounded-xl px-3 py-2.5">
-          <span className="text-sm text-text-muted">View standings</span>
+        <div className="bg-[#1A1A24] border border-[rgba(255,255,255,0.05)] rounded-[8px] px-3 py-2.5">
+          <span className="text-sm text-[#8A8694]" style={{ fontFamily: "'DM Sans', sans-serif" }}>View standings</span>
         </div>
       )}
     </button>
@@ -105,18 +104,19 @@ export default function Dashboard() {
 
   return (
     <ProtectedRoute>
-      <div className="min-h-screen bg-dark-base">
+      <div className="min-h-screen bg-[#0D1B2A]">
         {/* Header */}
-        <header className="bg-dark-surface border-b border-dark-border">
+        <header className="bg-[#111118] border-b border-[rgba(255,255,255,0.05)]">
           <div className="max-w-lg mx-auto px-5">
             <div className="flex justify-between items-center py-4">
               <div>
-                <h1 className="text-xl font-bold text-white">MBB Survivor</h1>
-                <p className="text-text-muted text-xs mt-0.5">{user?.email}</p>
+                <h1 className="text-xl font-bold text-[#E8E6E1]" style={{ fontFamily: "'Oswald', sans-serif", textTransform: 'uppercase' }}>Survive the Dance</h1>
+                <p className="text-[#8A8694] text-xs mt-0.5" style={{ fontFamily: "'DM Sans', sans-serif" }}>{user?.email}</p>
               </div>
               <button
                 onClick={signOut}
-                className="text-text-muted hover:text-text-secondary px-3 py-2 rounded-xl text-sm font-medium transition-colors"
+                className="text-[#8A8694] hover:text-[#E8E6E1] px-3 py-2 rounded-[8px] text-sm font-medium transition-colors"
+                style={{ fontFamily: "'DM Sans', sans-serif" }}
               >
                 Sign Out
               </button>
@@ -125,20 +125,20 @@ export default function Dashboard() {
         </header>
 
         <main className="max-w-lg mx-auto px-5 py-6">
-          {/* Action alert banner */}
+          {/* Action alert */}
           {needsAction.length > 0 && (
-            <div className="bg-gradient-to-r from-accent to-accent-hover text-white rounded-2xl p-4 mb-6 shadow-lg shadow-accent-dim animate-glow-pulse">
+            <div className="bg-[#FF5722] text-[#E8E6E1] rounded-[12px] p-4 mb-6 shadow-lg animate-glow-pulse" style={{ boxShadow: '0 4px 20px rgba(255, 87, 34, 0.3)' }}>
               <div className="flex items-center space-x-3">
-                <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center flex-shrink-0">
+                <div className="w-10 h-10 bg-[rgba(255,255,255,0.2)] rounded-[8px] flex items-center justify-center flex-shrink-0">
                   <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
                 </div>
                 <div>
-                  <p className="font-bold text-sm">
+                  <p className="font-bold text-sm" style={{ fontFamily: "'DM Sans', sans-serif" }}>
                     {needsAction.length === 1
-                      ? 'Pick needed in 1 pool!'
+                      ? "Clock's ticking. You haven't picked yet."
                       : `Picks needed in ${needsAction.length} pools!`}
                   </p>
-                  <p className="text-white/70 text-xs mt-0.5">
+                  <p className="text-[rgba(255,255,255,0.7)] text-xs mt-0.5" style={{ fontFamily: "'DM Sans', sans-serif" }}>
                     {needsAction.map(p => p.pool_name).join(', ')}
                   </p>
                 </div>
@@ -150,65 +150,59 @@ export default function Dashboard() {
           <div className="grid grid-cols-3 gap-3 mb-8">
             <Link
               href="/pools/create"
-              className="bg-dark-card border border-dark-border rounded-2xl p-4 hover:border-accent/30 transition-all text-center"
+              className="bg-[#111118] border border-[rgba(255,255,255,0.05)] rounded-[12px] p-4 hover:border-[rgba(255,87,34,0.3)] transition-all text-center"
             >
-              <div className="w-10 h-10 bg-electric/10 rounded-xl flex items-center justify-center mx-auto mb-2">
-                <svg className="w-5 h-5 text-electric" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div className="w-10 h-10 bg-[rgba(27,58,92,0.3)] rounded-[8px] flex items-center justify-center mx-auto mb-2">
+                <svg className="w-5 h-5 text-[#1B3A5C]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
                 </svg>
               </div>
-              <span className="text-xs font-medium text-text-secondary">Create</span>
+              <span className="text-xs font-medium text-[#8A8694]" style={{ fontFamily: "'DM Sans', sans-serif" }}>Create</span>
             </Link>
 
             <Link
               href="/pools/join"
-              className="bg-dark-card border border-dark-border rounded-2xl p-4 hover:border-accent/30 transition-all text-center"
+              className="bg-[#111118] border border-[rgba(255,255,255,0.05)] rounded-[12px] p-4 hover:border-[rgba(255,87,34,0.3)] transition-all text-center"
             >
-              <div className="w-10 h-10 bg-alive/10 rounded-xl flex items-center justify-center mx-auto mb-2">
-                <svg className="w-5 h-5 text-alive" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div className="w-10 h-10 bg-[rgba(76,175,80,0.1)] rounded-[8px] flex items-center justify-center mx-auto mb-2">
+                <svg className="w-5 h-5 text-[#4CAF50]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
                 </svg>
               </div>
-              <span className="text-xs font-medium text-text-secondary">Join</span>
+              <span className="text-xs font-medium text-[#8A8694]" style={{ fontFamily: "'DM Sans', sans-serif" }}>Join</span>
             </Link>
 
             <Link
               href="/tournament"
-              className="bg-dark-card border border-dark-border rounded-2xl p-4 hover:border-accent/30 transition-all text-center"
+              className="bg-[#111118] border border-[rgba(255,255,255,0.05)] rounded-[12px] p-4 hover:border-[rgba(255,87,34,0.3)] transition-all text-center"
             >
-              <div className="w-10 h-10 bg-accent/10 rounded-xl flex items-center justify-center mx-auto mb-2">
-                <svg className="w-5 h-5 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
+              <div className="w-10 h-10 bg-[rgba(255,87,34,0.08)] rounded-[8px] flex items-center justify-center mx-auto mb-2">
+                <svg className="w-5 h-5 text-[#FF5722]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
               </div>
-              <span className="text-xs font-medium text-text-secondary">Bracket</span>
+              <span className="text-xs font-medium text-[#8A8694]" style={{ fontFamily: "'DM Sans', sans-serif" }}>Bracket</span>
             </Link>
           </div>
 
           {/* My Pools */}
-          <h2 className="text-lg font-bold text-white mb-4 uppercase tracking-wide">My Pools</h2>
+          <h2 className="text-lg font-bold text-[#E8E6E1] mb-4" style={{ fontFamily: "'Oswald', sans-serif", textTransform: 'uppercase', letterSpacing: '0.02em' }}>My Pools</h2>
 
           {loadingPools ? (
-            <div className="bg-dark-card border border-dark-border rounded-2xl p-8 text-center">
-              <div className="animate-spin rounded-full h-8 w-8 border-2 border-dark-border border-t-accent mx-auto mb-3" />
-              <p className="text-text-muted text-sm">Loading your pools...</p>
+            <div className="bg-[#111118] border border-[rgba(255,255,255,0.05)] rounded-[12px] p-8 text-center">
+              <div className="animate-spin rounded-full h-8 w-8 border-2 border-[rgba(255,255,255,0.08)] border-t-[#FF5722] mx-auto mb-3" />
+              <p className="text-[#8A8694] text-sm" style={{ fontFamily: "'DM Sans', sans-serif" }}>Loading your pools...</p>
             </div>
           ) : pools.length === 0 ? (
-            <div className="bg-dark-card border border-dark-border rounded-2xl p-8 text-center">
-              <div className="w-16 h-16 bg-accent/10 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                <svg className="w-8 h-8 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
+            <div className="bg-[#111118] border border-[rgba(255,255,255,0.05)] rounded-[12px] p-8 text-center">
+              <div className="w-16 h-16 bg-[rgba(255,87,34,0.08)] rounded-[16px] flex items-center justify-center mx-auto mb-4">
+                <svg className="w-8 h-8 text-[#FF5722]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
               </div>
-              <p className="text-white font-semibold text-lg mb-1">No pools yet</p>
-              <p className="text-text-muted text-sm mb-6">Create or join a pool to get started!</p>
+              <p className="text-[#E8E6E1] font-semibold text-lg mb-1" style={{ fontFamily: "'Oswald', sans-serif", textTransform: 'uppercase' }}>No Pools Yet</p>
+              <p className="text-[#8A8694] text-sm mb-6" style={{ fontFamily: "'DM Sans', sans-serif" }}>Create or join a pool to start playing.</p>
               <div className="flex justify-center gap-3">
-                <Link
-                  href="/pools/create"
-                  className="btn-accent px-5 py-2.5 text-white text-sm font-semibold rounded-xl"
-                >
+                <Link href="/pools/create" className="btn-orange px-5 py-2.5 text-sm font-semibold rounded-[12px]" style={{ fontFamily: "'DM Sans', sans-serif" }}>
                   Create Pool
                 </Link>
-                <Link
-                  href="/pools/join"
-                  className="px-5 py-2.5 bg-dark-surface border border-dark-border text-text-secondary text-sm font-semibold rounded-xl hover:border-accent/30 transition-colors"
-                >
+                <Link href="/pools/join" className="px-5 py-2.5 bg-[#1A1A24] border border-[rgba(255,255,255,0.05)] text-[#8A8694] text-sm font-semibold rounded-[12px] hover:border-[rgba(255,87,34,0.3)] transition-colors" style={{ fontFamily: "'DM Sans', sans-serif" }}>
                   Join Pool
                 </Link>
               </div>
@@ -217,9 +211,7 @@ export default function Dashboard() {
             <div className="space-y-8">
               {activePools.length > 0 && (
                 <div>
-                  <h3 className="text-xs font-semibold text-text-muted uppercase tracking-widest mb-3">
-                    Active ({activePools.length})
-                  </h3>
+                  <p className="label mb-3">Active ({activePools.length})</p>
                   <div className="space-y-3">
                     {activePools.map((pool) => (
                       <PoolCard key={pool.pool_id} pool={pool} />
@@ -230,9 +222,7 @@ export default function Dashboard() {
 
               {eliminatedPools.length > 0 && (
                 <div>
-                  <h3 className="text-xs font-semibold text-text-muted uppercase tracking-widest mb-3">
-                    Eliminated ({eliminatedPools.length})
-                  </h3>
+                  <p className="label mb-3">Eliminated ({eliminatedPools.length})</p>
                   <div className="space-y-3">
                     {eliminatedPools.map((pool) => (
                       <PoolCard key={pool.pool_id} pool={pool} />

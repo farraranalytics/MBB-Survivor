@@ -9,18 +9,18 @@ interface RegionBracketProps {
 
 function TBDMatchupCard() {
   return (
-    <div className="w-52 border border-dashed border-dark-border rounded-xl overflow-hidden bg-dark-surface">
+    <div className="w-52 border border-dashed border-[rgba(255,255,255,0.05)] rounded-[12px] overflow-hidden bg-[#1A1A24]">
       <div className="flex items-center justify-between px-2.5 py-2">
         <div className="flex items-center gap-1.5">
-          <span className="text-xs text-text-muted w-5 text-center">-</span>
-          <span className="text-xs text-text-muted italic">TBD</span>
+          <span className="text-xs text-[#8A8694] w-5 text-center" style={{ fontFamily: "'Space Mono', monospace" }}>-</span>
+          <span className="text-xs text-[#8A8694] italic" style={{ fontFamily: "'DM Sans', sans-serif" }}>TBD</span>
         </div>
       </div>
-      <div className="border-t border-dark-border-subtle" />
+      <div className="border-t border-[rgba(255,255,255,0.05)]" />
       <div className="flex items-center justify-between px-2.5 py-2">
         <div className="flex items-center gap-1.5">
-          <span className="text-xs text-text-muted w-5 text-center">-</span>
-          <span className="text-xs text-text-muted italic">TBD</span>
+          <span className="text-xs text-[#8A8694] w-5 text-center" style={{ fontFamily: "'Space Mono', monospace" }}>-</span>
+          <span className="text-xs text-[#8A8694] italic" style={{ fontFamily: "'DM Sans', sans-serif" }}>TBD</span>
         </div>
       </div>
     </div>
@@ -49,7 +49,7 @@ function RoundColumn({
 
   return (
     <div className="flex flex-col flex-shrink-0" style={{ width: '220px' }}>
-      <div className="text-xs font-semibold text-text-muted uppercase tracking-widest text-center mb-3 px-1 truncate">
+      <div className="label text-center mb-3 px-1 truncate">
         {label}
       </div>
       <div className="flex flex-col justify-around flex-1 gap-2">

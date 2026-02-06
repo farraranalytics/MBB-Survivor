@@ -45,24 +45,21 @@ export default function PoolDetailPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-dark-base flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-2 border-dark-border border-t-accent" />
+      <div className="min-h-screen bg-[#0D1B2A] flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-2 border-[rgba(255,255,255,0.08)] border-t-[#FF5722]" />
       </div>
     );
   }
 
   if (error || !standings) {
     return (
-      <div className="min-h-screen bg-dark-base flex items-center justify-center">
+      <div className="min-h-screen bg-[#0D1B2A] flex items-center justify-center">
         <div className="text-center px-5">
-          <h1 className="text-2xl font-bold text-white mb-2">Pool Not Found</h1>
-          <p className="text-text-secondary mb-6">
+          <h1 className="text-2xl font-bold text-[#E8E6E1] mb-2" style={{ fontFamily: "'Oswald', sans-serif", textTransform: 'uppercase' }}>Pool Not Found</h1>
+          <p className="text-[#8A8694] mb-6" style={{ fontFamily: "'DM Sans', sans-serif" }}>
             {error || 'This pool does not exist or you don\u2019t have access.'}
           </p>
-          <button
-            onClick={() => router.push('/dashboard')}
-            className="btn-accent text-white px-6 py-3 rounded-xl font-semibold"
-          >
+          <button onClick={() => router.push('/dashboard')} className="btn-orange text-[#E8E6E1] px-6 py-3 rounded-[12px] font-semibold" style={{ fontFamily: "'DM Sans', sans-serif" }}>
             Back to Dashboard
           </button>
         </div>
@@ -71,8 +68,7 @@ export default function PoolDetailPage() {
   }
 
   const { your_status: yourStatus } = standings;
-  const canMakePick =
-    yourStatus && !yourStatus.is_eliminated && standings.current_round && !deadline?.is_expired;
+  const canMakePick = yourStatus && !yourStatus.is_eliminated && standings.current_round && !deadline?.is_expired;
   const hasMadePick = yourStatus?.current_pick != null;
 
   const formatTimeRemaining = (minutes: number) => {
@@ -84,57 +80,61 @@ export default function PoolDetailPage() {
 
   const topPlayers = standings.players.slice(0, 5);
 
-  // Deadline urgency color
   const getDeadlineColor = () => {
-    if (!deadline || deadline.is_expired) return 'text-eliminated';
-    if (deadline.minutes_remaining < 30) return 'text-eliminated';
-    if (deadline.minutes_remaining < 120) return 'text-warning';
-    return 'text-alive';
+    if (!deadline || deadline.is_expired) return 'text-[#EF5350]';
+    if (deadline.minutes_remaining < 30) return 'text-[#EF5350]';
+    if (deadline.minutes_remaining < 120) return 'text-[#FFB300]';
+    return 'text-[#4CAF50]';
   };
 
   return (
-    <div className="min-h-screen bg-dark-base">
+    <div className="min-h-screen bg-[#0D1B2A]">
       <div className="max-w-lg mx-auto px-5 py-6">
         {/* Header */}
-        <div className="bg-dark-card border border-dark-border rounded-2xl p-5 mb-4">
+        <div className="bg-[#111118] border border-[rgba(255,255,255,0.05)] rounded-[12px] p-5 mb-4">
           <div className="flex items-center justify-between mb-4">
-            <h1 className="text-xl font-bold text-white truncate mr-3">{standings.pool_name}</h1>
-            <button
-              onClick={() => router.push('/dashboard')}
-              className="text-text-muted hover:text-text-secondary text-sm flex-shrink-0 transition-colors"
-            >
+            <h1 className="text-xl font-bold text-[#E8E6E1] truncate mr-3" style={{ fontFamily: "'Oswald', sans-serif", textTransform: 'uppercase' }}>{standings.pool_name}</h1>
+            <button onClick={() => router.push('/dashboard')} className="text-[#8A8694] hover:text-[#E8E6E1] text-sm flex-shrink-0 transition-colors" style={{ fontFamily: "'DM Sans', sans-serif" }}>
               <svg className="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7" /></svg>
               Back
             </button>
           </div>
 
+          {/* Pool summary */}
+          <div className="text-center mb-3" style={{ fontFamily: "'Oswald', sans-serif" }}>
+            <p className="text-[#8A8694] text-sm" style={{ fontFamily: "'DM Sans', sans-serif" }}>
+              {standings.alive_players} alive. {standings.eliminated_players} eliminated. {standings.total_players} entered.
+            </p>
+          </div>
+
           <div className="grid grid-cols-3 gap-3 text-center">
-            <div className="bg-alive/10 rounded-xl p-3">
-              <p className="text-2xl font-bold text-alive">{standings.alive_players}</p>
-              <p className="text-[11px] text-alive/70 font-medium uppercase tracking-wide">Alive</p>
+            <div className="bg-[rgba(76,175,80,0.1)] rounded-[8px] p-3">
+              <p className="text-2xl font-bold text-[#4CAF50]" style={{ fontFamily: "'Oswald', sans-serif" }}>{standings.alive_players}</p>
+              <p className="label text-[#4CAF50]" style={{ fontSize: '0.6rem' }}>Alive</p>
             </div>
-            <div className="bg-eliminated/10 rounded-xl p-3">
-              <p className="text-2xl font-bold text-eliminated">{standings.eliminated_players}</p>
-              <p className="text-[11px] text-eliminated/70 font-medium uppercase tracking-wide">Out</p>
+            <div className="bg-[rgba(239,83,80,0.1)] rounded-[8px] p-3">
+              <p className="text-2xl font-bold text-[#EF5350]" style={{ fontFamily: "'Oswald', sans-serif" }}>{standings.eliminated_players}</p>
+              <p className="label text-[#EF5350]" style={{ fontSize: '0.6rem' }}>Out</p>
             </div>
-            <div className="bg-dark-surface rounded-xl p-3">
-              <p className="text-2xl font-bold text-white">{standings.total_players}</p>
-              <p className="text-[11px] text-text-muted font-medium uppercase tracking-wide">Total</p>
+            <div className="bg-[#1A1A24] rounded-[8px] p-3">
+              <p className="text-2xl font-bold text-[#E8E6E1]" style={{ fontFamily: "'Oswald', sans-serif" }}>{standings.total_players}</p>
+              <p className="label text-[#8A8694]" style={{ fontSize: '0.6rem' }}>Total</p>
             </div>
           </div>
         </div>
 
-        {/* Your Status & Pick Action */}
+        {/* Your Status */}
         {yourStatus && (
-          <div className="bg-dark-card border border-dark-border rounded-2xl p-5 mb-4">
+          <div className="bg-[#111118] border border-[rgba(255,255,255,0.05)] rounded-[12px] p-5 mb-4">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-sm font-semibold text-text-muted uppercase tracking-wide">Your Status</h2>
+              <p className="label">Your Status</p>
               <span
                 className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wide ${
                   yourStatus.is_eliminated
-                    ? 'bg-eliminated/15 text-eliminated'
-                    : 'bg-alive/15 text-alive'
+                    ? 'bg-[rgba(239,83,80,0.15)] text-[#EF5350]'
+                    : 'bg-[rgba(76,175,80,0.15)] text-[#4CAF50]'
                 }`}
+                style={{ fontFamily: "'Space Mono', monospace", letterSpacing: '0.1em' }}
               >
                 {yourStatus.is_eliminated ? 'ELIMINATED' : 'ALIVE'}
               </span>
@@ -143,26 +143,26 @@ export default function PoolDetailPage() {
             <div className="flex items-center justify-between">
               <div>
                 <div className="flex items-center gap-3 mb-2">
-                  <span className="text-sm text-text-secondary">
+                  <span className="text-sm text-[#8A8694]" style={{ fontFamily: "'DM Sans', sans-serif" }}>
                     {yourStatus.picks_count} pick{yourStatus.picks_count !== 1 ? 's' : ''}
                   </span>
                   {yourStatus.survival_streak > 1 && (
-                    <span className="text-sm text-accent font-bold">
+                    <span className="text-sm text-[#FF5722] font-bold" style={{ fontFamily: "'Space Mono', monospace" }}>
                       {yourStatus.survival_streak} streak
                     </span>
                   )}
                 </div>
 
                 {yourStatus.is_eliminated && yourStatus.elimination_reason && (
-                  <p className="text-sm text-eliminated">
+                  <p className="text-sm text-[#EF5350]" style={{ fontFamily: "'DM Sans', sans-serif" }}>
                     {yourStatus.elimination_reason.replace('_', ' ')}
                   </p>
                 )}
 
                 {yourStatus.current_pick?.team && (
-                  <p className="text-sm text-text-secondary">
+                  <p className="text-sm text-[#8A8694]" style={{ fontFamily: "'DM Sans', sans-serif" }}>
                     Pick:{' '}
-                    <span className="font-semibold text-white">
+                    <span className="font-semibold text-[#E8E6E1]">
                       ({yourStatus.current_pick.team.seed}) {yourStatus.current_pick.team.name}
                     </span>
                   </p>
@@ -173,7 +173,8 @@ export default function PoolDetailPage() {
                 {canMakePick && !hasMadePick && (
                   <button
                     onClick={() => router.push(`/pools/${poolId}/pick`)}
-                    className="btn-accent text-white px-5 py-3 rounded-xl font-bold text-sm shadow-lg shadow-accent-dim"
+                    className="btn-orange text-[#E8E6E1] px-5 py-3 rounded-[12px] font-bold text-sm"
+                    style={{ fontFamily: "'DM Sans', sans-serif", boxShadow: '0 4px 16px rgba(255, 87, 34, 0.3)' }}
                   >
                     Make Pick
                   </button>
@@ -182,43 +183,44 @@ export default function PoolDetailPage() {
                 {hasMadePick && !deadline?.is_expired && (
                   <button
                     onClick={() => router.push(`/pools/${poolId}/pick`)}
-                    className="bg-warning/15 text-warning border border-warning/30 px-5 py-3 rounded-xl font-bold text-sm hover:bg-warning/25 transition-colors"
+                    className="bg-[rgba(255,179,0,0.15)] text-[#FFB300] border border-[rgba(255,179,0,0.3)] px-5 py-3 rounded-[12px] font-bold text-sm hover:bg-[rgba(255,179,0,0.25)] transition-colors"
+                    style={{ fontFamily: "'DM Sans', sans-serif" }}
                   >
                     Change
                   </button>
                 )}
 
                 {hasMadePick && deadline?.is_expired && (
-                  <span className="text-alive font-semibold text-sm">Locked</span>
+                  <span className="text-[#4CAF50] font-semibold text-sm" style={{ fontFamily: "'DM Sans', sans-serif" }}>Locked</span>
                 )}
               </div>
             </div>
 
             {/* Deadline */}
             {standings.current_round && deadline && (
-              <div className="mt-4 p-4 bg-dark-surface border border-dark-border-subtle rounded-xl">
+              <div className="mt-4 p-4 bg-[#1A1A24] border border-[rgba(255,255,255,0.05)] rounded-[8px]">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm font-semibold text-white">
+                    <p className="text-sm font-semibold text-[#E8E6E1]" style={{ fontFamily: "'Oswald', sans-serif", textTransform: 'uppercase' }}>
                       {standings.current_round.name}
                     </p>
-                    <p className="text-xs text-text-muted mt-0.5">
+                    <p className="text-xs text-[#8A8694] mt-0.5" style={{ fontFamily: "'DM Sans', sans-serif" }}>
                       {hasMadePick
                         ? deadline?.is_expired
                           ? 'Pick locked'
                           : 'Change before deadline'
-                        : 'Pick needed'}
+                        : "Clock's ticking"}
                     </p>
                   </div>
                   <div className="text-right">
                     {deadline.is_expired ? (
-                      <p className="text-sm font-bold text-eliminated">Passed</p>
+                      <p className="text-sm font-bold text-[#EF5350]" style={{ fontFamily: "'Oswald', sans-serif", textTransform: 'uppercase' }}>Passed</p>
                     ) : (
                       <>
-                        <p className={`text-lg font-mono font-bold ${getDeadlineColor()}`}>
+                        <p className={`text-lg font-bold ${getDeadlineColor()}`} style={{ fontFamily: "'Space Mono', monospace" }}>
                           {formatTimeRemaining(deadline.minutes_remaining)}
                         </p>
-                        <p className="text-[10px] text-text-muted">
+                        <p className="text-[10px] text-[#8A8694]" style={{ fontFamily: "'Space Mono', monospace" }}>
                           {new Date(deadline.deadline_datetime).toLocaleTimeString([], {
                             hour: '2-digit',
                             minute: '2-digit'
@@ -233,14 +235,11 @@ export default function PoolDetailPage() {
           </div>
         )}
 
-        {/* Compact Standings */}
-        <div className="bg-dark-card border border-dark-border rounded-2xl p-5">
+        {/* Standings */}
+        <div className="bg-[#111118] border border-[rgba(255,255,255,0.05)] rounded-[12px] p-5">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-sm font-semibold text-text-muted uppercase tracking-wide">Standings</h2>
-            <button
-              onClick={() => router.push(`/pools/${poolId}/standings`)}
-              className="text-accent hover:text-accent-hover text-xs font-semibold transition-colors"
-            >
+            <p className="label">Standings</p>
+            <button onClick={() => router.push(`/pools/${poolId}/standings`)} className="text-[#FF5722] hover:text-[#E64A19] text-xs font-semibold transition-colors" style={{ fontFamily: "'DM Sans', sans-serif" }}>
               View All
             </button>
           </div>
@@ -251,32 +250,26 @@ export default function PoolDetailPage() {
               return (
                 <div
                   key={player.pool_player_id}
-                  className={`flex items-center justify-between p-3 rounded-xl ${
-                    isYou ? 'bg-accent/8 border border-accent/20' : 'bg-dark-surface'
+                  className={`flex items-center justify-between p-3 rounded-[8px] ${
+                    isYou ? 'bg-[rgba(255,87,34,0.06)] border border-[rgba(255,87,34,0.2)]' : 'bg-[#1A1A24]'
                   }`}
                 >
                   <div className="flex items-center space-x-3">
-                    <span className="text-xs font-bold text-text-muted w-5 text-right">
+                    <span className="text-xs font-bold text-[#8A8694] w-5 text-right" style={{ fontFamily: "'Space Mono', monospace" }}>
                       {index + 1}
                     </span>
                     <div>
-                      <p className="font-semibold text-white text-sm">
+                      <p className="font-semibold text-[#E8E6E1] text-sm" style={{ fontFamily: "'Oswald', sans-serif", textTransform: 'uppercase', letterSpacing: '0.02em' }}>
                         {player.display_name}
-                        {isYou && (
-                          <span className="text-accent text-xs ml-1.5">You</span>
-                        )}
+                        {isYou && <span className="text-[#FF5722] text-xs ml-1.5" style={{ fontFamily: "'Space Mono', monospace" }}>YOU</span>}
                       </p>
                       <div className="flex items-center gap-2 mt-0.5">
-                        <span
-                          className={`inline-flex items-center w-2 h-2 rounded-full ${
-                            player.is_eliminated ? 'bg-eliminated' : 'bg-alive'
-                          }`}
-                        />
-                        <span className="text-[11px] text-text-muted">
+                        <span className={`inline-flex items-center w-2 h-2 rounded-full ${player.is_eliminated ? 'bg-[#EF5350]' : 'bg-[#4CAF50]'}`} />
+                        <span className="text-[11px] text-[#8A8694]" style={{ fontFamily: "'DM Sans', sans-serif" }}>
                           {player.picks_count} pick{player.picks_count !== 1 ? 's' : ''}
                         </span>
                         {player.survival_streak > 1 && (
-                          <span className="text-[11px] text-accent font-medium">
+                          <span className="text-[11px] text-[#FF5722] font-medium" style={{ fontFamily: "'Space Mono', monospace" }}>
                             {player.survival_streak}x
                           </span>
                         )}
@@ -286,11 +279,11 @@ export default function PoolDetailPage() {
 
                   {player.current_pick?.team && (
                     <div className="text-right">
-                      <p className="text-xs font-semibold text-white">
+                      <p className="text-xs font-semibold text-[#E8E6E1]" style={{ fontFamily: "'DM Sans', sans-serif" }}>
                         {player.current_pick.team.name}
                       </p>
-                      <p className="text-[10px] text-text-muted">
-                        {player.current_pick.team.seed} seed
+                      <p className="text-[10px] text-[#8A8694]" style={{ fontFamily: "'Space Mono', monospace" }}>
+                        {player.current_pick.team.seed} SEED
                       </p>
                     </div>
                   )}
@@ -300,13 +293,14 @@ export default function PoolDetailPage() {
           </div>
 
           {standings.players.length === 0 && (
-            <p className="text-center text-text-muted py-8">No players in this pool yet.</p>
+            <p className="text-center text-[#8A8694] py-8" style={{ fontFamily: "'DM Sans', sans-serif" }}>No players in this pool yet.</p>
           )}
 
           {standings.players.length > 5 && (
             <button
               onClick={() => router.push(`/pools/${poolId}/standings`)}
-              className="w-full mt-3 py-3 text-center text-sm font-semibold text-accent bg-accent/8 rounded-xl hover:bg-accent/15 transition-colors"
+              className="w-full mt-3 py-3 text-center text-sm font-semibold text-[#FF5722] bg-[rgba(255,87,34,0.06)] rounded-[8px] hover:bg-[rgba(255,87,34,0.12)] transition-colors"
+              style={{ fontFamily: "'DM Sans', sans-serif" }}
             >
               See all {standings.players.length} players
             </button>
@@ -317,23 +311,21 @@ export default function PoolDetailPage() {
         <div className="mt-4 grid grid-cols-2 gap-3">
           <button
             onClick={() => router.push(`/pools/${poolId}/standings`)}
-            className="bg-dark-card border border-dark-border rounded-2xl p-4 text-center hover:border-accent/30 transition-colors"
+            className="bg-[#111118] border border-[rgba(255,255,255,0.05)] rounded-[12px] p-4 text-center hover:border-[rgba(255,87,34,0.3)] transition-colors"
           >
-            <div className="w-10 h-10 bg-electric/10 rounded-xl flex items-center justify-center mx-auto mb-2">
-              <svg className="w-5 h-5 text-electric" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg>
+            <div className="w-10 h-10 bg-[rgba(27,58,92,0.3)] rounded-[8px] flex items-center justify-center mx-auto mb-2">
+              <svg className="w-5 h-5 text-[#1B3A5C]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg>
             </div>
-            <span className="text-xs font-semibold text-white block">Full Standings</span>
-            <span className="text-[10px] text-text-muted block mt-0.5">Grid & history</span>
+            <span className="text-xs font-semibold text-[#E8E6E1] block" style={{ fontFamily: "'Oswald', sans-serif", textTransform: 'uppercase', letterSpacing: '0.02em' }}>Full Standings</span>
           </button>
           <button
             onClick={() => router.push('/tournament')}
-            className="bg-dark-card border border-dark-border rounded-2xl p-4 text-center hover:border-accent/30 transition-colors"
+            className="bg-[#111118] border border-[rgba(255,255,255,0.05)] rounded-[12px] p-4 text-center hover:border-[rgba(255,87,34,0.3)] transition-colors"
           >
-            <div className="w-10 h-10 bg-accent/10 rounded-xl flex items-center justify-center mx-auto mb-2">
-              <svg className="w-5 h-5 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
+            <div className="w-10 h-10 bg-[rgba(255,87,34,0.08)] rounded-[8px] flex items-center justify-center mx-auto mb-2">
+              <svg className="w-5 h-5 text-[#FF5722]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
             </div>
-            <span className="text-xs font-semibold text-white block">Tournament</span>
-            <span className="text-[10px] text-text-muted block mt-0.5">Bracket & scores</span>
+            <span className="text-xs font-semibold text-[#E8E6E1] block" style={{ fontFamily: "'Oswald', sans-serif", textTransform: 'uppercase', letterSpacing: '0.02em' }}>Tournament</span>
           </button>
         </div>
       </div>
