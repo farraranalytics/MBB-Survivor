@@ -1,0 +1,2276 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Survive the Dance — Component Library v1.0</title>
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Barlow+Condensed:wght@600;700;800&family=DM+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+/* ============================================================
+   SURVIVE THE DANCE — DESIGN SYSTEM & COMPONENT LIBRARY
+   Version 1.0
+   
+   This file is both a visual reference AND production-ready code.
+   Every component here can be copied directly into your app.
+   ============================================================ */
+
+/* ============================================================
+   1. CSS CUSTOM PROPERTIES (DESIGN TOKENS)
+   Copy this entire :root block into your global stylesheet.
+   ============================================================ */
+:root {
+  /* --- Primary Colors --- */
+  --color-orange: #FF5722;
+  --color-orange-hover: #FF6D3A;
+  --color-orange-active: #E64A19;
+  --color-orange-subtle: rgba(255, 87, 34, 0.08);
+  --color-orange-glow: rgba(255, 87, 34, 0.25);
+
+  --color-navy: #0D1B2A;
+  --color-navy-light: #122640;
+
+  --color-white: #E8E6E1;
+  --color-white-pure: #FFFFFF;
+
+  /* --- Surface Colors (layered dark UI) --- */
+  --surface-0: #080810;       /* deepest background */
+  --surface-1: #0D1B2A;       /* primary app background */
+  --surface-2: #111827;        /* card / panel backgrounds */
+  --surface-3: #1B2A3D;       /* elevated cards, modals */
+  --surface-4: #243447;        /* hover states on cards */
+  --surface-5: #2D3E52;        /* active/selected states */
+
+  /* --- Status Colors --- */
+  --color-alive: #4CAF50;
+  --color-alive-subtle: rgba(76, 175, 80, 0.12);
+  --color-alive-glow: rgba(76, 175, 80, 0.3);
+
+  --color-eliminated: #EF5350;
+  --color-eliminated-subtle: rgba(239, 83, 80, 0.12);
+  --color-eliminated-glow: rgba(239, 83, 80, 0.3);
+
+  --color-warning: #FFB300;
+  --color-warning-subtle: rgba(255, 179, 0, 0.12);
+
+  --color-info: #42A5F5;
+  --color-info-subtle: rgba(66, 165, 245, 0.12);
+
+  /* --- Text Colors --- */
+  --text-primary: #E8E6E1;
+  --text-secondary: #9BA3AE;
+  --text-tertiary: #5F6B7A;
+  --text-disabled: #3D4654;
+  --text-inverse: #0D1B2A;
+
+  /* --- Border Colors --- */
+  --border-subtle: rgba(255, 255, 255, 0.05);
+  --border-default: rgba(255, 255, 255, 0.08);
+  --border-strong: rgba(255, 255, 255, 0.12);
+  --border-accent: rgba(255, 87, 34, 0.3);
+  --border-accent-strong: rgba(255, 87, 34, 0.6);
+
+  /* --- Typography --- */
+  --font-display: 'Oswald', sans-serif;
+  --font-display-condensed: 'Barlow Condensed', sans-serif;
+  --font-body: 'DM Sans', sans-serif;
+  --font-mono: 'Space Mono', monospace;
+
+  /* --- Spacing Scale --- */
+  --space-1: 0.25rem;   /* 4px */
+  --space-2: 0.5rem;    /* 8px */
+  --space-3: 0.75rem;   /* 12px */
+  --space-4: 1rem;      /* 16px */
+  --space-5: 1.25rem;   /* 20px */
+  --space-6: 1.5rem;    /* 24px */
+  --space-8: 2rem;      /* 32px */
+  --space-10: 2.5rem;   /* 40px */
+  --space-12: 3rem;     /* 48px */
+  --space-16: 4rem;     /* 64px */
+
+  /* --- Border Radius --- */
+  --radius-xs: 4px;
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+  --radius-xl: 20px;
+  --radius-full: 9999px;
+  --radius-icon: 22%;
+
+  /* --- Shadows --- */
+  --shadow-sm: 0 1px 3px rgba(0,0,0,0.3);
+  --shadow-md: 0 4px 12px rgba(0,0,0,0.4);
+  --shadow-lg: 0 8px 30px rgba(0,0,0,0.5);
+  --shadow-glow-orange: 0 0 20px rgba(255, 87, 34, 0.2);
+  --shadow-glow-alive: 0 0 12px rgba(76, 175, 80, 0.25);
+  --shadow-glow-eliminated: 0 0 12px rgba(239, 83, 80, 0.25);
+
+  /* --- Transitions --- */
+  --transition-fast: 150ms ease;
+  --transition-base: 250ms ease;
+  --transition-slow: 400ms ease;
+
+  /* --- Z-Index Scale --- */
+  --z-base: 0;
+  --z-dropdown: 100;
+  --z-sticky: 200;
+  --z-modal-backdrop: 300;
+  --z-modal: 400;
+  --z-toast: 500;
+}
+
+/* ============================================================
+   2. RESET & BASE STYLES
+   ============================================================ */
+*, *::before, *::after {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html {
+  font-size: 16px;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  background: var(--surface-1);
+  color: var(--text-primary);
+  font-family: var(--font-body);
+  font-weight: 400;
+  line-height: 1.6;
+  overflow-x: hidden;
+}
+
+/* ============================================================
+   3. TYPOGRAPHY CLASSES
+   ============================================================ */
+
+/* Display / Hero */
+.text-display {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: clamp(2.5rem, 7vw, 5rem);
+  text-transform: uppercase;
+  line-height: 0.92;
+  letter-spacing: -0.02em;
+}
+
+/* Page Title */
+.text-title {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: clamp(1.75rem, 4vw, 2.5rem);
+  text-transform: uppercase;
+  line-height: 1;
+  letter-spacing: -0.01em;
+}
+
+/* Section Header */
+.text-heading {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 1.35rem;
+  text-transform: uppercase;
+  line-height: 1.15;
+}
+
+/* Card Title */
+.text-subheading {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 1.1rem;
+  text-transform: uppercase;
+  line-height: 1.2;
+}
+
+/* Body text */
+.text-body {
+  font-family: var(--font-body);
+  font-weight: 400;
+  font-size: 0.95rem;
+  line-height: 1.65;
+  color: var(--text-secondary);
+}
+
+/* Small body */
+.text-small {
+  font-family: var(--font-body);
+  font-weight: 400;
+  font-size: 0.85rem;
+  line-height: 1.5;
+  color: var(--text-secondary);
+}
+
+/* Data / Stats */
+.text-data {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 1rem;
+  letter-spacing: 0.03em;
+}
+
+.text-data-lg {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 1.75rem;
+  letter-spacing: 0.02em;
+}
+
+/* Labels */
+.text-label {
+  font-family: var(--font-mono);
+  font-weight: 400;
+  font-size: 0.65rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--text-tertiary);
+}
+
+.text-label-accent {
+  font-family: var(--font-mono);
+  font-weight: 400;
+  font-size: 0.65rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--color-orange);
+}
+
+/* Countdown / Timer */
+.text-countdown {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 2.5rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--color-orange);
+}
+
+/* ============================================================
+   COMPONENT LIBRARY PRESENTATION STYLES
+   (These are for the library page only, not for production)
+   ============================================================ */
+.library-container {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: var(--space-8);
+}
+
+.library-header {
+  text-align: center;
+  padding: var(--space-16) var(--space-8);
+  border-bottom: 1px solid var(--border-default);
+  margin-bottom: var(--space-12);
+}
+
+.library-section {
+  margin-bottom: var(--space-16);
+}
+
+.library-section-label {
+  font-family: var(--font-mono);
+  font-size: 0.6rem;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  color: var(--color-orange);
+  margin-bottom: var(--space-2);
+}
+
+.library-section-title {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 1.5rem;
+  text-transform: uppercase;
+  margin-bottom: var(--space-2);
+}
+
+.library-section-desc {
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+  margin-bottom: var(--space-8);
+  max-width: 600px;
+}
+
+.component-showcase {
+  background: var(--surface-0);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-lg);
+  padding: var(--space-10);
+  margin-bottom: var(--space-6);
+}
+
+.component-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-4);
+  align-items: flex-start;
+  margin-bottom: var(--space-6);
+}
+
+.component-row:last-child { margin-bottom: 0; }
+
+.component-code-label {
+  font-family: var(--font-mono);
+  font-size: 0.55rem;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--text-tertiary);
+  margin-bottom: var(--space-3);
+  padding-bottom: var(--space-2);
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.divider-line {
+  width: 100%;
+  height: 1px;
+  background: linear-gradient(90deg, transparent 0%, var(--border-default) 50%, transparent 100%);
+  margin: var(--space-12) 0;
+}
+
+/* ============================================================
+   4. BUTTONS
+   ============================================================ */
+
+/* Base button */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  font-family: var(--font-display);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  border: none;
+  cursor: pointer;
+  transition: all var(--transition-base);
+  text-decoration: none;
+  white-space: nowrap;
+  position: relative;
+  overflow: hidden;
+}
+
+.btn:active { transform: scale(0.97); }
+
+/* Primary — Tournament Orange, solid fill */
+.btn-primary {
+  background: var(--color-orange);
+  color: var(--text-inverse);
+  padding: var(--space-3) var(--space-6);
+  border-radius: var(--radius-sm);
+  font-size: 0.85rem;
+}
+
+.btn-primary:hover {
+  background: var(--color-orange-hover);
+  box-shadow: var(--shadow-glow-orange);
+}
+
+.btn-primary:active { background: var(--color-orange-active); }
+
+/* Primary Large */
+.btn-primary-lg {
+  background: var(--color-orange);
+  color: var(--text-inverse);
+  padding: var(--space-4) var(--space-8);
+  border-radius: var(--radius-md);
+  font-size: 1rem;
+}
+
+.btn-primary-lg:hover {
+  background: var(--color-orange-hover);
+  box-shadow: var(--shadow-glow-orange);
+}
+
+/* Secondary — Outline on dark */
+.btn-secondary {
+  background: transparent;
+  color: var(--text-primary);
+  padding: var(--space-3) var(--space-6);
+  border-radius: var(--radius-sm);
+  font-size: 0.85rem;
+  border: 1.5px solid var(--border-strong);
+}
+
+.btn-secondary:hover {
+  border-color: var(--color-orange);
+  color: var(--color-orange);
+  background: var(--color-orange-subtle);
+}
+
+/* Ghost — No border, text only */
+.btn-ghost {
+  background: transparent;
+  color: var(--text-secondary);
+  padding: var(--space-2) var(--space-4);
+  border-radius: var(--radius-sm);
+  font-size: 0.8rem;
+}
+
+.btn-ghost:hover {
+  color: var(--text-primary);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+/* Danger — Elimination Red */
+.btn-danger {
+  background: var(--color-eliminated);
+  color: var(--color-white-pure);
+  padding: var(--space-3) var(--space-6);
+  border-radius: var(--radius-sm);
+  font-size: 0.85rem;
+}
+
+.btn-danger:hover {
+  background: #F44336;
+  box-shadow: var(--shadow-glow-eliminated);
+}
+
+/* Disabled state */
+.btn-disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+/* ============================================================
+   5. CARDS
+   ============================================================ */
+
+/* Base card */
+.card {
+  background: var(--surface-2);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  padding: var(--space-6);
+  transition: border-color var(--transition-base);
+}
+
+.card:hover {
+  border-color: var(--border-default);
+}
+
+/* Card with accent border (used for featured/active items) */
+.card-accent {
+  background: var(--surface-2);
+  border: 1px solid var(--border-accent);
+  border-radius: var(--radius-lg);
+  padding: var(--space-6);
+}
+
+/* Card interactive — for pick selection, clickable items */
+.card-interactive {
+  background: var(--surface-2);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  padding: var(--space-6);
+  cursor: pointer;
+  transition: all var(--transition-base);
+}
+
+.card-interactive:hover {
+  border-color: var(--border-accent);
+  background: var(--surface-3);
+  box-shadow: var(--shadow-md);
+  transform: translateY(-1px);
+}
+
+.card-interactive.selected {
+  border-color: var(--color-orange);
+  background: var(--color-orange-subtle);
+  box-shadow: var(--shadow-glow-orange);
+}
+
+/* Card elevated — for modals, popovers */
+.card-elevated {
+  background: var(--surface-3);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-lg);
+  padding: var(--space-6);
+  box-shadow: var(--shadow-lg);
+}
+
+/* ============================================================
+   6. STATUS BADGES
+   ============================================================ */
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  font-family: var(--font-mono);
+  font-size: 0.6rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  padding: 3px 10px;
+  border-radius: var(--radius-full);
+}
+
+.badge-alive {
+  background: var(--color-alive-subtle);
+  color: var(--color-alive);
+}
+
+.badge-alive::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--color-alive);
+  box-shadow: var(--shadow-glow-alive);
+  animation: pulse-dot 2s ease-in-out infinite;
+}
+
+.badge-eliminated {
+  background: var(--color-eliminated-subtle);
+  color: var(--color-eliminated);
+  text-decoration: line-through;
+  text-decoration-thickness: 1px;
+}
+
+.badge-pending {
+  background: var(--color-warning-subtle);
+  color: var(--color-warning);
+}
+
+.badge-locked {
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--text-tertiary);
+}
+
+.badge-premium {
+  background: linear-gradient(135deg, rgba(255, 87, 34, 0.2), rgba(255, 179, 0, 0.15));
+  color: var(--color-orange);
+}
+
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+/* ============================================================
+   7. PICK CARD (Core gameplay component)
+   ============================================================ */
+
+.pick-card {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  background: var(--surface-2);
+  border: 1.5px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  padding: var(--space-4) var(--space-5);
+  cursor: pointer;
+  transition: all var(--transition-base);
+  position: relative;
+}
+
+.pick-card:hover {
+  border-color: var(--border-accent);
+  background: var(--surface-3);
+}
+
+.pick-card.pick-selected {
+  border-color: var(--color-orange);
+  background: var(--color-orange-subtle);
+  box-shadow: 0 0 0 1px var(--color-orange), var(--shadow-glow-orange);
+}
+
+.pick-card.pick-won {
+  border-color: var(--color-alive);
+  background: var(--color-alive-subtle);
+}
+
+.pick-card.pick-lost {
+  border-color: var(--color-eliminated);
+  background: var(--color-eliminated-subtle);
+  opacity: 0.6;
+}
+
+.pick-card.pick-used {
+  opacity: 0.3;
+  cursor: not-allowed;
+  pointer-events: none;
+  text-decoration: line-through;
+}
+
+.pick-card.pick-used::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -5%;
+  width: 110%;
+  height: 100%;
+  background: linear-gradient(
+    to right,
+    transparent 0%,
+    transparent 45%,
+    var(--color-eliminated) 45%,
+    var(--color-eliminated) 45.5%,
+    transparent 45.5%,
+    transparent 100%
+  );
+  opacity: 0.3;
+  transform: rotate(-3deg);
+  pointer-events: none;
+}
+
+.pick-card-seed {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 1.5rem;
+  color: var(--text-tertiary);
+  min-width: 2.5rem;
+  text-align: center;
+}
+
+.pick-card-info {
+  flex: 1;
+}
+
+.pick-card-team {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 1.1rem;
+  text-transform: uppercase;
+}
+
+.pick-card-meta {
+  font-family: var(--font-body);
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  margin-top: 2px;
+}
+
+.pick-card-prob {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 0.95rem;
+  color: var(--color-alive);
+  min-width: 3.5rem;
+  text-align: right;
+}
+
+.pick-card-prob.low { color: var(--color-warning); }
+.pick-card-prob.danger { color: var(--color-eliminated); }
+
+.pick-card-radio {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 2px solid var(--border-strong);
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all var(--transition-fast);
+}
+
+.pick-selected .pick-card-radio {
+  border-color: var(--color-orange);
+  background: var(--color-orange);
+}
+
+.pick-selected .pick-card-radio::after {
+  content: '✓';
+  font-size: 0.7rem;
+  color: var(--text-inverse);
+  font-weight: 700;
+}
+
+/* ============================================================
+   8. STANDINGS ROW
+   ============================================================ */
+
+.standings-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  padding: var(--space-4) var(--space-5);
+  border-bottom: 1px solid var(--border-subtle);
+  transition: background var(--transition-fast);
+}
+
+.standings-row:hover {
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.standings-row.you {
+  background: var(--color-orange-subtle);
+  border-left: 3px solid var(--color-orange);
+  padding-left: calc(var(--space-5) - 3px);
+}
+
+.standings-row.eliminated-row {
+  opacity: 0.45;
+}
+
+.standings-rank {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 1.1rem;
+  color: var(--text-tertiary);
+  min-width: 2rem;
+  text-align: center;
+}
+
+.standings-row.you .standings-rank {
+  color: var(--color-orange);
+}
+
+.standings-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: var(--surface-4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  flex-shrink: 0;
+}
+
+.standings-info {
+  flex: 1;
+}
+
+.standings-name {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 0.95rem;
+  text-transform: uppercase;
+}
+
+.standings-detail {
+  font-family: var(--font-body);
+  font-size: 0.75rem;
+  color: var(--text-tertiary);
+  margin-top: 1px;
+}
+
+.standings-teams-left {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  min-width: 4rem;
+  text-align: right;
+}
+
+/* ============================================================
+   9. COUNTDOWN TIMER
+   ============================================================ */
+
+.countdown-container {
+  text-align: center;
+  padding: var(--space-6);
+}
+
+.countdown-label {
+  font-family: var(--font-mono);
+  font-size: 0.6rem;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  color: var(--text-tertiary);
+  margin-bottom: var(--space-2);
+}
+
+.countdown-display {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-3);
+}
+
+.countdown-segment {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.countdown-value {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 2.5rem;
+  line-height: 1;
+  color: var(--color-orange);
+  min-width: 3.5rem;
+  padding: var(--space-2) var(--space-3);
+  background: var(--surface-2);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-accent);
+  text-align: center;
+}
+
+.countdown-unit {
+  font-family: var(--font-mono);
+  font-size: 0.5rem;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--text-tertiary);
+  margin-top: var(--space-1);
+}
+
+.countdown-separator {
+  font-family: var(--font-display);
+  font-size: 2rem;
+  color: var(--text-tertiary);
+  padding-bottom: 1rem;
+}
+
+.countdown-urgent .countdown-value {
+  color: var(--color-eliminated);
+  border-color: var(--color-eliminated);
+  animation: urgent-pulse 1s ease-in-out infinite;
+}
+
+@keyframes urgent-pulse {
+  0%, 100% { box-shadow: none; }
+  50% { box-shadow: var(--shadow-glow-eliminated); }
+}
+
+/* ============================================================
+   10. PROBABILITY BAR
+   ============================================================ */
+
+.prob-bar-container {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.prob-bar-label {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 0.85rem;
+  min-width: 3rem;
+  text-align: right;
+}
+
+.prob-bar-track {
+  flex: 1;
+  height: 8px;
+  background: var(--surface-3);
+  border-radius: var(--radius-full);
+  overflow: hidden;
+}
+
+.prob-bar-fill {
+  height: 100%;
+  border-radius: var(--radius-full);
+  transition: width var(--transition-slow);
+}
+
+.prob-bar-fill.high { background: var(--color-alive); }
+.prob-bar-fill.medium { background: var(--color-warning); }
+.prob-bar-fill.low { background: var(--color-eliminated); }
+
+/* Larger version for featured display */
+.prob-bar-lg .prob-bar-track {
+  height: 12px;
+}
+
+.prob-bar-lg .prob-bar-label {
+  font-size: 1.1rem;
+}
+
+/* ============================================================
+   11. SURVIVAL PROGRESS BAR (Days survived)
+   ============================================================ */
+
+.survival-bar {
+  display: flex;
+  gap: 3px;
+  padding: var(--space-2) 0;
+}
+
+.survival-segment {
+  flex: 1;
+  height: 8px;
+  border-radius: 2px;
+  background: rgba(255, 255, 255, 0.06);
+  transition: all var(--transition-base);
+}
+
+.survival-segment.survived {
+  background: var(--color-orange);
+  box-shadow: 0 0 6px rgba(255, 87, 34, 0.2);
+}
+
+.survival-segment.current {
+  background: var(--color-warning);
+  animation: segment-pulse 1.5s ease-in-out infinite;
+}
+
+.survival-segment.eliminated-seg {
+  background: var(--color-eliminated);
+  opacity: 0.5;
+}
+
+@keyframes segment-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+/* ============================================================
+   12. TEAM GRID (64-team inventory)
+   ============================================================ */
+
+.team-grid {
+  display: grid;
+  grid-template-columns: repeat(8, 1fr);
+  gap: 4px;
+}
+
+.team-cell {
+  aspect-ratio: 1;
+  border-radius: var(--radius-xs);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-mono);
+  font-size: 0.55rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  transition: all var(--transition-fast);
+  position: relative;
+  overflow: hidden;
+}
+
+/* Available — team is alive in tournament and unused by player */
+.team-cell.available {
+  background: var(--surface-3);
+  color: var(--text-primary);
+  border: 1px solid var(--border-default);
+  cursor: pointer;
+}
+
+.team-cell.available:hover {
+  background: var(--surface-4);
+  border-color: var(--color-orange);
+}
+
+/* Used/Burned — player already picked this team */
+.team-cell.used {
+  background: var(--surface-2);
+  color: var(--text-disabled);
+  border: 1px solid var(--border-subtle);
+  opacity: 0.4;
+}
+
+.team-cell.used::after {
+  content: '';
+  position: absolute;
+  top: -20%;
+  left: -20%;
+  width: 140%;
+  height: 140%;
+  background: linear-gradient(
+    135deg,
+    transparent 42%,
+    var(--color-orange) 42%,
+    var(--color-orange) 43%,
+    transparent 43%
+  );
+  opacity: 0.4;
+}
+
+/* Eliminated from tournament */
+.team-cell.eliminated-cell {
+  background: var(--surface-0);
+  color: var(--text-disabled);
+  border: 1px solid transparent;
+  opacity: 0.2;
+}
+
+/* Today's pick */
+.team-cell.today-pick {
+  background: var(--color-orange-subtle);
+  color: var(--color-orange);
+  border: 1.5px solid var(--color-orange);
+  box-shadow: var(--shadow-glow-orange);
+}
+
+/* ============================================================
+   13. NAVIGATION TABS
+   ============================================================ */
+
+.nav-tabs {
+  display: flex;
+  background: var(--surface-0);
+  border-top: 1px solid var(--border-subtle);
+  padding: var(--space-2) var(--space-2) 0;
+  gap: 0;
+}
+
+.nav-tab {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  padding: var(--space-2) var(--space-2) var(--space-3);
+  cursor: pointer;
+  transition: color var(--transition-fast);
+  position: relative;
+  border: none;
+  background: none;
+}
+
+.nav-tab-icon {
+  font-size: 1.2rem;
+  color: var(--text-tertiary);
+  transition: color var(--transition-fast);
+}
+
+.nav-tab-label {
+  font-family: var(--font-mono);
+  font-size: 0.5rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-tertiary);
+  transition: color var(--transition-fast);
+}
+
+.nav-tab:hover .nav-tab-icon,
+.nav-tab:hover .nav-tab-label {
+  color: var(--text-secondary);
+}
+
+.nav-tab.active .nav-tab-icon {
+  color: var(--color-orange);
+}
+
+.nav-tab.active .nav-tab-label {
+  color: var(--color-orange);
+}
+
+.nav-tab.active::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 20%;
+  width: 60%;
+  height: 2px;
+  background: var(--color-orange);
+  border-radius: 0 0 2px 2px;
+}
+
+/* ============================================================
+   14. SECTION DIVIDERS & DECORATIVE ELEMENTS
+   ============================================================ */
+
+.divider {
+  width: 100%;
+  height: 1px;
+  background: linear-gradient(90deg, transparent 0%, var(--border-default) 50%, transparent 100%);
+}
+
+.divider-accent {
+  width: 60px;
+  height: 3px;
+  background: var(--color-orange);
+  border-radius: 2px;
+}
+
+/* Court line background decoration */
+.court-line-circle {
+  position: absolute;
+  border: 1.5px solid rgba(255, 87, 34, 0.08);
+  border-radius: 50%;
+  pointer-events: none;
+}
+
+/* Diagonal slash (elimination motif) */
+.slash-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.slash-overlay::after {
+  content: '';
+  position: absolute;
+  top: -10%;
+  left: -10%;
+  width: 120%;
+  height: 120%;
+  background: linear-gradient(
+    155deg,
+    transparent 44%,
+    var(--color-eliminated) 44%,
+    var(--color-eliminated) 44.8%,
+    transparent 44.8%
+  );
+  opacity: 0.2;
+}
+
+/* ============================================================
+   15. FORM ELEMENTS
+   ============================================================ */
+
+.input-field {
+  width: 100%;
+  background: var(--surface-2);
+  border: 1.5px solid var(--border-default);
+  border-radius: var(--radius-md);
+  padding: var(--space-3) var(--space-4);
+  font-family: var(--font-body);
+  font-size: 0.95rem;
+  color: var(--text-primary);
+  transition: border-color var(--transition-fast);
+  outline: none;
+}
+
+.input-field::placeholder {
+  color: var(--text-tertiary);
+}
+
+.input-field:focus {
+  border-color: var(--color-orange);
+  box-shadow: 0 0 0 3px var(--color-orange-subtle);
+}
+
+.input-label {
+  display: block;
+  font-family: var(--font-mono);
+  font-size: 0.6rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--text-tertiary);
+  margin-bottom: var(--space-2);
+}
+
+/* Group Code Input (large, centered) */
+.code-input {
+  width: 100%;
+  max-width: 400px;
+  background: var(--surface-2);
+  border: 2px solid var(--border-strong);
+  border-radius: var(--radius-lg);
+  padding: var(--space-5) var(--space-6);
+  font-family: var(--font-display);
+  font-size: 1.8rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  text-align: center;
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+  outline: none;
+  transition: border-color var(--transition-fast);
+}
+
+.code-input::placeholder {
+  color: var(--text-disabled);
+  font-weight: 400;
+  letter-spacing: 0.05em;
+  font-size: 1.2rem;
+}
+
+.code-input:focus {
+  border-color: var(--color-orange);
+  box-shadow: 0 0 0 4px var(--color-orange-subtle);
+}
+
+/* ============================================================
+   16. TOAST / NOTIFICATION
+   ============================================================ */
+
+.toast {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-4) var(--space-5);
+  border-radius: var(--radius-md);
+  font-family: var(--font-body);
+  font-size: 0.9rem;
+  font-weight: 500;
+  box-shadow: var(--shadow-lg);
+  max-width: 400px;
+  animation: toast-in 0.4s ease-out;
+}
+
+.toast-survived {
+  background: linear-gradient(135deg, #1B3D20, #162E1A);
+  border: 1px solid var(--color-alive);
+  color: var(--color-alive);
+}
+
+.toast-eliminated {
+  background: linear-gradient(135deg, #3D1B1B, #2E1616);
+  border: 1px solid var(--color-eliminated);
+  color: var(--color-eliminated);
+}
+
+.toast-warning {
+  background: linear-gradient(135deg, #3D361B, #2E2A16);
+  border: 1px solid var(--color-warning);
+  color: var(--color-warning);
+}
+
+.toast-info {
+  background: linear-gradient(135deg, #1B2E3D, #16232E);
+  border: 1px solid var(--color-info);
+  color: var(--color-info);
+}
+
+.toast-icon {
+  font-size: 1.2rem;
+  flex-shrink: 0;
+}
+
+@keyframes toast-in {
+  from { transform: translateY(-20px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+/* ============================================================
+   17. PREMIUM LOCK OVERLAY
+   ============================================================ */
+
+.premium-lock {
+  position: relative;
+  overflow: hidden;
+}
+
+.premium-lock-content {
+  filter: blur(6px);
+  pointer-events: none;
+  user-select: none;
+}
+
+.premium-lock-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: rgba(13, 27, 42, 0.6);
+  backdrop-filter: blur(2px);
+  border-radius: var(--radius-lg);
+  z-index: 2;
+}
+
+.premium-lock-icon {
+  font-size: 1.5rem;
+  margin-bottom: var(--space-2);
+}
+
+.premium-lock-text {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 0.9rem;
+  text-transform: uppercase;
+  color: var(--text-primary);
+  margin-bottom: var(--space-1);
+}
+
+.premium-lock-sub {
+  font-family: var(--font-body);
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  margin-bottom: var(--space-4);
+}
+
+/* ============================================================
+   18. MATCHUP CARD (Game display)
+   ============================================================ */
+
+.matchup-card {
+  background: var(--surface-2);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  padding: var(--space-5);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.matchup-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.matchup-round {
+  font-family: var(--font-mono);
+  font-size: 0.55rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--text-tertiary);
+}
+
+.matchup-time {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  color: var(--text-secondary);
+}
+
+.matchup-teams {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.matchup-team-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-sm);
+  transition: background var(--transition-fast);
+}
+
+.matchup-team-row:hover {
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.matchup-team-row.favored {
+  border-left: 2px solid var(--color-orange);
+  padding-left: calc(var(--space-3) - 2px);
+}
+
+.matchup-seed {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 0.9rem;
+  color: var(--text-tertiary);
+  min-width: 1.5rem;
+  text-align: center;
+}
+
+.matchup-team-name {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 0.95rem;
+  text-transform: uppercase;
+  flex: 1;
+}
+
+.matchup-spread {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+}
+
+.matchup-prob {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 0.8rem;
+}
+
+.matchup-vs-line {
+  width: 100%;
+  height: 1px;
+  background: var(--border-subtle);
+  position: relative;
+}
+
+.matchup-vs-line::after {
+  content: 'VS';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-family: var(--font-display);
+  font-size: 0.55rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  color: var(--text-disabled);
+  background: var(--surface-2);
+  padding: 0 var(--space-2);
+}
+
+/* ============================================================
+   19. APP ICON / WORDMARK
+   ============================================================ */
+
+.wordmark {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0;
+}
+
+.wordmark-survive {
+  font-family: var(--font-display-condensed);
+  font-weight: 800;
+  font-size: 0.75rem;
+  letter-spacing: 0.5em;
+  text-transform: uppercase;
+  color: rgba(232, 230, 225, 0.4);
+  line-height: 1;
+}
+
+.wordmark-the {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 1.5rem;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--color-orange);
+  line-height: 1.1;
+}
+
+.wordmark-dance {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 2.75rem;
+  letter-spacing: -0.02em;
+  text-transform: uppercase;
+  color: var(--text-primary);
+  line-height: 0.85;
+}
+
+/* Wordmark small (for headers, nav) */
+.wordmark-sm .wordmark-survive { font-size: 0.4rem; letter-spacing: 0.35em; }
+.wordmark-sm .wordmark-the { font-size: 0.7rem; letter-spacing: 0.1em; }
+.wordmark-sm .wordmark-dance { font-size: 1.25rem; }
+
+/* App icon simulation */
+.app-icon {
+  border-radius: var(--radius-icon);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(145deg, #0D1B2A, #1B3A5C);
+  box-shadow: var(--shadow-lg);
+  gap: 1px;
+}
+
+.app-icon-lg { width: 100px; height: 100px; }
+.app-icon-md { width: 64px; height: 64px; }
+.app-icon-sm { width: 44px; height: 44px; }
+
+.app-icon-lg .icon-survive { font-family: var(--font-display-condensed); font-weight: 800; font-size: 7px; letter-spacing: 3px; text-transform: uppercase; color: rgba(232,230,225,0.45); }
+.app-icon-lg .icon-the { font-family: var(--font-display); font-weight: 700; font-size: 14px; letter-spacing: 2px; text-transform: uppercase; color: var(--color-orange); }
+.app-icon-lg .icon-dance { font-family: var(--font-display); font-weight: 700; font-size: 22px; text-transform: uppercase; color: var(--text-primary); line-height: 0.9; }
+
+.app-icon-md .icon-survive { font-family: var(--font-display-condensed); font-weight: 800; font-size: 4.5px; letter-spacing: 2px; text-transform: uppercase; color: rgba(232,230,225,0.45); }
+.app-icon-md .icon-the { font-family: var(--font-display); font-weight: 700; font-size: 9px; letter-spacing: 1.5px; text-transform: uppercase; color: var(--color-orange); }
+.app-icon-md .icon-dance { font-family: var(--font-display); font-weight: 700; font-size: 14px; text-transform: uppercase; color: var(--text-primary); line-height: 0.9; }
+
+.app-icon-sm .icon-survive { font-family: var(--font-display-condensed); font-weight: 800; font-size: 3px; letter-spacing: 1.5px; text-transform: uppercase; color: rgba(232,230,225,0.45); }
+.app-icon-sm .icon-the { font-family: var(--font-display); font-weight: 700; font-size: 6.5px; letter-spacing: 1px; text-transform: uppercase; color: var(--color-orange); }
+.app-icon-sm .icon-dance { font-family: var(--font-display); font-weight: 700; font-size: 10px; text-transform: uppercase; color: var(--text-primary); line-height: 0.9; }
+
+/* ============================================================
+   20. UTILITY CLASSES
+   ============================================================ */
+
+.text-orange { color: var(--color-orange); }
+.text-alive { color: var(--color-alive); }
+.text-eliminated { color: var(--color-eliminated); }
+.text-warning { color: var(--color-warning); }
+.text-dim { color: var(--text-secondary); }
+.text-muted { color: var(--text-tertiary); }
+
+.bg-surface-0 { background: var(--surface-0); }
+.bg-surface-1 { background: var(--surface-1); }
+.bg-surface-2 { background: var(--surface-2); }
+.bg-surface-3 { background: var(--surface-3); }
+
+.flex { display: flex; }
+.flex-col { flex-direction: column; }
+.items-center { align-items: center; }
+.justify-between { justify-content: space-between; }
+.justify-center { justify-content: center; }
+.gap-1 { gap: var(--space-1); }
+.gap-2 { gap: var(--space-2); }
+.gap-3 { gap: var(--space-3); }
+.gap-4 { gap: var(--space-4); }
+.gap-6 { gap: var(--space-6); }
+.gap-8 { gap: var(--space-8); }
+
+.w-full { width: 100%; }
+.text-center { text-align: center; }
+.mt-2 { margin-top: var(--space-2); }
+.mt-4 { margin-top: var(--space-4); }
+.mt-6 { margin-top: var(--space-6); }
+.mt-8 { margin-top: var(--space-8); }
+.mb-2 { margin-bottom: var(--space-2); }
+.mb-4 { margin-bottom: var(--space-4); }
+.mb-6 { margin-bottom: var(--space-6); }
+.mb-8 { margin-bottom: var(--space-8); }
+.p-4 { padding: var(--space-4); }
+.p-6 { padding: var(--space-6); }
+.p-8 { padding: var(--space-8); }
+
+/* Background ambient glow (for hero/feature areas) */
+.bg-glow {
+  position: relative;
+}
+
+.bg-glow::before {
+  content: '';
+  position: absolute;
+  top: -30%;
+  left: -20%;
+  width: 140%;
+  height: 160%;
+  background: radial-gradient(ellipse at 30% 40%, rgba(21, 101, 192, 0.07) 0%, transparent 55%),
+              radial-gradient(ellipse at 70% 60%, rgba(255, 87, 34, 0.05) 0%, transparent 50%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.bg-glow > * { position: relative; z-index: 1; }
+</style>
+</head>
+<body>
+
+<!-- ============================================================
+     COMPONENT LIBRARY — LIVE PREVIEW
+     Everything below is demonstration. Copy the CSS above + 
+     the HTML patterns below into your app.
+     ============================================================ -->
+
+<div class="library-container">
+
+  <!-- HEADER -->
+  <div class="library-header">
+    <div class="text-label-accent" style="margin-bottom: var(--space-4);">Component Library v1.0</div>
+    <div class="wordmark" style="margin-bottom: var(--space-6);">
+      <span class="wordmark-survive">SURVIVE</span>
+      <span class="wordmark-the">THE</span>
+      <span class="wordmark-dance">DANCE</span>
+    </div>
+    <p class="text-body" style="max-width: 550px; margin: 0 auto;">Every component below is production-ready. Copy the CSS variables, component classes, and HTML patterns directly into your codebase.</p>
+  </div>
+
+  <div class="divider-line"></div>
+
+  <!-- ============ WORDMARK & APP ICONS ============ -->
+  <div class="library-section">
+    <div class="library-section-label">01 — Brand Mark</div>
+    <div class="library-section-title">Wordmark & App Icons</div>
+    <div class="library-section-desc">The stacked typographic lockup at multiple sizes. The app icon uses the same type hierarchy on a navy gradient.</div>
+
+    <div class="component-showcase">
+      <div class="component-code-label">Wordmark — Full Size</div>
+      <div style="display: flex; justify-content: center; padding: var(--space-8); background: var(--surface-1); border-radius: var(--radius-md); margin-bottom: var(--space-6);">
+        <div class="wordmark">
+          <span class="wordmark-survive">SURVIVE</span>
+          <span class="wordmark-the">THE</span>
+          <span class="wordmark-dance">DANCE</span>
+        </div>
+      </div>
+
+      <div class="component-code-label">Wordmark — Small (Header / Nav)</div>
+      <div style="display: flex; justify-content: center; padding: var(--space-6); background: var(--surface-1); border-radius: var(--radius-md); margin-bottom: var(--space-6);">
+        <div class="wordmark wordmark-sm">
+          <span class="wordmark-survive">SURVIVE</span>
+          <span class="wordmark-the">THE</span>
+          <span class="wordmark-dance">DANCE</span>
+        </div>
+      </div>
+
+      <div class="component-code-label">App Icons — All Sizes</div>
+      <div style="display: flex; gap: var(--space-6); align-items: flex-end; justify-content: center; padding: var(--space-6);">
+        <div style="display: flex; flex-direction: column; align-items: center; gap: var(--space-2);">
+          <div class="app-icon app-icon-lg">
+            <span class="icon-survive">SURVIVE</span>
+            <span class="icon-the">THE</span>
+            <span class="icon-dance">DANCE</span>
+          </div>
+          <span class="text-label">100px</span>
+        </div>
+        <div style="display: flex; flex-direction: column; align-items: center; gap: var(--space-2);">
+          <div class="app-icon app-icon-md">
+            <span class="icon-survive">SURVIVE</span>
+            <span class="icon-the">THE</span>
+            <span class="icon-dance">DANCE</span>
+          </div>
+          <span class="text-label">64px</span>
+        </div>
+        <div style="display: flex; flex-direction: column; align-items: center; gap: var(--space-2);">
+          <div class="app-icon app-icon-sm">
+            <span class="icon-survive">SURVIVE</span>
+            <span class="icon-the">THE</span>
+            <span class="icon-dance">DANCE</span>
+          </div>
+          <span class="text-label">44px</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="divider-line"></div>
+
+  <!-- ============ TYPOGRAPHY ============ -->
+  <div class="library-section">
+    <div class="library-section-label">02 — Typography</div>
+    <div class="library-section-title">Type Scale</div>
+    <div class="library-section-desc">Oswald for display, DM Sans for body, Space Mono for data. Oswald is always uppercase.</div>
+
+    <div class="component-showcase">
+      <div class="component-code-label">.text-display</div>
+      <div class="text-display" style="margin-bottom: var(--space-6);">Survive The Dance</div>
+
+      <div class="component-code-label">.text-title</div>
+      <div class="text-title" style="margin-bottom: var(--space-6);">Today's Games</div>
+
+      <div class="component-code-label">.text-heading</div>
+      <div class="text-heading" style="margin-bottom: var(--space-6);">Pick Your Team</div>
+
+      <div class="component-code-label">.text-subheading</div>
+      <div class="text-subheading" style="margin-bottom: var(--space-6);">Round of 64 — Day 1</div>
+
+      <div class="component-code-label">.text-body</div>
+      <p class="text-body" style="margin-bottom: var(--space-6);">UConn has a 91% win probability today — but you'll want them for the Elite 8. Creighton at 78% is the smarter burn.</p>
+
+      <div class="component-code-label">.text-data / .text-data-lg</div>
+      <div style="display: flex; align-items: baseline; gap: var(--space-6); margin-bottom: var(--space-6);">
+        <span class="text-data-lg text-orange">78%</span>
+        <span class="text-data">3 TEAMS LEFT</span>
+        <span class="text-data" style="color: var(--text-secondary);">DAY 7/13</span>
+      </div>
+
+      <div class="component-code-label">.text-label / .text-label-accent</div>
+      <div style="display: flex; gap: var(--space-6);">
+        <span class="text-label">Win Probability</span>
+        <span class="text-label-accent">Pick Deadline</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="divider-line"></div>
+
+  <!-- ============ COLORS ============ -->
+  <div class="library-section">
+    <div class="library-section-label">03 — Colors</div>
+    <div class="library-section-title">Palette</div>
+
+    <div class="component-showcase">
+      <div class="component-code-label">Primary</div>
+      <div style="display: flex; gap: var(--space-3); flex-wrap: wrap; margin-bottom: var(--space-6);">
+        <div style="width: 140px;">
+          <div style="height: 70px; background: var(--color-orange); border-radius: var(--radius-sm) var(--radius-sm) 0 0;"></div>
+          <div style="background: var(--surface-2); padding: var(--space-2) var(--space-3); border-radius: 0 0 var(--radius-sm) var(--radius-sm); border: 1px solid var(--border-subtle); border-top: 0;">
+            <div style="font-weight: 700; font-size: 0.8rem;">Tournament Orange</div>
+            <div class="text-label" style="margin-top: 2px;">#FF5722</div>
+          </div>
+        </div>
+        <div style="width: 140px;">
+          <div style="height: 70px; background: var(--color-navy); border-radius: var(--radius-sm) var(--radius-sm) 0 0; border: 1px solid var(--border-subtle); border-bottom: 0;"></div>
+          <div style="background: var(--surface-2); padding: var(--space-2) var(--space-3); border-radius: 0 0 var(--radius-sm) var(--radius-sm); border: 1px solid var(--border-subtle); border-top: 0;">
+            <div style="font-weight: 700; font-size: 0.8rem;">Midnight Navy</div>
+            <div class="text-label" style="margin-top: 2px;">#0D1B2A</div>
+          </div>
+        </div>
+        <div style="width: 140px;">
+          <div style="height: 70px; background: var(--color-white); border-radius: var(--radius-sm) var(--radius-sm) 0 0;"></div>
+          <div style="background: var(--surface-2); padding: var(--space-2) var(--space-3); border-radius: 0 0 var(--radius-sm) var(--radius-sm); border: 1px solid var(--border-subtle); border-top: 0;">
+            <div style="font-weight: 700; font-size: 0.8rem;">Court White</div>
+            <div class="text-label" style="margin-top: 2px;">#E8E6E1</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="component-code-label">Status</div>
+      <div style="display: flex; gap: var(--space-3); flex-wrap: wrap; margin-bottom: var(--space-6);">
+        <div style="width: 140px;">
+          <div style="height: 70px; background: var(--color-alive); border-radius: var(--radius-sm) var(--radius-sm) 0 0;"></div>
+          <div style="background: var(--surface-2); padding: var(--space-2) var(--space-3); border-radius: 0 0 var(--radius-sm) var(--radius-sm); border: 1px solid var(--border-subtle); border-top: 0;">
+            <div style="font-weight: 700; font-size: 0.8rem;">Alive Green</div>
+            <div class="text-label" style="margin-top: 2px;">#4CAF50</div>
+          </div>
+        </div>
+        <div style="width: 140px;">
+          <div style="height: 70px; background: var(--color-eliminated); border-radius: var(--radius-sm) var(--radius-sm) 0 0;"></div>
+          <div style="background: var(--surface-2); padding: var(--space-2) var(--space-3); border-radius: 0 0 var(--radius-sm) var(--radius-sm); border: 1px solid var(--border-subtle); border-top: 0;">
+            <div style="font-weight: 700; font-size: 0.8rem;">Eliminated Red</div>
+            <div class="text-label" style="margin-top: 2px;">#EF5350</div>
+          </div>
+        </div>
+        <div style="width: 140px;">
+          <div style="height: 70px; background: var(--color-warning); border-radius: var(--radius-sm) var(--radius-sm) 0 0;"></div>
+          <div style="background: var(--surface-2); padding: var(--space-2) var(--space-3); border-radius: 0 0 var(--radius-sm) var(--radius-sm); border: 1px solid var(--border-subtle); border-top: 0;">
+            <div style="font-weight: 700; font-size: 0.8rem;">Warning Gold</div>
+            <div class="text-label" style="margin-top: 2px;">#FFB300</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="component-code-label">Surfaces (Layered Dark UI)</div>
+      <div style="display: flex; gap: 0; border-radius: var(--radius-md); overflow: hidden; margin-bottom: 0;">
+        <div style="flex: 1; height: 60px; background: var(--surface-0); display: flex; align-items: flex-end; padding: var(--space-2);"><span class="text-label" style="font-size: 0.5rem;">S-0</span></div>
+        <div style="flex: 1; height: 60px; background: var(--surface-1); display: flex; align-items: flex-end; padding: var(--space-2);"><span class="text-label" style="font-size: 0.5rem;">S-1</span></div>
+        <div style="flex: 1; height: 60px; background: var(--surface-2); display: flex; align-items: flex-end; padding: var(--space-2);"><span class="text-label" style="font-size: 0.5rem;">S-2</span></div>
+        <div style="flex: 1; height: 60px; background: var(--surface-3); display: flex; align-items: flex-end; padding: var(--space-2);"><span class="text-label" style="font-size: 0.5rem;">S-3</span></div>
+        <div style="flex: 1; height: 60px; background: var(--surface-4); display: flex; align-items: flex-end; padding: var(--space-2);"><span class="text-label" style="font-size: 0.5rem;">S-4</span></div>
+        <div style="flex: 1; height: 60px; background: var(--surface-5); display: flex; align-items: flex-end; padding: var(--space-2);"><span class="text-label" style="font-size: 0.5rem;">S-5</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="divider-line"></div>
+
+  <!-- ============ BUTTONS ============ -->
+  <div class="library-section">
+    <div class="library-section-label">04 — Buttons</div>
+    <div class="library-section-title">Actions</div>
+
+    <div class="component-showcase">
+      <div class="component-code-label">Button Variants</div>
+      <div class="component-row">
+        <button class="btn btn-primary">Lock Pick</button>
+        <button class="btn btn-primary-lg">Join Pool</button>
+        <button class="btn btn-secondary">View Bracket</button>
+        <button class="btn btn-ghost">Cancel</button>
+        <button class="btn btn-danger">Leave Pool</button>
+        <button class="btn btn-primary btn-disabled">Pick Locked</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="divider-line"></div>
+
+  <!-- ============ STATUS BADGES ============ -->
+  <div class="library-section">
+    <div class="library-section-label">05 — Badges</div>
+    <div class="library-section-title">Status Indicators</div>
+
+    <div class="component-showcase">
+      <div class="component-code-label">Badge Variants</div>
+      <div class="component-row">
+        <span class="badge badge-alive">Alive</span>
+        <span class="badge badge-eliminated">Eliminated</span>
+        <span class="badge badge-pending">Pick Pending</span>
+        <span class="badge badge-locked">Locked</span>
+        <span class="badge badge-premium">Survive+</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="divider-line"></div>
+
+  <!-- ============ PICK CARDS ============ -->
+  <div class="library-section">
+    <div class="library-section-label">06 — Pick Cards</div>
+    <div class="library-section-title">Team Selection</div>
+    <div class="library-section-desc">The core gameplay component. Shows all states: available, selected, won, lost, and already used.</div>
+
+    <div class="component-showcase">
+      <div style="max-width: 480px; display: flex; flex-direction: column; gap: var(--space-3);">
+
+        <div class="component-code-label">Available (Default)</div>
+        <div class="pick-card">
+          <div class="pick-card-seed">1</div>
+          <div class="pick-card-info">
+            <div class="pick-card-team">UConn Huskies</div>
+            <div class="pick-card-meta">vs (16) Stetson · 7:10 PM ET</div>
+          </div>
+          <div class="pick-card-prob">91%</div>
+          <div class="pick-card-radio"></div>
+        </div>
+
+        <div class="component-code-label">Selected (Your Pick)</div>
+        <div class="pick-card pick-selected">
+          <div class="pick-card-seed">4</div>
+          <div class="pick-card-info">
+            <div class="pick-card-team">Creighton Bluejays</div>
+            <div class="pick-card-meta">vs (13) Vermont · 4:30 PM ET</div>
+          </div>
+          <div class="pick-card-prob">78%</div>
+          <div class="pick-card-radio"></div>
+        </div>
+
+        <div class="component-code-label">Won (Post-game)</div>
+        <div class="pick-card pick-won">
+          <div class="pick-card-seed">2</div>
+          <div class="pick-card-info">
+            <div class="pick-card-team">Houston Cougars</div>
+            <div class="pick-card-meta">W 78-55 vs (15) N. Kentucky</div>
+          </div>
+          <div class="pick-card-prob" style="color: var(--color-alive);">✓ W</div>
+          <div class="pick-card-radio"></div>
+        </div>
+
+        <div class="component-code-label">Lost (Eliminated)</div>
+        <div class="pick-card pick-lost">
+          <div class="pick-card-seed">5</div>
+          <div class="pick-card-info">
+            <div class="pick-card-team">San Diego State</div>
+            <div class="pick-card-meta">L 62-71 vs (12) Drake</div>
+          </div>
+          <div class="pick-card-prob danger" style="color: var(--color-eliminated);">✗ L</div>
+          <div class="pick-card-radio"></div>
+        </div>
+
+        <div class="component-code-label">Already Used (Burned)</div>
+        <div class="pick-card pick-used">
+          <div class="pick-card-seed">1</div>
+          <div class="pick-card-info">
+            <div class="pick-card-team">Purdue Boilermakers</div>
+            <div class="pick-card-meta">Used Day 1</div>
+          </div>
+          <div class="pick-card-prob" style="color: var(--text-disabled);">—</div>
+          <div class="pick-card-radio"></div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <div class="divider-line"></div>
+
+  <!-- ============ STANDINGS ============ -->
+  <div class="library-section">
+    <div class="library-section-label">07 — Standings</div>
+    <div class="library-section-title">Leaderboard Rows</div>
+
+    <div class="component-showcase">
+      <div style="max-width: 580px;">
+
+        <div class="standings-row you">
+          <div class="standings-rank">1</div>
+          <div class="standings-avatar" style="background: var(--color-orange-subtle); color: var(--color-orange);">YO</div>
+          <div class="standings-info">
+            <div class="standings-name">You</div>
+            <div class="standings-detail">Survived 7 days · Last pick: Creighton ✓</div>
+          </div>
+          <span class="badge badge-alive">Alive</span>
+          <div class="standings-teams-left">9 left</div>
+        </div>
+
+        <div class="standings-row">
+          <div class="standings-rank">2</div>
+          <div class="standings-avatar">JK</div>
+          <div class="standings-info">
+            <div class="standings-name">Jake</div>
+            <div class="standings-detail">Survived 7 days · Last pick: Duke ✓</div>
+          </div>
+          <span class="badge badge-alive">Alive</span>
+          <div class="standings-teams-left">6 left</div>
+        </div>
+
+        <div class="standings-row">
+          <div class="standings-rank">3</div>
+          <div class="standings-avatar">SR</div>
+          <div class="standings-info">
+            <div class="standings-name">Sarah</div>
+            <div class="standings-detail">Survived 7 days · Last pick: Auburn ✓</div>
+          </div>
+          <span class="badge badge-alive">Alive</span>
+          <div class="standings-teams-left">3 left</div>
+        </div>
+
+        <div class="standings-row eliminated-row">
+          <div class="standings-rank">4</div>
+          <div class="standings-avatar">MK</div>
+          <div class="standings-info">
+            <div class="standings-name">Mike</div>
+            <div class="standings-detail">Eliminated Day 5 · Pick: San Diego State ✗</div>
+          </div>
+          <span class="badge badge-eliminated">Eliminated</span>
+          <div class="standings-teams-left">—</div>
+        </div>
+
+        <div class="standings-row eliminated-row">
+          <div class="standings-rank">5</div>
+          <div class="standings-avatar">DW</div>
+          <div class="standings-info">
+            <div class="standings-name">Dave</div>
+            <div class="standings-detail">Eliminated Day 2 · Missed deadline</div>
+          </div>
+          <span class="badge badge-eliminated">Eliminated</span>
+          <div class="standings-teams-left">—</div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <div class="divider-line"></div>
+
+  <!-- ============ COUNTDOWN ============ -->
+  <div class="library-section">
+    <div class="library-section-label">08 — Countdown</div>
+    <div class="library-section-title">Pick Deadline Timer</div>
+
+    <div class="component-showcase">
+      <div class="component-code-label">Normal State</div>
+      <div class="countdown-container" style="margin-bottom: var(--space-8);">
+        <div class="countdown-label">Pick Deadline</div>
+        <div class="countdown-display">
+          <div class="countdown-segment">
+            <div class="countdown-value">02</div>
+            <div class="countdown-unit">Hours</div>
+          </div>
+          <div class="countdown-separator">:</div>
+          <div class="countdown-segment">
+            <div class="countdown-value">34</div>
+            <div class="countdown-unit">Min</div>
+          </div>
+          <div class="countdown-separator">:</div>
+          <div class="countdown-segment">
+            <div class="countdown-value">18</div>
+            <div class="countdown-unit">Sec</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="component-code-label">Urgent State (Under 30 Min)</div>
+      <div class="countdown-container countdown-urgent">
+        <div class="countdown-label" style="color: var(--color-eliminated);">⚠ Deadline Approaching</div>
+        <div class="countdown-display">
+          <div class="countdown-segment">
+            <div class="countdown-value">00</div>
+            <div class="countdown-unit">Hours</div>
+          </div>
+          <div class="countdown-separator">:</div>
+          <div class="countdown-segment">
+            <div class="countdown-value">12</div>
+            <div class="countdown-unit">Min</div>
+          </div>
+          <div class="countdown-separator">:</div>
+          <div class="countdown-segment">
+            <div class="countdown-value">41</div>
+            <div class="countdown-unit">Sec</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="divider-line"></div>
+
+  <!-- ============ PROBABILITY BARS ============ -->
+  <div class="library-section">
+    <div class="library-section-label">09 — Data Visualization</div>
+    <div class="library-section-title">Probability Bars & Survival Progress</div>
+
+    <div class="component-showcase">
+      <div style="max-width: 480px;">
+        <div class="component-code-label">Win Probability Bars</div>
+        <div style="display: flex; flex-direction: column; gap: var(--space-4); margin-bottom: var(--space-8);">
+          <div>
+            <div class="text-small" style="margin-bottom: var(--space-1); font-weight: 600; color: var(--text-primary);">(1) UConn vs (16) Stetson</div>
+            <div class="prob-bar-container">
+              <span class="prob-bar-label text-alive">91%</span>
+              <div class="prob-bar-track"><div class="prob-bar-fill high" style="width: 91%;"></div></div>
+            </div>
+          </div>
+          <div>
+            <div class="text-small" style="margin-bottom: var(--space-1); font-weight: 600; color: var(--text-primary);">(4) Creighton vs (13) Vermont</div>
+            <div class="prob-bar-container">
+              <span class="prob-bar-label text-warning">78%</span>
+              <div class="prob-bar-track"><div class="prob-bar-fill medium" style="width: 78%;"></div></div>
+            </div>
+          </div>
+          <div>
+            <div class="text-small" style="margin-bottom: var(--space-1); font-weight: 600; color: var(--text-primary);">(8) Memphis vs (9) FAU</div>
+            <div class="prob-bar-container">
+              <span class="prob-bar-label text-eliminated">54%</span>
+              <div class="prob-bar-track"><div class="prob-bar-fill low" style="width: 54%;"></div></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="component-code-label">Survival Progress (13-Day Tournament)</div>
+        <div style="margin-bottom: var(--space-2);">
+          <div class="text-label" style="margin-bottom: var(--space-2);">Day 7 of 13 — You're alive</div>
+          <div class="survival-bar">
+            <div class="survival-segment survived"></div>
+            <div class="survival-segment survived"></div>
+            <div class="survival-segment survived"></div>
+            <div class="survival-segment survived"></div>
+            <div class="survival-segment survived"></div>
+            <div class="survival-segment survived"></div>
+            <div class="survival-segment current"></div>
+            <div class="survival-segment"></div>
+            <div class="survival-segment"></div>
+            <div class="survival-segment"></div>
+            <div class="survival-segment"></div>
+            <div class="survival-segment"></div>
+            <div class="survival-segment"></div>
+          </div>
+        </div>
+        <div>
+          <div class="text-label" style="margin-bottom: var(--space-2);">Eliminated on Day 5</div>
+          <div class="survival-bar">
+            <div class="survival-segment survived"></div>
+            <div class="survival-segment survived"></div>
+            <div class="survival-segment survived"></div>
+            <div class="survival-segment survived"></div>
+            <div class="survival-segment eliminated-seg"></div>
+            <div class="survival-segment"></div>
+            <div class="survival-segment"></div>
+            <div class="survival-segment"></div>
+            <div class="survival-segment"></div>
+            <div class="survival-segment"></div>
+            <div class="survival-segment"></div>
+            <div class="survival-segment"></div>
+            <div class="survival-segment"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="divider-line"></div>
+
+  <!-- ============ TEAM GRID ============ -->
+  <div class="library-section">
+    <div class="library-section-label">10 — Team Grid</div>
+    <div class="library-section-title">64-Team Inventory</div>
+    <div class="library-section-desc">Visual representation of your remaining "ammo." Each cell = one tournament team.</div>
+
+    <div class="component-showcase">
+      <div style="max-width: 420px;">
+        <div class="text-label" style="margin-bottom: var(--space-3);">Your Team Pool — 9 of 16 available</div>
+        <div class="team-grid">
+          <div class="team-cell used">PUR</div>
+          <div class="team-cell used">HOU</div>
+          <div class="team-cell available">UNC</div>
+          <div class="team-cell available">DUKE</div>
+          <div class="team-cell eliminated-cell">COL</div>
+          <div class="team-cell available">AUB</div>
+          <div class="team-cell today-pick">CRE</div>
+          <div class="team-cell eliminated-cell">NKU</div>
+
+          <div class="team-cell available">UCON</div>
+          <div class="team-cell eliminated-cell">FAIR</div>
+          <div class="team-cell available">GONZ</div>
+          <div class="team-cell used">ISU</div>
+          <div class="team-cell eliminated-cell">GRAM</div>
+          <div class="team-cell available">MARQ</div>
+          <div class="team-cell available">BAYLOR</div>
+          <div class="team-cell eliminated-cell">LONG</div>
+        </div>
+        <div style="display: flex; gap: var(--space-4); margin-top: var(--space-3);">
+          <span class="text-label" style="display: flex; align-items: center; gap: 4px;">
+            <span style="width: 8px; height: 8px; border-radius: 2px; background: var(--surface-3); border: 1px solid var(--border-default);"></span> Available
+          </span>
+          <span class="text-label" style="display: flex; align-items: center; gap: 4px;">
+            <span style="width: 8px; height: 8px; border-radius: 2px; background: var(--color-orange-subtle); border: 1px solid var(--color-orange);"></span> Today
+          </span>
+          <span class="text-label" style="display: flex; align-items: center; gap: 4px;">
+            <span style="width: 8px; height: 8px; border-radius: 2px; background: var(--surface-2); opacity: 0.4;"></span> Used
+          </span>
+          <span class="text-label" style="display: flex; align-items: center; gap: 4px;">
+            <span style="width: 8px; height: 8px; border-radius: 2px; background: var(--surface-0); opacity: 0.3;"></span> Out
+          </span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="divider-line"></div>
+
+  <!-- ============ TOASTS ============ -->
+  <div class="library-section">
+    <div class="library-section-label">11 — Notifications</div>
+    <div class="library-section-title">Toast Messages</div>
+
+    <div class="component-showcase">
+      <div style="display: flex; flex-direction: column; gap: var(--space-4);">
+        <div class="toast toast-survived">
+          <span class="toast-icon">✓</span>
+          Gonzaga holds on. You live to dance another day.
+        </div>
+        <div class="toast toast-eliminated">
+          <span class="toast-icon">✗</span>
+          13-seed Furman pulls the upset. Your run is over.
+        </div>
+        <div class="toast toast-warning">
+          <span class="toast-icon">⚠</span>
+          Tip-off in 30 minutes. You haven't picked yet.
+        </div>
+        <div class="toast toast-info">
+          <span class="toast-icon">ℹ</span>
+          Pick for Day 8 is now open. 4 games on the board.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="divider-line"></div>
+
+  <!-- ============ FORMS ============ -->
+  <div class="library-section">
+    <div class="library-section-label">12 — Forms</div>
+    <div class="library-section-title">Inputs & Join Code</div>
+
+    <div class="component-showcase">
+      <div style="max-width: 440px;">
+        <div class="component-code-label">Standard Input</div>
+        <div style="margin-bottom: var(--space-6);">
+          <label class="input-label">Display Name</label>
+          <input type="text" class="input-field" placeholder="Enter your name..." value="MarchMadnessKing">
+        </div>
+
+        <div class="component-code-label">Group Code Input (Join Flow)</div>
+        <div style="text-align: center;">
+          <input type="text" class="code-input" placeholder="ENTER CODE" value="MADNESS26" maxlength="12">
+          <div style="margin-top: var(--space-4);">
+            <button class="btn btn-primary-lg" style="width: 100%; max-width: 400px;">Join Pool</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="divider-line"></div>
+
+  <!-- ============ MATCHUP CARDS ============ -->
+  <div class="library-section">
+    <div class="library-section-label">13 — Matchup Cards</div>
+    <div class="library-section-title">Game Display</div>
+
+    <div class="component-showcase">
+      <div style="max-width: 420px;">
+        <div class="matchup-card">
+          <div class="matchup-header">
+            <span class="matchup-round">Round of 64 · South Region</span>
+            <span class="matchup-time">7:10 PM ET</span>
+          </div>
+          <div class="matchup-teams">
+            <div class="matchup-team-row favored">
+              <span class="matchup-seed">1</span>
+              <span class="matchup-team-name">UConn</span>
+              <span class="matchup-spread">-18.5</span>
+              <span class="matchup-prob text-alive">91%</span>
+            </div>
+            <div class="matchup-vs-line"></div>
+            <div class="matchup-team-row">
+              <span class="matchup-seed">16</span>
+              <span class="matchup-team-name">Stetson</span>
+              <span class="matchup-spread">+18.5</span>
+              <span class="matchup-prob text-eliminated">9%</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="divider-line"></div>
+
+  <!-- ============ PREMIUM LOCK ============ -->
+  <div class="library-section">
+    <div class="library-section-label">14 — Premium Lock</div>
+    <div class="library-section-title">Paywall Overlay</div>
+    <div class="library-section-desc">The "taste" method — blurred real data behind a Survive+ upsell.</div>
+
+    <div class="component-showcase">
+      <div style="max-width: 480px;">
+        <div class="premium-lock" style="border-radius: var(--radius-lg);">
+          <div class="premium-lock-content" style="padding: var(--space-6); background: var(--surface-2); border-radius: var(--radius-lg);">
+            <div class="text-subheading" style="margin-bottom: var(--space-4);">Path Simulator</div>
+            <div style="display: flex; justify-content: space-between; margin-bottom: var(--space-3);">
+              <span>Your survival to Final Four</span>
+              <span class="text-data text-alive">42%</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; margin-bottom: var(--space-3);">
+              <span>Jake's survival to Final Four</span>
+              <span class="text-data text-warning">61%</span>
+            </div>
+            <div style="display: flex; justify-content: space-between;">
+              <span>Sarah's survival to Final Four</span>
+              <span class="text-data text-eliminated">18%</span>
+            </div>
+          </div>
+          <div class="premium-lock-overlay">
+            <div class="premium-lock-icon">🔒</div>
+            <div class="premium-lock-text">Unlock with Survive+</div>
+            <div class="premium-lock-sub">See your path to victory — $9.99/tournament</div>
+            <button class="btn btn-primary">Upgrade Now</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="divider-line"></div>
+
+  <!-- ============ NAVIGATION ============ -->
+  <div class="library-section">
+    <div class="library-section-label">15 — Navigation</div>
+    <div class="library-section-title">Bottom Tab Bar</div>
+
+    <div class="component-showcase">
+      <div style="max-width: 420px;">
+        <div class="nav-tabs">
+          <button class="nav-tab active">
+            <span class="nav-tab-icon">⌂</span>
+            <span class="nav-tab-label">Home</span>
+          </button>
+          <button class="nav-tab">
+            <span class="nav-tab-icon">✎</span>
+            <span class="nav-tab-label">Pick</span>
+          </button>
+          <button class="nav-tab">
+            <span class="nav-tab-icon">☰</span>
+            <span class="nav-tab-label">Standings</span>
+          </button>
+          <button class="nav-tab">
+            <span class="nav-tab-icon">⊞</span>
+            <span class="nav-tab-label">Bracket</span>
+          </button>
+          <button class="nav-tab">
+            <span class="nav-tab-icon">◎</span>
+            <span class="nav-tab-label">Analyze</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="divider-line"></div>
+
+  <!-- ============ CARDS ============ -->
+  <div class="library-section">
+    <div class="library-section-label">16 — Cards</div>
+    <div class="library-section-title">Container Variants</div>
+
+    <div class="component-showcase">
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-4); max-width: 600px;">
+        <div class="card">
+          <div class="text-label" style="margin-bottom: var(--space-2);">Default Card</div>
+          <div class="text-subheading" style="margin-bottom: var(--space-2);">Base Container</div>
+          <p class="text-small">Used for most content areas. Subtle border, surface-2 background.</p>
+        </div>
+        <div class="card-accent">
+          <div class="text-label-accent" style="margin-bottom: var(--space-2);">Accent Card</div>
+          <div class="text-subheading" style="margin-bottom: var(--space-2);">Highlighted</div>
+          <p class="text-small">For featured content. Orange border accent draws the eye.</p>
+        </div>
+        <div class="card-interactive">
+          <div class="text-label" style="margin-bottom: var(--space-2);">Interactive Card</div>
+          <div class="text-subheading" style="margin-bottom: var(--space-2);">Clickable</div>
+          <p class="text-small">Hover to see elevation change. For selectable items.</p>
+        </div>
+        <div class="card-elevated">
+          <div class="text-label" style="margin-bottom: var(--space-2);">Elevated Card</div>
+          <div class="text-subheading" style="margin-bottom: var(--space-2);">Floating</div>
+          <p class="text-small">For modals, popovers. Higher surface level + drop shadow.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- FOOTER -->
+  <div style="text-align: center; padding: var(--space-12) var(--space-8); color: var(--text-tertiary);">
+    <div class="text-label" style="margin-bottom: var(--space-2);">Survive the Dance — Component Library v1.0</div>
+    <div class="text-label">20 Components · 6 Surface Levels · 3 Font Families · Production Ready</div>
+  </div>
+
+</div>
+
+</body>
+</html>

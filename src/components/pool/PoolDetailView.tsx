@@ -290,14 +290,14 @@ export default function PoolDetailView({ standings, deadline, user, poolId, show
                   isYou ? 'bg-[rgba(255,87,34,0.06)] border border-[rgba(255,87,34,0.2)]' : 'bg-[#1A1A24]'
                 }`}
               >
-                <div className="flex items-center space-x-3">
-                  <span className="text-xs font-bold text-[#8A8694] w-5 text-right" style={{ fontFamily: "'Space Mono', monospace" }}>
+                <div className="flex items-center space-x-3 min-w-0 flex-1">
+                  <span className="text-xs font-bold text-[#8A8694] w-5 text-right flex-shrink-0" style={{ fontFamily: "'Space Mono', monospace" }}>
                     {index + 1}
                   </span>
-                  <div>
-                    <p className="font-semibold text-[#E8E6E1] text-sm" style={{ fontFamily: "'Oswald', sans-serif", textTransform: 'uppercase', letterSpacing: '0.02em' }}>
-                      {player.display_name}
-                      {isYou && <span className="text-[#FF5722] text-xs ml-1.5" style={{ fontFamily: "'Space Mono', monospace" }}>YOU</span>}
+                  <div className="min-w-0">
+                    <p className="font-semibold text-[#E8E6E1] text-xs truncate" style={{ fontFamily: "'Oswald', sans-serif", textTransform: 'uppercase', letterSpacing: '0.02em' }}>
+                      {player.display_name} <span className="text-[#8A8694] font-normal" style={{ fontFamily: "'DM Sans', sans-serif", textTransform: 'none' }}>&mdash; {player.entry_label}</span>
+                      {isYou && <span className="text-[#FF5722] ml-1.5" style={{ fontFamily: "'Space Mono', monospace" }}>YOU</span>}
                     </p>
                     <div className="flex items-center gap-2 mt-0.5">
                       <span className={`inline-flex items-center w-2 h-2 rounded-full ${player.is_eliminated ? 'bg-[#EF5350]' : 'bg-[#4CAF50]'}`} />

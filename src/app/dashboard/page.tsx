@@ -3,25 +3,15 @@
 import { useEffect, useState } from 'react';
 import ProtectedRoute from '@/components/auth/ProtectedRoute';
 import { useAuth } from '@/components/auth/AuthProvider';
-import { getMyPools } from '@/lib/standings';
+import { useActivePool } from '@/hooks/useActivePool';
 import { MyPool, MyPoolEntry } from '@/types/standings';
 import { usePoolDetail } from '@/hooks/usePoolDetail';
 import PoolDetailView from '@/components/pool/PoolDetailView';
 import Link from 'next/link';
 
-const SELECTED_POOL_KEY = 'std_selected_pool';
-
 function EmptyState() {
   return (
     <div className="min-h-screen bg-[#0D1B2A] pb-24">
-      <header className="bg-[#111118] border-b border-[rgba(255,255,255,0.05)]">
-        <div className="max-w-lg mx-auto px-5">
-          <div className="py-4">
-            <h1 className="text-xl font-bold text-[#E8E6E1]" style={{ fontFamily: "'Oswald', sans-serif", textTransform: 'uppercase' }}>Survive the Dance</h1>
-          </div>
-        </div>
-      </header>
-
       <main className="max-w-lg mx-auto px-5 py-6">
         <div className="bg-[#111118] border border-[rgba(255,255,255,0.05)] rounded-[12px] p-8 text-center">
           <div className="w-16 h-16 bg-[rgba(255,87,34,0.08)] rounded-[16px] flex items-center justify-center mx-auto mb-4">
@@ -126,49 +116,24 @@ function PoolHome({ pool, user }: { pool: MyPool; user: NonNullable<ReturnType<t
 
 export default function Dashboard() {
   const { user } = useAuth();
-  const [pools, setPools] = useState<MyPool[]>([]);
-  const [loadingPools, setLoadingPools] = useState(true);
-  const [selectedPoolId, setSelectedPoolId] = useState<string | null>(null);
+  const { activePoolId, setActivePool, pools, loadingPools } = useActivePool();
   const [selectedBracketId, setSelectedBracketId] = useState<string | null>(null);
 
+  const selectedPool = pools.find(p => p.pool_id === activePoolId) || null;
+
+  // Set default bracket when active pool changes
   useEffect(() => {
-    if (!user) return;
-
-    const fetchPools = async () => {
-      try {
-        const myPools = await getMyPools(user.id);
-        setPools(myPools);
-
-        // Restore saved selection or default to first pool
-        if (myPools.length > 0) {
-          const saved = localStorage.getItem(SELECTED_POOL_KEY);
-          const savedExists = saved && myPools.some(p => p.pool_id === saved);
-          const firstPool = savedExists ? myPools.find(p => p.pool_id === saved)! : myPools[0];
-          setSelectedPoolId(firstPool.pool_id);
-          // Default to first bracket
-          if (firstPool.your_entries.length > 0) {
-            setSelectedBracketId(firstPool.your_entries[0].pool_player_id);
-          }
-        }
-      } catch (err) {
-        console.error('Failed to fetch pools:', err);
-      } finally {
-        setLoadingPools(false);
-      }
-    };
-
-    fetchPools();
-  }, [user]);
-
-  const handleSelectPool = (poolId: string) => {
-    setSelectedPoolId(poolId);
-    localStorage.setItem(SELECTED_POOL_KEY, poolId);
-    // Reset bracket selection to first entry of new pool
-    const pool = pools.find(p => p.pool_id === poolId);
-    if (pool && pool.your_entries.length > 0) {
-      setSelectedBracketId(pool.your_entries[0].pool_player_id);
+    if (selectedPool && selectedPool.your_entries.length > 0) {
+      setSelectedBracketId(selectedPool.your_entries[0].pool_player_id);
     } else {
       setSelectedBracketId(null);
+    }
+  }, [activePoolId, selectedPool]);
+
+  const handleSelectPool = (poolId: string) => {
+    const pool = pools.find(p => p.pool_id === poolId);
+    if (pool) {
+      setActivePool(poolId, pool.pool_name);
     }
   };
 
@@ -176,50 +141,36 @@ export default function Dashboard() {
     setSelectedBracketId(bracketId);
   };
 
-  const selectedPool = pools.find(p => p.pool_id === selectedPoolId) || null;
-
   return (
     <ProtectedRoute>
       <div className="min-h-screen bg-[#0D1B2A] pb-24">
         {loadingPools ? (
-          <>
-            <header className="bg-[#111118] border-b border-[rgba(255,255,255,0.05)]">
-              <div className="max-w-lg mx-auto px-5">
-                <div className="py-4">
-                  <h1 className="text-xl font-bold text-[#E8E6E1]" style={{ fontFamily: "'Oswald', sans-serif", textTransform: 'uppercase' }}>Survive the Dance</h1>
-                </div>
-              </div>
-            </header>
-            <div className="max-w-lg mx-auto px-5 py-6">
-              <div className="bg-[#111118] border border-[rgba(255,255,255,0.05)] rounded-[12px] p-8 text-center">
-                <div className="animate-spin rounded-full h-8 w-8 border-2 border-[rgba(255,255,255,0.08)] border-t-[#FF5722] mx-auto mb-3" />
-                <p className="text-[#8A8694] text-sm" style={{ fontFamily: "'DM Sans', sans-serif" }}>Loading your pools...</p>
-              </div>
+          <div className="max-w-lg mx-auto px-5 py-6">
+            <div className="bg-[#111118] border border-[rgba(255,255,255,0.05)] rounded-[12px] p-8 text-center">
+              <div className="animate-spin rounded-full h-8 w-8 border-2 border-[rgba(255,255,255,0.08)] border-t-[#FF5722] mx-auto mb-3" />
+              <p className="text-[#8A8694] text-sm" style={{ fontFamily: "'DM Sans', sans-serif" }}>Loading your pools...</p>
             </div>
-          </>
+          </div>
         ) : pools.length === 0 ? (
           <EmptyState />
         ) : (
           <>
-            {/* Header */}
-            <header className="bg-[#111118] border-b border-[rgba(255,255,255,0.05)]">
+            {/* Dashboard sub-header: pool actions + switchers */}
+            <div className="bg-[#111118] border-b border-[rgba(255,255,255,0.05)]">
               <div className="max-w-lg mx-auto px-5">
-                <div className="flex justify-between items-center py-4">
-                  <h1 className="text-xl font-bold text-[#E8E6E1]" style={{ fontFamily: "'Oswald', sans-serif", textTransform: 'uppercase' }}>Survive the Dance</h1>
-                  <div className="flex items-center gap-3">
-                    <Link href="/pools/create" className="text-[#8A8694] hover:text-[#FF5722] text-xs font-medium transition-colors" style={{ fontFamily: "'DM Sans', sans-serif" }}>
-                      Create
-                    </Link>
-                    <Link href="/pools/join" className="text-[#8A8694] hover:text-[#FF5722] text-xs font-medium transition-colors" style={{ fontFamily: "'DM Sans', sans-serif" }}>
-                      Join
-                    </Link>
-                  </div>
+                <div className="flex items-center gap-3 py-2">
+                  <Link href="/pools/create" className="text-[#8A8694] hover:text-[#FF5722] text-xs font-medium transition-colors" style={{ fontFamily: "'DM Sans', sans-serif" }}>
+                    Create
+                  </Link>
+                  <Link href="/pools/join" className="text-[#8A8694] hover:text-[#FF5722] text-xs font-medium transition-colors" style={{ fontFamily: "'DM Sans', sans-serif" }}>
+                    Join
+                  </Link>
                 </div>
 
                 {/* Pool switcher for multiple pools */}
-                {pools.length > 1 && (
+                {pools.length > 1 && activePoolId && (
                   <div className="pb-3">
-                    <PoolSwitcher pools={pools} selectedId={selectedPoolId!} onSelect={handleSelectPool} />
+                    <PoolSwitcher pools={pools} selectedId={activePoolId} onSelect={handleSelectPool} />
                   </div>
                 )}
 
@@ -230,7 +181,7 @@ export default function Dashboard() {
                   </div>
                 )}
               </div>
-            </header>
+            </div>
 
             {/* Pool Detail */}
             {selectedPool && user && (

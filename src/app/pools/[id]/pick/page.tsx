@@ -409,20 +409,13 @@ export default function PickPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#0D1B2A] pb-32">
-      {/* Sticky Header */}
-      <div className="sticky top-0 z-40 bg-[#111118] border-b border-[rgba(255,255,255,0.05)]">
+    <div className="min-h-screen bg-[#0D1B2A] pb-48">
+      {/* Sticky sub-header: round name + countdown */}
+      <div className="sticky top-12 z-30 bg-[#111118] border-b border-[rgba(255,255,255,0.05)]">
         <div className="max-w-lg mx-auto px-5 py-3">
-          <div className="flex items-center justify-between mb-2">
-            <button onClick={() => router.push(`/pools/${poolId}`)} className="text-[#8A8694] hover:text-[#E8E6E1] text-sm font-medium transition-colors" style={{ fontFamily: "'DM Sans', sans-serif" }}>
-              <svg className="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7" /></svg>
-              Pool
-            </button>
-            <span className="text-sm font-semibold text-[#E8E6E1]" style={{ fontFamily: "'Oswald', sans-serif", textTransform: 'uppercase' }}>
-              {round?.name || 'Make Your Pick'}
-            </span>
-            <div className="w-12" />
-          </div>
+          <p className="text-sm font-semibold text-[#E8E6E1] text-center mb-2" style={{ fontFamily: "'Oswald', sans-serif", textTransform: 'uppercase' }}>
+            {round?.name || 'Make Your Pick'}
+          </p>
           {deadline && <DeadlineCountdown deadline={deadline} />}
         </div>
       </div>
@@ -498,9 +491,9 @@ export default function PickPage() {
         )}
       </div>
 
-      {/* Fixed Bottom Bar */}
+      {/* Fixed Bottom Bar — sits above the bottom nav */}
       {selectedTeam && (
-        <div className="fixed bottom-0 inset-x-0 z-40 bg-[#111118] border-t border-[rgba(255,255,255,0.05)] tab-bar-shadow safe-area-bottom">
+        <div className="fixed bottom-16 inset-x-0 z-20 bg-[#111118] border-t border-[rgba(255,255,255,0.05)] tab-bar-shadow">
           <div className="max-w-lg mx-auto px-5 py-4">
             <button
               onClick={() => setShowConfirm(true)}

@@ -1,6 +1,8 @@
 import type { Metadata } from 'next'
 import './globals.css'
 import { AuthProvider } from '@/components/auth/AuthProvider'
+import { ActivePoolProvider } from '@/contexts/ActivePoolContext'
+import Header from '@/components/Header'
 import BottomNav from '@/components/BottomNav'
 
 export const metadata: Metadata = {
@@ -25,8 +27,11 @@ export default function RootLayout({
       </head>
       <body className="bg-[#0D1B2A] text-[#E8E6E1] antialiased" style={{ fontFamily: "'DM Sans', sans-serif" }}>
         <AuthProvider>
-          {children}
-          <BottomNav />
+          <ActivePoolProvider>
+            <Header />
+            {children}
+            <BottomNav />
+          </ActivePoolProvider>
         </AuthProvider>
       </body>
     </html>

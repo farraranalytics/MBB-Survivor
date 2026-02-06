@@ -1,32 +1,45 @@
 'use client';
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
-import Link from 'next/link';
+import { Suspense, useState, useEffect, useCallback, useRef } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/components/auth/AuthProvider';
+import { useActivePool } from '@/hooks/useActivePool';
 import { supabase } from '@/lib/supabase/client';
 
 const inputClass = "w-full px-4 py-3 bg-[#1A1A24] border border-[rgba(255,255,255,0.05)] rounded-[12px] text-[#E8E6E1] placeholder-[#8A8694] focus:outline-none focus:ring-2 focus:ring-[#FF5722] focus:border-transparent transition-colors";
 
-export default function JoinPool() {
+function JoinPoolContent() {
+  const searchParams = useSearchParams();
+  const codeFromUrl = searchParams.get('code');
   const { user } = useAuth();
+  const { refreshPools, setActivePool } = useActivePool();
   const [joinCode, setJoinCode] = useState('');
   const [displayName, setDisplayName] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [bracketName, setBracketName] = useState('');
+  const [entryName, setEntryName] = useState('');
   const [poolInfo, setPoolInfo] = useState<any>(null);
   const [existingEntryCount, setExistingEntryCount] = useState(0);
   const router = useRouter();
+  const autoLookedUp = useRef(false);
 
-  useState(() => {
+  // Initialize display name from user metadata
+  useEffect(() => {
     if (user) {
       setDisplayName(user.user_metadata?.display_name || user.email?.split('@')[0] || '');
     }
-  });
+  }, [user]);
 
-  const handleLookupPool = async () => {
-    if (!joinCode.trim()) return;
+  // Auto-populate join code from URL param
+  useEffect(() => {
+    if (codeFromUrl) {
+      setJoinCode(codeFromUrl.toUpperCase());
+    }
+  }, [codeFromUrl]);
+
+  const handleLookupPool = useCallback(async (codeOverride?: string) => {
+    const code = codeOverride || joinCode;
+    if (!code.trim()) return;
     setLoading(true);
     setError('');
     setPoolInfo(null);
@@ -35,7 +48,7 @@ export default function JoinPool() {
       const { data: pool, error: poolError } = await supabase
         .from('pools')
         .select(`*, pool_players(count)`)
-        .eq('join_code', joinCode.trim().toUpperCase())
+        .eq('join_code', code.trim().toUpperCase())
         .single();
 
       if (poolError) {
@@ -67,7 +80,15 @@ export default function JoinPool() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [joinCode, user]);
+
+  // Auto-trigger lookup when code comes from URL and user is authenticated
+  useEffect(() => {
+    if (codeFromUrl && user && !autoLookedUp.current) {
+      autoLookedUp.current = true;
+      handleLookupPool(codeFromUrl.toUpperCase());
+    }
+  }, [codeFromUrl, user, handleLookupPool]);
 
   const handleJoinPool = async () => {
     if (!user || !poolInfo) return;
@@ -77,7 +98,7 @@ export default function JoinPool() {
     try {
       const entryNumber = existingEntryCount + 1;
       const baseName = displayName.trim() || user.email?.split('@')[0] || 'Player';
-      const entryLabel = bracketName.trim() || `${baseName}'s Bracket${entryNumber > 1 ? ` ${entryNumber}` : ''}`;
+      const entryLabel = entryName.trim() || `${baseName}'s Entry${entryNumber > 1 ? ` ${entryNumber}` : ''}`;
       const { error: joinError } = await supabase
         .from('pool_players')
         .insert({
@@ -89,14 +110,22 @@ export default function JoinPool() {
         });
 
       if (joinError) throw joinError;
-      router.push(`/pools/${poolInfo.id}`);
+
+      await refreshPools();
+      setActivePool(poolInfo.id, poolInfo.name);
+      router.push('/dashboard');
     } catch (err: any) {
       setError(err.message || 'Failed to join pool');
       setLoading(false);
     }
   };
 
+  // Redirect unauthenticated users, preserving join code in sessionStorage
   if (!user) {
+    const pendingCode = codeFromUrl;
+    if (pendingCode) {
+      sessionStorage.setItem('std_pending_join_code', pendingCode);
+    }
     router.push('/auth/login');
     return (
       <div className="min-h-screen bg-[#0D1B2A] flex items-center justify-center">
@@ -107,18 +136,6 @@ export default function JoinPool() {
 
   return (
     <div className="min-h-screen bg-[#0D1B2A] pb-24">
-      <header className="bg-[#111118] border-b border-[rgba(255,255,255,0.05)]">
-        <div className="max-w-lg mx-auto px-5">
-          <div className="flex items-center justify-between py-4">
-            <h1 className="text-xl font-bold text-[#E8E6E1]" style={{ fontFamily: "'Oswald', sans-serif", textTransform: 'uppercase' }}>Join Pool</h1>
-            <Link href="/dashboard" className="text-[#8A8694] hover:text-[#E8E6E1] text-sm font-medium transition-colors" style={{ fontFamily: "'DM Sans', sans-serif" }}>
-              <svg className="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7" /></svg>
-              Back
-            </Link>
-          </div>
-        </div>
-      </header>
-
       <main className="max-w-lg mx-auto px-5 py-6">
         <div className="bg-[#111118] border border-[rgba(255,255,255,0.05)] rounded-[12px] p-6">
           {error && (
@@ -142,7 +159,7 @@ export default function JoinPool() {
                   style={{ fontFamily: "'Space Mono', monospace" }}
                 />
                 <button
-                  onClick={handleLookupPool}
+                  onClick={() => handleLookupPool()}
                   disabled={loading || !joinCode.trim()}
                   className="px-5 py-3 btn-orange font-semibold rounded-[12px] disabled:opacity-50 disabled:cursor-not-allowed flex-shrink-0"
                   style={{ fontFamily: "'DM Sans', sans-serif" }}
@@ -192,23 +209,23 @@ export default function JoinPool() {
 
             {poolInfo && (
               <div>
-                <label htmlFor="bracketName" className="block text-sm font-medium text-[#8A8694] mb-2" style={{ fontFamily: "'DM Sans', sans-serif" }}>
-                  Bracket Name {existingEntryCount > 0 ? '*' : ''}
+                <label htmlFor="entryName" className="block text-sm font-medium text-[#8A8694] mb-2" style={{ fontFamily: "'DM Sans', sans-serif" }}>
+                  Entry Name {existingEntryCount > 0 ? '*' : ''}
                 </label>
                 <input
-                  id="bracketName"
+                  id="entryName"
                   type="text"
-                  value={bracketName}
-                  onChange={(e) => setBracketName(e.target.value)}
+                  value={entryName}
+                  onChange={(e) => setEntryName(e.target.value)}
                   maxLength={60}
                   className={inputClass}
-                  placeholder={existingEntryCount > 0 ? 'e.g., Chaos Bracket' : "e.g., Main Bracket"}
+                  placeholder={existingEntryCount > 0 ? 'e.g., Second Entry' : "e.g., My Entry"}
                   style={{ fontFamily: "'DM Sans', sans-serif" }}
                 />
                 <p className="text-xs text-[#8A8694] mt-1.5" style={{ fontFamily: "'DM Sans', sans-serif" }}>
                   {existingEntryCount > 0
                     ? `This is entry #${existingEntryCount + 1} — give it a unique name`
-                    : 'Name your bracket (you can add more later if the pool allows)'}
+                    : 'Name your entry (you can add more later if the pool allows)'}
                 </p>
               </div>
             )}
@@ -237,5 +254,17 @@ export default function JoinPool() {
         </div>
       </main>
     </div>
+  );
+}
+
+export default function JoinPool() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-[#0D1B2A] flex items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-2 border-[rgba(255,255,255,0.08)] border-t-[#FF5722]" />
+      </div>
+    }>
+      <JoinPoolContent />
+    </Suspense>
   );
 }

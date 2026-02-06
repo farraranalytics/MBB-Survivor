@@ -1,0 +1,1547 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Survive the Dance — Brand Identity</title>
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Barlow:wght@400;500;600;700&family=Barlow+Condensed:wght@600;700;800&family=DM+Sans:wght@400;500;600;700&family=Space+Mono:wght@400;700&family=Bebas+Neue&family=Sora:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0a0f;
+    --surface: #111118;
+    --surface2: #1a1a24;
+    --text: #e8e6e1;
+    --text-dim: #8a8694;
+    --accent-orange: #FF5722;
+    --accent-blue: #1565C0;
+    --accent-gold: #FFB300;
+    --white: #ffffff;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    line-height: 1.6;
+    overflow-x: hidden;
+  }
+
+  /* --- HERO --- */
+  .hero {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    padding: 4rem 2rem;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .hero::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: radial-gradient(ellipse at 30% 50%, rgba(21, 101, 192, 0.08) 0%, transparent 50%),
+                radial-gradient(ellipse at 70% 50%, rgba(255, 87, 34, 0.06) 0%, transparent 50%);
+    animation: drift 20s ease-in-out infinite alternate;
+  }
+
+  @keyframes drift {
+    0% { transform: translate(0, 0); }
+    100% { transform: translate(-5%, 3%); }
+  }
+
+  .hero-label {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.75rem;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    color: var(--accent-orange);
+    margin-bottom: 2rem;
+    position: relative;
+    z-index: 1;
+  }
+
+  .hero-title {
+    font-family: 'Oswald', sans-serif;
+    font-weight: 700;
+    font-size: clamp(3rem, 8vw, 7rem);
+    text-transform: uppercase;
+    line-height: 0.95;
+    letter-spacing: -0.02em;
+    position: relative;
+    z-index: 1;
+  }
+
+  .hero-title span {
+    display: block;
+    background: linear-gradient(135deg, var(--white) 0%, #b0b0b0 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .hero-title .accent {
+    background: linear-gradient(135deg, var(--accent-orange) 0%, #FF8A65 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .hero-subtitle {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 1.15rem;
+    color: var(--text-dim);
+    margin-top: 1.5rem;
+    max-width: 500px;
+    position: relative;
+    z-index: 1;
+  }
+
+  .hero-divider {
+    width: 60px;
+    height: 3px;
+    background: var(--accent-orange);
+    margin: 3rem auto;
+    position: relative;
+    z-index: 1;
+  }
+
+  .hero-scroll {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.7rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    position: relative;
+    z-index: 1;
+    animation: pulse 2s ease-in-out infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 0.4; }
+    50% { opacity: 1; }
+  }
+
+  /* --- SECTIONS --- */
+  section {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 5rem 2rem;
+  }
+
+  .section-label {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.7rem;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    color: var(--accent-orange);
+    margin-bottom: 0.75rem;
+  }
+
+  .section-title {
+    font-family: 'Oswald', sans-serif;
+    font-weight: 700;
+    font-size: clamp(2rem, 4vw, 3rem);
+    text-transform: uppercase;
+    line-height: 1;
+    margin-bottom: 1.5rem;
+  }
+
+  .section-desc {
+    color: var(--text-dim);
+    max-width: 700px;
+    margin-bottom: 3rem;
+    font-size: 1rem;
+    line-height: 1.7;
+  }
+
+  .divider {
+    width: 100%;
+    height: 1px;
+    background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.08) 50%, transparent 100%);
+    margin: 0 auto;
+  }
+
+  /* --- TAGLINE SECTION --- */
+  .tagline-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+  }
+
+  .tagline-card {
+    background: var(--surface);
+    border: 1px solid rgba(255,255,255,0.05);
+    border-radius: 12px;
+    padding: 2rem;
+    transition: border-color 0.3s;
+  }
+
+  .tagline-card:hover {
+    border-color: rgba(255, 87, 34, 0.3);
+  }
+
+  .tagline-card.recommended {
+    border-color: var(--accent-orange);
+    position: relative;
+  }
+
+  .tagline-card.recommended::after {
+    content: '★ RECOMMENDED';
+    position: absolute;
+    top: -10px;
+    right: 20px;
+    font-family: 'Space Mono', monospace;
+    font-size: 0.6rem;
+    letter-spacing: 0.15em;
+    color: var(--bg);
+    background: var(--accent-orange);
+    padding: 3px 10px;
+    border-radius: 4px;
+  }
+
+  .tagline-text {
+    font-family: 'Oswald', sans-serif;
+    font-size: 1.5rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+    margin-bottom: 0.75rem;
+  }
+
+  .tagline-angle {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.7rem;
+    color: var(--accent-orange);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    margin-bottom: 0.5rem;
+  }
+
+  .tagline-note {
+    color: var(--text-dim);
+    font-size: 0.9rem;
+  }
+
+  /* --- LOGO CONCEPTS --- */
+  .logo-concepts {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 3rem;
+  }
+
+  .logo-concept {
+    background: var(--surface);
+    border: 1px solid rgba(255,255,255,0.05);
+    border-radius: 16px;
+    overflow: hidden;
+  }
+
+  .logo-concept.recommended {
+    border-color: var(--accent-orange);
+    position: relative;
+  }
+
+  .logo-concept.recommended::before {
+    content: '★ TOP RECOMMENDATION';
+    position: absolute;
+    top: 16px;
+    right: 16px;
+    font-family: 'Space Mono', monospace;
+    font-size: 0.6rem;
+    letter-spacing: 0.15em;
+    color: var(--bg);
+    background: var(--accent-orange);
+    padding: 4px 12px;
+    border-radius: 4px;
+    z-index: 10;
+  }
+
+  .logo-visual {
+    height: 400px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .logo-details {
+    padding: 2.5rem;
+  }
+
+  .logo-concept-label {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.65rem;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    color: var(--accent-orange);
+    margin-bottom: 0.5rem;
+  }
+
+  .logo-concept-title {
+    font-family: 'Oswald', sans-serif;
+    font-weight: 700;
+    font-size: 1.5rem;
+    text-transform: uppercase;
+    margin-bottom: 1rem;
+  }
+
+  .logo-concept-desc {
+    color: var(--text-dim);
+    font-size: 0.95rem;
+    line-height: 1.7;
+    margin-bottom: 1.5rem;
+  }
+
+  .logo-specs {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+  }
+
+  .logo-spec {
+    background: var(--surface2);
+    padding: 1rem;
+    border-radius: 8px;
+  }
+
+  .logo-spec-label {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.6rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    margin-bottom: 0.4rem;
+  }
+
+  .logo-spec-value {
+    font-size: 0.9rem;
+    font-weight: 600;
+  }
+
+  /* App icon preview area */
+  .app-icon-row {
+    display: flex;
+    gap: 1.5rem;
+    align-items: flex-end;
+    margin-top: 1.5rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid rgba(255,255,255,0.05);
+  }
+
+  .app-icon-preview {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .app-icon-preview span {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.55rem;
+    color: var(--text-dim);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+
+  /* --- CONCEPT A: The Court --- */
+  .concept-a-bg {
+    background: linear-gradient(145deg, #0D1B2A 0%, #1B2838 100%);
+  }
+
+  .concept-a-logo {
+    text-align: center;
+    position: relative;
+  }
+
+  .concept-a-logo .court-lines {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 300px;
+    height: 300px;
+    border: 2px solid rgba(255, 87, 34, 0.15);
+    border-radius: 50%;
+  }
+
+  .concept-a-logo .court-lines::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: rgba(255, 87, 34, 0.1);
+  }
+
+  .concept-a-logo .wordmark {
+    position: relative;
+    z-index: 2;
+  }
+
+  .concept-a-logo .survive {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-weight: 800;
+    font-size: 1rem;
+    letter-spacing: 0.5em;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.5);
+    display: block;
+  }
+
+  .concept-a-logo .the-dance {
+    font-family: 'Oswald', sans-serif;
+    font-weight: 700;
+    font-size: 4.5rem;
+    text-transform: uppercase;
+    line-height: 0.9;
+    letter-spacing: -0.02em;
+    color: var(--white);
+    display: block;
+  }
+
+  .concept-a-logo .the-dance .the {
+    font-size: 2.5rem;
+    color: var(--accent-orange);
+    display: block;
+    letter-spacing: 0.15em;
+    line-height: 1.2;
+  }
+
+  .concept-a-logo .tagline-sub {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.55rem;
+    letter-spacing: 0.35em;
+    text-transform: uppercase;
+    color: var(--accent-orange);
+    margin-top: 0.75rem;
+    display: block;
+  }
+
+  /* --- CONCEPT B: The Shield --- */
+  .concept-b-bg {
+    background: linear-gradient(145deg, #1a0a00 0%, #2d1200 50%, #1a0a00 100%);
+  }
+
+  .concept-b-logo {
+    text-align: center;
+    position: relative;
+  }
+
+  .shield-shape {
+    width: 220px;
+    height: 260px;
+    position: relative;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .shield-shape svg {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+  }
+
+  .shield-content {
+    position: relative;
+    z-index: 2;
+    text-align: center;
+  }
+
+  .shield-content .std-s {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 0.85rem;
+    letter-spacing: 0.4em;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.45);
+    display: block;
+    margin-bottom: 2px;
+  }
+
+  .shield-content .std-main {
+    font-family: 'Oswald', sans-serif;
+    font-weight: 700;
+    font-size: 2rem;
+    text-transform: uppercase;
+    line-height: 0.85;
+    color: var(--white);
+    display: block;
+  }
+
+  .shield-content .std-the {
+    font-family: 'Oswald', sans-serif;
+    font-weight: 700;
+    font-size: 1.1rem;
+    text-transform: uppercase;
+    letter-spacing: 0.2em;
+    color: var(--accent-orange);
+    display: block;
+    margin: 2px 0;
+  }
+
+  .shield-content .std-dance {
+    font-family: 'Oswald', sans-serif;
+    font-weight: 700;
+    font-size: 2.4rem;
+    text-transform: uppercase;
+    line-height: 0.85;
+    color: var(--white);
+    display: block;
+  }
+
+  .shield-content .std-year {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.55rem;
+    letter-spacing: 0.3em;
+    color: rgba(255,255,255,0.3);
+    margin-top: 6px;
+    display: block;
+  }
+
+  /* --- CONCEPT C: The Strike --- */
+  .concept-c-bg {
+    background: linear-gradient(145deg, #0a0a0a 0%, #151515 100%);
+    position: relative;
+  }
+
+  .concept-c-bg::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 2px,
+      rgba(255,255,255,0.015) 2px,
+      rgba(255,255,255,0.015) 4px
+    );
+  }
+
+  .concept-c-logo {
+    text-align: center;
+    position: relative;
+    z-index: 2;
+  }
+
+  .concept-c-logo .strike-mark {
+    font-family: 'Oswald', sans-serif;
+    font-weight: 700;
+    font-size: 5.5rem;
+    text-transform: uppercase;
+    line-height: 0.85;
+    letter-spacing: -0.03em;
+    color: var(--white);
+    position: relative;
+    display: inline-block;
+  }
+
+  .concept-c-logo .strike-mark .std-text {
+    position: relative;
+    z-index: 2;
+  }
+
+  .concept-c-logo .strike-mark .line1 { display: block; }
+  .concept-c-logo .strike-mark .line2 {
+    display: block;
+    color: var(--accent-orange);
+    font-size: 4rem;
+  }
+  .concept-c-logo .strike-mark .line3 { display: block; }
+
+  .concept-c-logo .slash {
+    position: absolute;
+    top: -10%;
+    left: -5%;
+    width: 110%;
+    height: 120%;
+    z-index: 1;
+  }
+
+  .concept-c-logo .slash line {
+    stroke: var(--accent-orange);
+    stroke-width: 3;
+    opacity: 0.25;
+  }
+
+  .concept-c-logo .sub {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.6rem;
+    letter-spacing: 0.4em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    margin-top: 1rem;
+    display: block;
+  }
+
+  /* --- APP ICON MOCKUPS --- */
+  .icon-box {
+    border-radius: 22%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    flex-shrink: 0;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+  }
+
+  .icon-box.large { width: 100px; height: 100px; }
+  .icon-box.medium { width: 60px; height: 60px; }
+  .icon-box.small { width: 40px; height: 40px; }
+
+  .icon-a {
+    background: linear-gradient(145deg, #0D1B2A, #1B3A5C);
+    flex-direction: column;
+    gap: 1px;
+  }
+
+  .icon-a .icon-text-survive {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-weight: 800;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.5);
+    line-height: 1;
+  }
+
+  .icon-a .icon-text-the {
+    font-family: 'Oswald', sans-serif;
+    font-weight: 700;
+    text-transform: uppercase;
+    color: var(--accent-orange);
+    line-height: 1;
+  }
+
+  .icon-a .icon-text-dance {
+    font-family: 'Oswald', sans-serif;
+    font-weight: 700;
+    text-transform: uppercase;
+    color: var(--white);
+    line-height: 1;
+  }
+
+  .icon-a.large .icon-text-survive { font-size: 7px; letter-spacing: 3px; }
+  .icon-a.large .icon-text-the { font-size: 14px; letter-spacing: 2px; }
+  .icon-a.large .icon-text-dance { font-size: 20px; }
+  .icon-a.medium .icon-text-survive { font-size: 4.5px; letter-spacing: 2px; }
+  .icon-a.medium .icon-text-the { font-size: 9px; letter-spacing: 1.5px; }
+  .icon-a.medium .icon-text-dance { font-size: 12px; }
+  .icon-a.small .icon-text-survive { font-size: 3px; letter-spacing: 1.5px; }
+  .icon-a.small .icon-text-the { font-size: 6px; letter-spacing: 1px; }
+  .icon-a.small .icon-text-dance { font-size: 8px; }
+
+  /* Icon B - STD monogram in shield */
+  .icon-b {
+    background: linear-gradient(145deg, #1a0a00, #3d1800);
+    position: relative;
+  }
+
+  .icon-b .icon-monogram {
+    font-family: 'Oswald', sans-serif;
+    font-weight: 700;
+    text-transform: uppercase;
+    color: var(--white);
+    line-height: 1;
+    text-align: center;
+    position: relative;
+    z-index: 2;
+  }
+
+  .icon-b .icon-monogram .mono-s { color: var(--white); }
+  .icon-b .icon-monogram .mono-t { color: var(--accent-orange); }
+  .icon-b .icon-monogram .mono-d { color: var(--white); }
+
+  .icon-b.large .icon-monogram { font-size: 36px; }
+  .icon-b.medium .icon-monogram { font-size: 22px; }
+  .icon-b.small .icon-monogram { font-size: 15px; }
+
+  .icon-b .shield-border {
+    position: absolute;
+    top: 12%;
+    left: 15%;
+    width: 70%;
+    height: 76%;
+  }
+
+  /* Icon C - Bold text with slash */
+  .icon-c {
+    background: linear-gradient(145deg, #111, #1a1a1a);
+    position: relative;
+  }
+
+  .icon-c .icon-std-text {
+    font-family: 'Oswald', sans-serif;
+    font-weight: 700;
+    text-transform: uppercase;
+    color: var(--white);
+    line-height: 0.85;
+    text-align: center;
+    position: relative;
+    z-index: 2;
+  }
+
+  .icon-c .icon-std-text .line-the {
+    color: var(--accent-orange);
+    display: block;
+  }
+
+  .icon-c.large .icon-std-text { font-size: 18px; }
+  .icon-c.large .icon-std-text .line-the { font-size: 12px; }
+  .icon-c.medium .icon-std-text { font-size: 11px; }
+  .icon-c.medium .icon-std-text .line-the { font-size: 7px; }
+  .icon-c.small .icon-std-text { font-size: 7.5px; }
+  .icon-c.small .icon-std-text .line-the { font-size: 5px; }
+
+  .icon-c .slash-line {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 1;
+  }
+
+  /* --- BRAND VOICE --- */
+  .voice-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+  }
+
+  .voice-card {
+    background: var(--surface);
+    border: 1px solid rgba(255,255,255,0.05);
+    border-radius: 12px;
+    padding: 2rem;
+  }
+
+  .voice-card h3 {
+    font-family: 'Oswald', sans-serif;
+    font-size: 1.1rem;
+    text-transform: uppercase;
+    margin-bottom: 0.75rem;
+    color: var(--accent-orange);
+  }
+
+  .voice-card p {
+    color: var(--text-dim);
+    font-size: 0.9rem;
+    line-height: 1.6;
+  }
+
+  .voice-example {
+    background: var(--surface2);
+    border-left: 3px solid var(--accent-orange);
+    padding: 1.25rem;
+    border-radius: 0 8px 8px 0;
+    margin-top: 2rem;
+  }
+
+  .voice-example-label {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.6rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--accent-orange);
+    margin-bottom: 0.5rem;
+  }
+
+  .voice-example p {
+    font-size: 0.95rem;
+    color: var(--text);
+    font-style: italic;
+    line-height: 1.6;
+  }
+
+  /* --- COLOR PALETTE --- */
+  .palette-row {
+    display: flex;
+    gap: 1.5rem;
+    flex-wrap: wrap;
+    margin-bottom: 2rem;
+  }
+
+  .color-chip {
+    flex: 1;
+    min-width: 140px;
+    border-radius: 12px;
+    overflow: hidden;
+    background: var(--surface);
+    border: 1px solid rgba(255,255,255,0.05);
+  }
+
+  .color-chip .swatch {
+    height: 100px;
+    display: flex;
+    align-items: flex-end;
+    padding: 0.75rem;
+  }
+
+  .color-chip .swatch span {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.65rem;
+    letter-spacing: 0.05em;
+    padding: 2px 6px;
+    border-radius: 3px;
+    background: rgba(0,0,0,0.4);
+    color: white;
+  }
+
+  .color-chip .info {
+    padding: 1rem;
+  }
+
+  .color-chip .info .name {
+    font-weight: 700;
+    font-size: 0.9rem;
+    margin-bottom: 0.25rem;
+  }
+
+  .color-chip .info .use {
+    font-size: 0.8rem;
+    color: var(--text-dim);
+  }
+
+  /* --- TYPOGRAPHY SPEC --- */
+  .type-spec {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2rem;
+    margin-bottom: 2rem;
+  }
+
+  .type-card {
+    background: var(--surface);
+    border: 1px solid rgba(255,255,255,0.05);
+    border-radius: 12px;
+    padding: 2rem;
+  }
+
+  .type-card .type-label {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.6rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--accent-orange);
+    margin-bottom: 1rem;
+  }
+
+  .type-card .type-sample-headline {
+    font-family: 'Oswald', sans-serif;
+    font-weight: 700;
+    font-size: 2.5rem;
+    text-transform: uppercase;
+    line-height: 1;
+    margin-bottom: 0.75rem;
+  }
+
+  .type-card .type-sample-body {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 1rem;
+    line-height: 1.6;
+    color: var(--text-dim);
+  }
+
+  .type-card .type-name {
+    font-weight: 700;
+    font-size: 1rem;
+    margin-bottom: 0.25rem;
+  }
+
+  .type-card .type-meta {
+    font-size: 0.85rem;
+    color: var(--text-dim);
+  }
+
+  /* --- MOTIFS --- */
+  .motif-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1.5rem;
+  }
+
+  .motif-card {
+    background: var(--surface);
+    border: 1px solid rgba(255,255,255,0.05);
+    border-radius: 12px;
+    padding: 2rem;
+    text-align: center;
+  }
+
+  .motif-card .motif-icon {
+    font-size: 2.5rem;
+    margin-bottom: 1rem;
+  }
+
+  .motif-card .motif-name {
+    font-family: 'Oswald', sans-serif;
+    text-transform: uppercase;
+    font-size: 0.95rem;
+    margin-bottom: 0.5rem;
+  }
+
+  .motif-card .motif-desc {
+    font-size: 0.85rem;
+    color: var(--text-dim);
+    line-height: 1.5;
+  }
+
+  /* --- SLIDER SPECTRUM --- */
+  .spectrum {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 1rem;
+    padding: 1rem 0;
+  }
+
+  .spectrum-label {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.65rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--text-dim);
+    min-width: 80px;
+    text-align: right;
+  }
+
+  .spectrum-label:last-child {
+    text-align: left;
+  }
+
+  .spectrum-bar {
+    flex: 1;
+    height: 6px;
+    background: var(--surface2);
+    border-radius: 3px;
+    position: relative;
+  }
+
+  .spectrum-fill {
+    height: 100%;
+    border-radius: 3px;
+    background: linear-gradient(90deg, var(--accent-blue), var(--accent-orange));
+  }
+
+  .spectrum-dot {
+    width: 16px;
+    height: 16px;
+    background: var(--accent-orange);
+    border-radius: 50%;
+    position: absolute;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    box-shadow: 0 0 10px rgba(255, 87, 34, 0.5);
+  }
+
+  /* --- RESPONSIVE --- */
+  @media (max-width: 768px) {
+    .logo-specs { grid-template-columns: 1fr; }
+    .type-spec { grid-template-columns: 1fr; }
+    .app-icon-row { flex-wrap: wrap; }
+    section { padding: 3rem 1.25rem; }
+  }
+
+  /* --- SUMMARY TABLE --- */
+  .summary-table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+
+  .summary-table th {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.65rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    text-align: left;
+    padding: 1rem;
+    border-bottom: 1px solid rgba(255,255,255,0.08);
+  }
+
+  .summary-table td {
+    padding: 1rem;
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+    font-size: 0.95rem;
+    vertical-align: top;
+  }
+
+  .summary-table td:first-child {
+    font-weight: 700;
+    color: var(--accent-orange);
+    font-family: 'Oswald', sans-serif;
+    text-transform: uppercase;
+    white-space: nowrap;
+  }
+</style>
+</head>
+<body>
+
+<!-- ======== HERO ======== -->
+<div class="hero">
+  <div class="hero-label">Brand Identity Presentation</div>
+  <h1 class="hero-title">
+    <span>Survive</span>
+    <span class="accent">The Dance</span>
+  </h1>
+  <p class="hero-subtitle">March Madness Survivor Pool — one pick per day, survive or go home. A complete brand identity system.</p>
+  <div class="hero-divider"></div>
+  <div class="hero-scroll">Scroll to explore ↓</div>
+</div>
+
+<div class="divider"></div>
+
+<!-- ======== TAGLINES ======== -->
+<section>
+  <div class="section-label">02 — Taglines</div>
+  <h2 class="section-title">Words That Hit</h2>
+  <p class="section-desc">Three tagline options — each under 8 words, each communicating the core: one pick, survive or die. The recommended option balances drama with clarity.</p>
+
+  <div class="tagline-grid">
+    <div class="tagline-card recommended">
+      <div class="tagline-angle">High-Stakes Drama</div>
+      <div class="tagline-text">"Every pick could be your last."</div>
+      <p class="tagline-note">Cinematic tension. Immediately communicates the elimination format and the weight of each decision. Works as App Store subtitle, social headers, and push notifications. This is the one.</p>
+    </div>
+    <div class="tagline-card">
+      <div class="tagline-angle">Format-Forward Clarity</div>
+      <div class="tagline-text">"One pick per day. Last one standing."</div>
+      <p class="tagline-note">Crystal clear. Explains the game in seven words. Best for App Store descriptions and onboarding screens where you need people to "get it" instantly.</p>
+    </div>
+    <div class="tagline-card">
+      <div class="tagline-angle">Social Competition</div>
+      <div class="tagline-text">"Outlast your friends. Win the Dance."</div>
+      <p class="tagline-note">Emphasizes the social/group element. "Your friends" signals this is a group activity, not a solo game. Good for marketing but slightly softer on the stakes.</p>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- ======== LOGO CONCEPT A ======== -->
+<section>
+  <div class="section-label">03 — Logo Concepts</div>
+  <h2 class="section-title">Three Directions</h2>
+  <p class="section-desc">Each concept takes a different visual approach to the brand. All are designed to work at app-icon size (small, legible, memorable) and scale up to web headers and marketing materials.</p>
+
+  <div class="logo-concepts">
+
+    <!-- CONCEPT A -->
+    <div class="logo-concept recommended">
+      <div class="logo-visual concept-a-bg">
+        <div class="concept-a-logo">
+          <div class="court-lines"></div>
+          <div class="wordmark">
+            <span class="survive">SURVIVE</span>
+            <span class="the-dance">
+              <span class="the">THE</span>
+              DANCE
+            </span>
+            <span class="tagline-sub">Every pick could be your last</span>
+          </div>
+        </div>
+      </div>
+      <div class="logo-details">
+        <div class="logo-concept-label">Concept A</div>
+        <div class="logo-concept-title">"The Court"</div>
+        <p class="logo-concept-desc">
+          A typographic lockup with court-inspired geometry. "SURVIVE" sits small and quiet above the dominant "THE DANCE" wordmark, creating a visual hierarchy that mirrors the brand name's natural emphasis. A subtle half-court circle frames the mark. The "THE" in tournament orange creates a color break that draws the eye. At app-icon size, it reduces to a stacked type treatment that remains fully legible.
+        </p>
+        <div class="logo-specs">
+          <div class="logo-spec">
+            <div class="logo-spec-label">Icon Shape</div>
+            <div class="logo-spec-value">Stacked typography in rounded square</div>
+          </div>
+          <div class="logo-spec">
+            <div class="logo-spec-label">Color Palette</div>
+            <div class="logo-spec-value">Deep navy + Tournament Orange + White</div>
+          </div>
+          <div class="logo-spec">
+            <div class="logo-spec-label">Typography</div>
+            <div class="logo-spec-value">Oswald Bold + Barlow Condensed</div>
+          </div>
+          <div class="logo-spec">
+            <div class="logo-spec-label">App Icon Read</div>
+            <div class="logo-spec-value">Strong — type hierarchy works at every size</div>
+          </div>
+        </div>
+
+        <div class="app-icon-row">
+          <div class="app-icon-preview">
+            <div class="icon-box large icon-a">
+              <span class="icon-text-survive">SURVIVE</span>
+              <span class="icon-text-the">THE</span>
+              <span class="icon-text-dance">DANCE</span>
+            </div>
+            <span>Large</span>
+          </div>
+          <div class="app-icon-preview">
+            <div class="icon-box medium icon-a">
+              <span class="icon-text-survive">SURVIVE</span>
+              <span class="icon-text-the">THE</span>
+              <span class="icon-text-dance">DANCE</span>
+            </div>
+            <span>Medium</span>
+          </div>
+          <div class="app-icon-preview">
+            <div class="icon-box small icon-a">
+              <span class="icon-text-survive">SURVIVE</span>
+              <span class="icon-text-the">THE</span>
+              <span class="icon-text-dance">DANCE</span>
+            </div>
+            <span>Small</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- CONCEPT B -->
+    <div class="logo-concept">
+      <div class="logo-visual concept-b-bg">
+        <div class="concept-b-logo">
+          <div class="shield-shape">
+            <svg viewBox="0 0 220 260" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M110 8 L205 45 L205 150 Q205 220 110 252 Q15 220 15 150 L15 45 Z" stroke="rgba(255,87,34,0.6)" stroke-width="2.5" fill="rgba(255,87,34,0.05)"/>
+              <path d="M110 24 L193 56 L193 148 Q193 210 110 238 Q27 210 27 148 L27 56 Z" stroke="rgba(255,87,34,0.15)" stroke-width="1" fill="none"/>
+              <line x1="15" y1="130" x2="205" y2="130" stroke="rgba(255,87,34,0.1)" stroke-width="1"/>
+            </svg>
+            <div class="shield-content">
+              <span class="std-s">SURVIVE</span>
+              <span class="std-the">— THE —</span>
+              <span class="std-dance">DANCE</span>
+              <span class="std-year">EST. 2026</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="logo-details">
+        <div class="logo-concept-label">Concept B</div>
+        <div class="logo-concept-title">"The Shield"</div>
+        <p class="logo-concept-desc">
+          A crest/shield lockup that borrows from college athletics tradition — conference logos, bowl game marks, and championship patches. The shield conveys authority, tradition, and "earned" status. Text is stacked inside the shield with "THE" in orange acting as a divider. At app-icon size, reduces to the "STD" monogram inside the shield outline, which is bold and distinctive.
+        </p>
+        <div class="logo-specs">
+          <div class="logo-spec">
+            <div class="logo-spec-label">Icon Shape</div>
+            <div class="logo-spec-value">Shield/crest with monogram</div>
+          </div>
+          <div class="logo-spec">
+            <div class="logo-spec-label">Color Palette</div>
+            <div class="logo-spec-value">Dark amber/brown + Orange + Cream</div>
+          </div>
+          <div class="logo-spec">
+            <div class="logo-spec-label">Typography</div>
+            <div class="logo-spec-value">Oswald Bold + Bebas Neue</div>
+          </div>
+          <div class="logo-spec">
+            <div class="logo-spec-label">App Icon Read</div>
+            <div class="logo-spec-value">Good — shield shape is distinctive at small sizes</div>
+          </div>
+        </div>
+
+        <div class="app-icon-row">
+          <div class="app-icon-preview">
+            <div class="icon-box large icon-b">
+              <svg viewBox="0 0 100 100" style="position:absolute;width:72%;height:72%;top:14%;left:14%;" fill="none">
+                <path d="M50 4 L92 20 L92 58 Q92 82 50 96 Q8 82 8 58 L8 20 Z" stroke="rgba(255,87,34,0.5)" stroke-width="1.5" fill="rgba(255,87,34,0.05)"/>
+              </svg>
+              <div class="icon-monogram"><span class="mono-s">S</span><span class="mono-t">T</span><span class="mono-d">D</span></div>
+            </div>
+            <span>Large</span>
+          </div>
+          <div class="app-icon-preview">
+            <div class="icon-box medium icon-b">
+              <svg viewBox="0 0 100 100" style="position:absolute;width:72%;height:72%;top:14%;left:14%;" fill="none">
+                <path d="M50 4 L92 20 L92 58 Q92 82 50 96 Q8 82 8 58 L8 20 Z" stroke="rgba(255,87,34,0.5)" stroke-width="2" fill="rgba(255,87,34,0.05)"/>
+              </svg>
+              <div class="icon-monogram"><span class="mono-s">S</span><span class="mono-t">T</span><span class="mono-d">D</span></div>
+            </div>
+            <span>Medium</span>
+          </div>
+          <div class="app-icon-preview">
+            <div class="icon-box small icon-b">
+              <svg viewBox="0 0 100 100" style="position:absolute;width:72%;height:72%;top:14%;left:14%;" fill="none">
+                <path d="M50 4 L92 20 L92 58 Q92 82 50 96 Q8 82 8 58 L8 20 Z" stroke="rgba(255,87,34,0.5)" stroke-width="3" fill="rgba(255,87,34,0.05)"/>
+              </svg>
+              <div class="icon-monogram"><span class="mono-s">S</span><span class="mono-t">T</span><span class="mono-d">D</span></div>
+            </div>
+            <span>Small</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- CONCEPT C -->
+    <div class="logo-concept">
+      <div class="logo-visual concept-c-bg">
+        <div class="concept-c-logo">
+          <div class="strike-mark">
+            <svg class="slash" viewBox="0 0 300 200">
+              <line x1="0" y1="180" x2="300" y2="20"/>
+              <line x1="10" y1="185" x2="310" y2="25" stroke-width="1" opacity="0.1"/>
+            </svg>
+            <span class="std-text">
+              <span class="line1">SURVIVE</span>
+              <span class="line2">THE</span>
+              <span class="line3">DANCE</span>
+            </span>
+          </div>
+          <span class="sub">One pick per day • Last one standing</span>
+        </div>
+      </div>
+      <div class="logo-details">
+        <div class="logo-concept-label">Concept C</div>
+        <div class="logo-concept-title">"The Strike"</div>
+        <p class="logo-concept-desc">
+          Aggressive, editorial typography with a diagonal slash cutting through the mark — representing elimination. Inspired by sports media graphics (ESPN tournament coverage, broadcast lower-thirds). The slash line is a recurring brand motif that can be used across the UI as a divider, background element, and elimination indicator. Pure black background gives it a premium, no-nonsense feel. "THE" in orange breaks up the stacked type.
+        </p>
+        <div class="logo-specs">
+          <div class="logo-spec">
+            <div class="logo-spec-label">Icon Shape</div>
+            <div class="logo-spec-value">Bold stacked type with diagonal slash</div>
+          </div>
+          <div class="logo-spec">
+            <div class="logo-spec-label">Color Palette</div>
+            <div class="logo-spec-value">True black + Tournament Orange + White</div>
+          </div>
+          <div class="logo-spec">
+            <div class="logo-spec-label">Typography</div>
+            <div class="logo-spec-value">Oswald Bold (single family lockup)</div>
+          </div>
+          <div class="logo-spec">
+            <div class="logo-spec-label">App Icon Read</div>
+            <div class="logo-spec-value">Strong — high contrast, diagonal slash is eye-catching</div>
+          </div>
+        </div>
+
+        <div class="app-icon-row">
+          <div class="app-icon-preview">
+            <div class="icon-box large icon-c">
+              <svg class="slash-line" viewBox="0 0 100 100">
+                <line x1="0" y1="90" x2="100" y2="10" stroke="rgba(255,87,34,0.2)" stroke-width="2"/>
+              </svg>
+              <div class="icon-std-text">
+                <span>SURVIVE</span>
+                <span class="line-the">THE</span>
+                <span>DANCE</span>
+              </div>
+            </div>
+            <span>Large</span>
+          </div>
+          <div class="app-icon-preview">
+            <div class="icon-box medium icon-c">
+              <svg class="slash-line" viewBox="0 0 100 100">
+                <line x1="0" y1="90" x2="100" y2="10" stroke="rgba(255,87,34,0.2)" stroke-width="3"/>
+              </svg>
+              <div class="icon-std-text">
+                <span>SURVIVE</span>
+                <span class="line-the">THE</span>
+                <span>DANCE</span>
+              </div>
+            </div>
+            <span>Medium</span>
+          </div>
+          <div class="app-icon-preview">
+            <div class="icon-box small icon-c">
+              <svg class="slash-line" viewBox="0 0 100 100">
+                <line x1="0" y1="90" x2="100" y2="10" stroke="rgba(255,87,34,0.25)" stroke-width="4"/>
+              </svg>
+              <div class="icon-std-text">
+                <span>SURVIVE</span>
+                <span class="line-the">THE</span>
+                <span>DANCE</span>
+              </div>
+            </div>
+            <span>Small</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- ======== BRAND VOICE ======== -->
+<section>
+  <div class="section-label">04 — Brand Voice & Personality</div>
+  <h2 class="section-title">How We Sound</h2>
+  <p class="section-desc">Survive the Dance sits at the intersection of high-stakes intensity and friend-group energy. Think ESPN broadcast booth meets your group chat. Confident, not corporate. Dramatic, not cheesy.</p>
+
+  <div class="voice-grid">
+    <div class="voice-card">
+      <h3>Intense but not Hostile</h3>
+      <p>We talk about elimination, survival, and stakes — but it's always rooted in the fun of competition. The drama is the entertainment. We never talk down to losing players or make elimination feel cruel.</p>
+    </div>
+    <div class="voice-card">
+      <h3>Knowing, not Nerdy</h3>
+      <p>We speak fluent basketball. We reference seeds, chalk, Cinderellas, and busted brackets naturally — but we don't gatekeep. A casual fan should feel welcome, not quizzed. Smart but accessible.</p>
+    </div>
+    <div class="voice-card">
+      <h3>Concise & Punchy</h3>
+      <p>Short sentences. Active voice. Like a broadcast call, not a press release. "You survived." "Duke goes down. 4 players eliminated." Every word earns its spot — economy of language mirrors the economy of picks.</p>
+    </div>
+    <div class="voice-card">
+      <h3>Friend-Group Energy</h3>
+      <p>The app is the commissioner of your pool — authoritative but fun. It should feel like the friend who actually organized the bracket, not a faceless platform. Light trash talk is encouraged. Formality is not.</p>
+    </div>
+  </div>
+
+  <!-- Brand Voice Spectrums -->
+  <div style="background: var(--surface); border-radius: 12px; padding: 2rem; border: 1px solid rgba(255,255,255,0.05);">
+    <div style="font-family: 'Oswald', sans-serif; text-transform: uppercase; font-size: 1rem; margin-bottom: 1.5rem;">Personality Spectrum</div>
+
+    <div class="spectrum">
+      <span class="spectrum-label">Playful</span>
+      <div class="spectrum-bar">
+        <div class="spectrum-fill" style="width: 72%;"></div>
+        <div class="spectrum-dot" style="left: 72%;"></div>
+      </div>
+      <span class="spectrum-label">Serious</span>
+    </div>
+
+    <div class="spectrum">
+      <span class="spectrum-label">Casual</span>
+      <div class="spectrum-bar">
+        <div class="spectrum-fill" style="width: 60%;"></div>
+        <div class="spectrum-dot" style="left: 60%;"></div>
+      </div>
+      <span class="spectrum-label">Premium</span>
+    </div>
+
+    <div class="spectrum">
+      <span class="spectrum-label">Simple</span>
+      <div class="spectrum-bar">
+        <div class="spectrum-fill" style="width: 55%;"></div>
+        <div class="spectrum-dot" style="left: 55%;"></div>
+      </div>
+      <span class="spectrum-label">Data-heavy</span>
+    </div>
+
+    <div class="spectrum">
+      <span class="spectrum-label">Reserved</span>
+      <div class="spectrum-bar">
+        <div class="spectrum-fill" style="width: 75%;"></div>
+        <div class="spectrum-dot" style="left: 75%;"></div>
+      </div>
+      <span class="spectrum-label">Bold</span>
+    </div>
+  </div>
+
+  <!-- Voice Examples -->
+  <div style="margin-top: 2rem;">
+    <div style="font-family: 'Oswald', sans-serif; text-transform: uppercase; font-size: 1rem; margin-bottom: 1rem;">Sample Copy</div>
+
+    <div class="voice-example" style="margin-bottom: 1rem;">
+      <div class="voice-example-label">Push Notification — Deadline Warning</div>
+      <p>"Tip-off in 2 hours. You haven't picked yet. Don't be that person."</p>
+    </div>
+    <div class="voice-example" style="margin-bottom: 1rem;">
+      <div class="voice-example-label">Push Notification — Survived</div>
+      <p>"Gonzaga holds on. You live to dance another day. Pick for Day 5 is open."</p>
+    </div>
+    <div class="voice-example" style="margin-bottom: 1rem;">
+      <div class="voice-example-label">Push Notification — Eliminated</div>
+      <p>"13-seed Furman pulls the upset. Your run is over. Finished Day 3 of 13."</p>
+    </div>
+    <div class="voice-example" style="margin-bottom: 1rem;">
+      <div class="voice-example-label">Standings Page — Header</div>
+      <p>"8 entered. 3 remain. The Dance gets harder from here."</p>
+    </div>
+    <div class="voice-example">
+      <div class="voice-example-label">Analyze Tab — Pick Recommendation</div>
+      <p>"UConn has a 91% win probability today — but you'll want them for the Elite 8. Creighton at 78% is the smarter burn."</p>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- ======== VISUAL IDENTITY ======== -->
+<section>
+  <div class="section-label">05 — Visual Identity System</div>
+  <h2 class="section-title">The Full Kit</h2>
+  <p class="section-desc">Colors, type, and motifs that form a cohesive system. Designed to feel like a premium sports broadcast, not a generic fantasy app.</p>
+
+  <!-- Color Palette -->
+  <div style="font-family: 'Oswald', sans-serif; text-transform: uppercase; font-size: 1rem; margin-bottom: 1.25rem;">Color Palette</div>
+
+  <div class="palette-row">
+    <div class="color-chip">
+      <div class="swatch" style="background: #FF5722;"><span>#FF5722</span></div>
+      <div class="info">
+        <div class="name">Tournament Orange</div>
+        <div class="use">Primary brand color. CTAs, highlights, active states, "THE" in wordmark.</div>
+      </div>
+    </div>
+    <div class="color-chip">
+      <div class="swatch" style="background: #0D1B2A;"><span>#0D1B2A</span></div>
+      <div class="info">
+        <div class="name">Midnight Navy</div>
+        <div class="use">Primary background. Deep, dark, broadcast-quality. The "field" of the app.</div>
+      </div>
+    </div>
+    <div class="color-chip">
+      <div class="swatch" style="background: #E8E6E1;"><span>#E8E6E1</span></div>
+      <div class="info">
+        <div class="name">Court White</div>
+        <div class="use">Primary text, logos on dark. Warm white, not sterile — like hardwood court paint.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="palette-row">
+    <div class="color-chip">
+      <div class="swatch" style="background: #1B3A5C;"><span>#1B3A5C</span></div>
+      <div class="info">
+        <div class="name">Deep Court Blue</div>
+        <div class="use">Secondary surfaces, cards, subtle differentiation. The depth layer.</div>
+      </div>
+    </div>
+    <div class="color-chip">
+      <div class="swatch" style="background: #4CAF50;"><span>#4CAF50</span></div>
+      <div class="info">
+        <div class="name">Alive Green</div>
+        <div class="use">Accent — "Alive" status indicators, successful picks, positive states.</div>
+      </div>
+    </div>
+    <div class="color-chip">
+      <div class="swatch" style="background: #EF5350;"><span>#EF5350</span></div>
+      <div class="info">
+        <div class="name">Eliminated Red</div>
+        <div class="use">Accent — elimination markers, wrong picks, danger states.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Typography -->
+  <div style="font-family: 'Oswald', sans-serif; text-transform: uppercase; font-size: 1rem; margin: 2.5rem 0 1.25rem;">Typography</div>
+
+  <div class="type-spec">
+    <div class="type-card">
+      <div class="type-label">Headline / Display</div>
+      <div class="type-sample-headline">SURVIVE<br>THE DANCE</div>
+      <div class="type-name">Oswald</div>
+      <div class="type-meta">Weights: Bold (700), Semi-Bold (600). Used for: all headings, the wordmark, countdown timers, score displays, section titles. Always uppercase.</div>
+    </div>
+    <div class="type-card">
+      <div class="type-label">Body / UI</div>
+      <div class="type-sample-body">Your pick is locked. Gonzaga (-8.5) tips off at 7:10 PM ET against TCU. 6 of 12 players in your pool have also picked a 1-seed today.</div>
+      <div class="type-name">DM Sans</div>
+      <div class="type-meta">Weights: Regular (400), Medium (500), Bold (700). Used for: body copy, pick cards, analysis text, navigation labels, buttons. Highly legible at small sizes on mobile.</div>
+    </div>
+  </div>
+
+  <div style="background: var(--surface); border-radius: 12px; padding: 2rem; border: 1px solid rgba(255,255,255,0.05); margin-bottom: 2.5rem;">
+    <div class="type-label" style="font-family: 'Space Mono', monospace; font-size: 0.6rem; letter-spacing: 0.2em; text-transform: uppercase; color: var(--accent-orange); margin-bottom: 1rem;">Accent / Data</div>
+    <div style="font-family: 'Space Mono', monospace; font-size: 1.5rem; margin-bottom: 0.5rem;">78% WIN PROB · 3 TEAMS LEFT · DAY 7/13</div>
+    <div style="font-weight: 700; font-size: 1rem;">Space Mono</div>
+    <div style="color: var(--text-dim); font-size: 0.85rem;">Used for: data labels, statistics, countdowns, probabilities, monospaced emphasis. The "analytics" voice of the brand.</div>
+  </div>
+
+  <!-- Visual Motifs -->
+  <div style="font-family: 'Oswald', sans-serif; text-transform: uppercase; font-size: 1rem; margin-bottom: 1.25rem;">Recurring Visual Motifs</div>
+
+  <div class="motif-grid">
+    <div class="motif-card">
+      <div class="motif-icon">⊘</div>
+      <div class="motif-name">The Strikethrough</div>
+      <div class="motif-desc">A diagonal line through eliminated teams and players. The core elimination visual — used on pick history, standings, and team lists.</div>
+    </div>
+    <div class="motif-card">
+      <div class="motif-icon">◯</div>
+      <div class="motif-name">Court Lines</div>
+      <div class="motif-desc">Half-court circles, free-throw arcs, and lane lines used as subtle background textures and section dividers throughout the app.</div>
+    </div>
+    <div class="motif-card">
+      <div class="motif-icon">▮▮▮</div>
+      <div class="motif-name">The Countdown Bar</div>
+      <div class="motif-desc">A segmented progress bar showing days survived out of total tournament days. Each segment lights up as you advance — or goes dark.</div>
+    </div>
+    <div class="motif-card">
+      <div class="motif-icon">◻◻◼</div>
+      <div class="motif-name">The Team Grid</div>
+      <div class="motif-desc">A grid of 64 team slots — used fills up as you burn teams. A visual representation of your "ammo" running out over the tournament.</div>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- ======== QUICK REFERENCE ======== -->
+<section>
+  <div class="section-label">06 — Quick Reference</div>
+  <h2 class="section-title">Brand At A Glance</h2>
+
+  <table class="summary-table">
+    <tr>
+      <td>Name</td>
+      <td>Survive the Dance</td>
+    </tr>
+    <tr>
+      <td>Tagline</td>
+      <td>Every pick could be your last.</td>
+    </tr>
+    <tr>
+      <td>Logo Direction</td>
+      <td>Concept A "The Court" — stacked typographic lockup, navy + orange, court geometry</td>
+    </tr>
+    <tr>
+      <td>Primary Colors</td>
+      <td>Tournament Orange (#FF5722) + Midnight Navy (#0D1B2A) + Court White (#E8E6E1)</td>
+    </tr>
+    <tr>
+      <td>Accent Colors</td>
+      <td>Alive Green (#4CAF50) + Eliminated Red (#EF5350)</td>
+    </tr>
+    <tr>
+      <td>Headline Font</td>
+      <td>Oswald — Bold, always uppercase</td>
+    </tr>
+    <tr>
+      <td>Body Font</td>
+      <td>DM Sans — clean, mobile-optimized</td>
+    </tr>
+    <tr>
+      <td>Data Font</td>
+      <td>Space Mono — stats, probabilities, countdowns</td>
+    </tr>
+    <tr>
+      <td>Voice</td>
+      <td>Confident, concise, basketball-fluent. ESPN broadcast meets group chat energy.</td>
+    </tr>
+    <tr>
+      <td>Core Motifs</td>
+      <td>Strikethrough elimination lines, court line geometry, countdown progress bars, team burn grid</td>
+    </tr>
+    <tr>
+      <td>Domain</td>
+      <td>survivethedance.com (check availability)</td>
+    </tr>
+  </table>
+</section>
+
+<div style="text-align: center; padding: 4rem 2rem; color: var(--text-dim);">
+  <div style="font-family: 'Space Mono', monospace; font-size: 0.65rem; letter-spacing: 0.3em; text-transform: uppercase;">Survive the Dance — Brand Identity v1.0</div>
+</div>
+
+</body>
+</html>

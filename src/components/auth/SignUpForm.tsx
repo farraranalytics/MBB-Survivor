@@ -61,7 +61,9 @@ export default function SignUpForm() {
             </div>
             <h1 className="text-2xl font-bold text-[#E8E6E1] mb-2" style={{ fontFamily: "'Oswald', sans-serif", textTransform: 'uppercase' }}>Account Created!</h1>
             <p className="text-[#8A8694] text-sm" style={{ fontFamily: "'DM Sans', sans-serif" }}>
-              Check your email to verify your account. Redirecting to login...
+              {typeof window !== 'undefined' && sessionStorage.getItem('std_pending_join_code')
+                ? 'After verifying your email, log in to join the pool.'
+                : 'Check your email to verify your account. Redirecting to login...'}
             </p>
           </div>
           <Link

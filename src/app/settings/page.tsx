@@ -56,20 +56,8 @@ export default function SettingsPage() {
   return (
     <ProtectedRoute>
       <div className="min-h-screen bg-[#0D1B2A] pb-24">
-        {/* Header */}
-        <header className="bg-[#111118] border-b border-[rgba(255,255,255,0.05)]">
-          <div className="max-w-lg mx-auto px-5">
-            <div className="flex items-center justify-between py-4">
-              <h1 className="text-xl font-bold text-[#E8E6E1]" style={{ fontFamily: "'Oswald', sans-serif", textTransform: 'uppercase' }}>Settings</h1>
-              <Link href="/dashboard" className="text-[#8A8694] hover:text-[#E8E6E1] text-sm font-medium transition-colors" style={{ fontFamily: "'DM Sans', sans-serif" }}>
-                <svg className="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7" /></svg>
-                Back
-              </Link>
-            </div>
-          </div>
-        </header>
-
         <main className="max-w-lg mx-auto px-5 py-6 space-y-6">
+          <h1 className="text-xl font-bold text-[#E8E6E1]" style={{ fontFamily: "'Oswald', sans-serif", textTransform: 'uppercase' }}>Settings</h1>
           {/* My Created Pools */}
           <section>
             <p className="label mb-3">My Created Pools</p>

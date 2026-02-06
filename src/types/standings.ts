@@ -18,6 +18,7 @@ export interface StandingsPlayer {
   pool_player_id: string;
   user_id: string;
   display_name: string;
+  entry_label: string;
   is_eliminated: boolean;
   elimination_reason: 'wrong_pick' | 'missed_pick' | 'manual' | null;
   elimination_round_name: string | null;

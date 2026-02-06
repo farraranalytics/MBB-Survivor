@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/components/auth/AuthProvider';
+import { useActivePool } from '@/hooks/useActivePool';
 import { supabase } from '@/lib/supabase/client';
 
 const inputClass = "w-full px-4 py-3 bg-[#1A1A24] border border-[rgba(255,255,255,0.05)] rounded-[12px] text-[#E8E6E1] placeholder-[#8A8694] focus:outline-none focus:ring-2 focus:ring-[#FF5722] focus:border-transparent transition-colors";
@@ -110,6 +111,7 @@ function PoolCreatedSuccess({ pool, onCopy, copied }: { pool: CreatedPoolResult;
 
 export default function CreatePool() {
   const { user } = useAuth();
+  const { setActivePool, refreshPools } = useActivePool();
   const [name, setName] = useState('');
   const [entryFee, setEntryFee] = useState('');
   const [maxPlayers, setMaxPlayers] = useState('');
@@ -188,6 +190,8 @@ export default function CreatePool() {
 
       if (playerError) throw playerError;
 
+      await refreshPools();
+      setActivePool(pool.id, pool.name);
       setCreatedPool({ id: pool.id, name: pool.name, join_code: pool.join_code });
       setLoading(false);
     } catch (err: any) {

@@ -38,7 +38,7 @@ export async function getPoolLeaderboard(poolId: string): Promise<PoolLeaderboar
   // 4. All players in pool
   const { data: players, error: playersError } = await supabase
     .from('pool_players')
-    .select('id, user_id, display_name, is_eliminated, elimination_round_id, elimination_reason, joined_at')
+    .select('id, user_id, display_name, entry_label, is_eliminated, elimination_round_id, elimination_reason, joined_at')
     .eq('pool_id', poolId);
 
   if (playersError) {
@@ -179,6 +179,7 @@ export async function getPoolLeaderboard(poolId: string): Promise<PoolLeaderboar
       pool_player_id: player.id,
       user_id: player.user_id,
       display_name: player.display_name,
+      entry_label: player.entry_label || player.display_name,
       is_eliminated: player.is_eliminated,
       elimination_reason: player.elimination_reason as 'wrong_pick' | 'missed_pick' | 'manual' | null,
       elimination_round_name: eliminationRoundName,

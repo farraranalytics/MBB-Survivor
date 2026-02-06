@@ -193,24 +193,6 @@ export default function StandingsPage() {
 
   return (
     <div className="min-h-screen bg-[#0D1B2A] pb-24">
-      {/* Sticky Header */}
-      <div className="sticky top-0 z-40 bg-[#111118] border-b border-[rgba(255,255,255,0.05)]">
-        <div className="max-w-4xl mx-auto px-5 py-3">
-          <div className="flex items-center justify-between">
-            <button
-              onClick={() => router.push(`/pools/${poolId}`)}
-              className="text-[#8A8694] hover:text-[#E8E6E1] text-sm font-medium transition-colors"
-              style={{ fontFamily: "'DM Sans', sans-serif" }}
-            >
-              <svg className="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7" /></svg>
-              Pool
-            </button>
-            <h1 className="text-lg font-bold text-[#E8E6E1]" style={{ fontFamily: "'Oswald', sans-serif", textTransform: 'uppercase' }}>Standings</h1>
-            <div className="w-12" />
-          </div>
-        </div>
-      </div>
-
       <div className="max-w-4xl mx-auto px-5 py-4 sm:py-6">
         {/* Pool Summary */}
         <div className="bg-[#111118] border border-[rgba(255,255,255,0.05)] rounded-[12px] p-5 mb-4">
@@ -317,7 +299,7 @@ export default function StandingsPage() {
                             </span>
                             <div className="min-w-0">
                               <p className={`text-xs font-semibold truncate max-w-[120px] ${player.is_eliminated ? 'strikethrough text-[#8A8694]' : 'text-[#E8E6E1]'}`} style={{ fontFamily: "'Oswald', sans-serif", textTransform: 'uppercase' }}>
-                                {player.display_name}
+                                {player.display_name} <span className="text-[#8A8694] font-normal" style={{ fontFamily: "'DM Sans', sans-serif", textTransform: 'none' }}>&mdash; {player.entry_label}</span>
                                 {isYou && <span className="text-[#FF5722] text-[10px] ml-1" style={{ fontFamily: "'Space Mono', monospace" }}>YOU</span>}
                               </p>
                               <span
@@ -384,7 +366,7 @@ export default function StandingsPage() {
                           <div className="min-w-0">
                             <div className="flex items-center space-x-2">
                               <p className={`text-sm font-semibold truncate ${player.is_eliminated ? 'strikethrough text-[#8A8694]' : 'text-[#E8E6E1]'}`} style={{ fontFamily: "'Oswald', sans-serif", textTransform: 'uppercase' }}>
-                                {player.display_name}
+                                {player.display_name} <span className="text-[#8A8694] font-normal text-xs" style={{ fontFamily: "'DM Sans', sans-serif", textTransform: 'none' }}>&mdash; {player.entry_label}</span>
                               </p>
                               {isYou && (
                                 <span className="flex-shrink-0 text-[#FF5722] font-bold" style={{ fontFamily: "'Space Mono', monospace", fontSize: '0.65rem', letterSpacing: '0.2em', textTransform: 'uppercase' }}>

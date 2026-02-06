@@ -25,7 +25,13 @@ export default function LoginForm() {
     if (error) {
       setError(error);
     } else {
-      router.push('/dashboard');
+      const pendingCode = sessionStorage.getItem('std_pending_join_code');
+      if (pendingCode) {
+        sessionStorage.removeItem('std_pending_join_code');
+        router.push(`/pools/join?code=${pendingCode}`);
+      } else {
+        router.push('/dashboard');
+      }
     }
 
     setLoading(false);
