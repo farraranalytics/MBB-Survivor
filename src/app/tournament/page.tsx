@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import Link from 'next/link';
 import ProtectedRoute from '@/components/auth/ProtectedRoute';
 import RegionBracketComponent from '@/components/bracket/RegionBracket';
 import BracketMatchupCard from '@/components/bracket/BracketMatchupCard';
@@ -99,9 +100,20 @@ export default function TournamentPage() {
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="py-6">
               <div className="flex items-center justify-between flex-wrap gap-4">
-                <h1 className="text-3xl font-bold text-gray-900">
-                  NCAA Tournament
-                </h1>
+                <div className="flex items-center gap-3">
+                  <Link
+                    href="/dashboard"
+                    className="text-gray-400 hover:text-gray-600 transition-colors"
+                    aria-label="Back to dashboard"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+                    </svg>
+                  </Link>
+                  <h1 className="text-3xl font-bold text-gray-900">
+                    NCAA Tournament
+                  </h1>
+                </div>
 
                 <div className="flex items-center gap-3">
                   {/* View toggle */}
