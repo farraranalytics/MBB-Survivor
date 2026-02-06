@@ -185,7 +185,7 @@ export default function CreatePool() {
           user_id: authUser.id,
           display_name: creatorName,
           entry_number: 1,
-          entry_label: bracketName.trim() || `${creatorName}'s Bracket`,
+          entry_label: bracketName.trim() || `${creatorName}'s Entry`,
         });
 
       if (playerError) throw playerError;
@@ -242,9 +242,9 @@ export default function CreatePool() {
             </div>
 
             <div>
-              <label htmlFor="bracketName" className="block text-sm font-medium text-[#8A8694] mb-2" style={{ fontFamily: "'DM Sans', sans-serif" }}>Your Bracket Name</label>
-              <input id="bracketName" type="text" value={bracketName} onChange={(e) => setBracketName(e.target.value)} maxLength={60} className={inputClass} placeholder="e.g., Main Bracket" style={{ fontFamily: "'DM Sans', sans-serif" }} />
-              <p className="text-xs text-[#8A8694] mt-1.5" style={{ fontFamily: "'DM Sans', sans-serif" }}>Name for your first bracket in this pool</p>
+              <label htmlFor="bracketName" className="block text-sm font-medium text-[#8A8694] mb-2" style={{ fontFamily: "'DM Sans', sans-serif" }}>Your Entry Name</label>
+              <input id="bracketName" type="text" value={bracketName} onChange={(e) => setBracketName(e.target.value)} maxLength={60} className={inputClass} placeholder="e.g., Main Entry" style={{ fontFamily: "'DM Sans', sans-serif" }} />
+              <p className="text-xs text-[#8A8694] mt-1.5" style={{ fontFamily: "'DM Sans', sans-serif" }}>Name for your first entry in this pool</p>
             </div>
 
             <div>
@@ -273,9 +273,9 @@ export default function CreatePool() {
             </div>
 
             <div>
-              <label htmlFor="maxEntries" className="block text-sm font-medium text-[#8A8694] mb-2" style={{ fontFamily: "'DM Sans', sans-serif" }}>Brackets Per Player</label>
+              <label htmlFor="maxEntries" className="block text-sm font-medium text-[#8A8694] mb-2" style={{ fontFamily: "'DM Sans', sans-serif" }}>Entries Per Player</label>
               <input id="maxEntries" type="number" min="1" max="10" value={maxEntries} onChange={(e) => setMaxEntries(e.target.value)} className={inputClass} placeholder="1" style={{ fontFamily: "'DM Sans', sans-serif" }} />
-              <p className="text-xs text-[#8A8694] mt-1.5" style={{ fontFamily: "'DM Sans', sans-serif" }}>Allow players to run multiple brackets in this pool</p>
+              <p className="text-xs text-[#8A8694] mt-1.5" style={{ fontFamily: "'DM Sans', sans-serif" }}>Allow players to run multiple entries in this pool</p>
             </div>
 
             <div className="bg-[#1A1A24] border border-[rgba(255,255,255,0.05)] rounded-[8px] p-4">

@@ -162,7 +162,7 @@ export default function PoolDetailView({ standings, deadline, user, poolId, show
             {standings.your_entries.map((entry) => {
               const entryCanPick = !entry.is_eliminated && standings.current_round && !deadline?.is_expired;
               const entryHasPick = entry.current_pick != null;
-              const entryLabel = entry.entry_label || `Bracket ${entry.entry_number}`;
+              const entryLabel = entry.entry_label || `Entry ${entry.entry_number}`;
 
               return (
                 <div key={entry.pool_player_id} className={standings.your_entries.length > 1 ? 'bg-[#1A1A24] border border-[rgba(255,255,255,0.05)] rounded-[8px] p-4' : ''}>

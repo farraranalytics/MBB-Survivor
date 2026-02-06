@@ -247,7 +247,9 @@ export async function getMyPools(userId: string): Promise<MyPool[]> {
         id,
         name,
         status,
-        join_code
+        join_code,
+        creator_id,
+        max_entries_per_user
       )
     `)
     .eq('user_id', userId)
@@ -288,6 +290,8 @@ export async function getMyPools(userId: string): Promise<MyPool[]> {
       name: string;
       status: string;
       join_code: string;
+      creator_id: string;
+      max_entries_per_user: number | null;
     } | null;
 
     if (!pool) continue;
@@ -338,7 +342,7 @@ export async function getMyPools(userId: string): Promise<MyPool[]> {
       yourEntries.push({
         pool_player_id: entry.id,
         entry_number: (entry as any).entry_number ?? 1,
-        entry_label: (entry as any).entry_label || `Bracket ${(entry as any).entry_number ?? 1}`,
+        entry_label: (entry as any).entry_label || `Entry ${(entry as any).entry_number ?? 1}`,
         is_eliminated: entry.is_eliminated,
         picks_count: entryPickCount,
         has_picked_today: entryPickedToday,
@@ -350,6 +354,8 @@ export async function getMyPools(userId: string): Promise<MyPool[]> {
       pool_name: pool.name,
       pool_status: pool.status as 'open' | 'active' | 'complete',
       join_code: pool.join_code,
+      creator_id: pool.creator_id,
+      max_entries_per_user: pool.max_entries_per_user ?? 1,
       total_players: totalPlayers || 0,
       alive_players: alivePlayers || 0,
       your_status: anyAlive ? 'active' : 'eliminated',

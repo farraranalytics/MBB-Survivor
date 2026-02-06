@@ -215,7 +215,7 @@ export default function PoolAdminPage() {
             </div>
 
             <div>
-              <label htmlFor="maxEntries" className="block text-sm font-medium text-[#8A8694] mb-2" style={{ fontFamily: "'DM Sans', sans-serif" }}>Brackets Per Player</label>
+              <label htmlFor="maxEntries" className="block text-sm font-medium text-[#8A8694] mb-2" style={{ fontFamily: "'DM Sans', sans-serif" }}>Entries Per Player</label>
               <input
                 id="maxEntries"
                 type="number"

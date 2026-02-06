@@ -1,13 +1,64 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import ProtectedRoute from '@/components/auth/ProtectedRoute';
+import { useState } from 'react';
 import { useAuth } from '@/components/auth/AuthProvider';
 import { useActivePool } from '@/hooks/useActivePool';
 import { MyPool, MyPoolEntry } from '@/types/standings';
-import { usePoolDetail } from '@/hooks/usePoolDetail';
-import PoolDetailView from '@/components/pool/PoolDetailView';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+
+// ─── Deadline Formatter ──────────────────────────────────────────
+
+function formatDeadline(deadlineDatetime: string): { text: string; color: string } {
+  const diff = new Date(deadlineDatetime).getTime() - Date.now();
+  if (diff <= 0) return { text: 'Picks locked', color: 'text-[#EF5350]' };
+
+  const hours = Math.floor(diff / 3600000);
+  const minutes = Math.floor((diff % 3600000) / 60000);
+
+  let text: string;
+  if (hours > 0) text = `${hours}h ${minutes}m`;
+  else text = `${minutes}m`;
+
+  let color: string;
+  if (diff < 1800000) color = 'text-[#EF5350]';
+  else if (diff < 3600000) color = 'text-[#FF5722]';
+  else if (diff < 7200000) color = 'text-[#FFB300]';
+  else color = 'text-[#4CAF50]';
+
+  return { text: `Deadline in ${text}`, color };
+}
+
+// ─── Loading Skeleton ────────────────────────────────────────────
+
+function LoadingSkeleton() {
+  return (
+    <div className="min-h-screen bg-[#0D1B2A] pb-24">
+      <div className="max-w-lg mx-auto px-5 py-4 space-y-4">
+        {[1, 2].map(i => (
+          <div key={i} className="bg-[#111118] border border-[rgba(255,255,255,0.05)] rounded-[12px] p-5 animate-pulse">
+            <div className="flex items-center justify-between mb-3">
+              <div className="h-5 w-32 bg-[#1A1A24] rounded" />
+              <div className="h-5 w-16 bg-[#1A1A24] rounded-full" />
+            </div>
+            <div className="h-4 w-24 bg-[#1A1A24] rounded mb-4" />
+            <div className="space-y-2 mb-4">
+              <div className="h-4 w-48 bg-[#1A1A24] rounded" />
+              <div className="h-4 w-40 bg-[#1A1A24] rounded" />
+            </div>
+            <div className="h-4 w-36 bg-[#1A1A24] rounded mb-4" />
+            <div className="flex gap-2">
+              <div className="h-10 flex-1 bg-[#1A1A24] rounded-[12px]" />
+              <div className="h-10 flex-1 bg-[#1A1A24] rounded-[12px]" />
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ─── Empty State ─────────────────────────────────────────────────
 
 function EmptyState() {
   return (
@@ -33,163 +84,281 @@ function EmptyState() {
   );
 }
 
-function PoolSwitcher({ pools, selectedId, onSelect }: { pools: MyPool[]; selectedId: string; onSelect: (id: string) => void }) {
+// ─── Entry Status Line ───────────────────────────────────────────
+
+function EntryStatusLine({ entry, poolStatus }: { entry: MyPoolEntry; poolStatus: string }) {
+  let dotColor: string;
+  let statusText: string;
+
+  if (entry.is_eliminated) {
+    dotColor = 'bg-[#EF5350]';
+    statusText = 'Eliminated';
+  } else if (entry.has_picked_today) {
+    dotColor = 'bg-[#4CAF50]';
+    statusText = 'Alive · Picked ✓';
+  } else if (poolStatus === 'active') {
+    dotColor = 'bg-[#FFB300]';
+    statusText = 'Alive · Needs Pick';
+  } else {
+    dotColor = 'bg-[#4CAF50]';
+    statusText = 'Alive';
+  }
+
   return (
-    <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
-      {pools.map((pool) => {
-        const isSelected = pool.pool_id === selectedId;
-        return (
-          <button
-            key={pool.pool_id}
-            onClick={() => onSelect(pool.pool_id)}
-            className={`flex-shrink-0 flex items-center gap-2 px-4 py-2 rounded-full text-sm font-semibold transition-all ${
-              isSelected
-                ? 'bg-[#FF5722] text-[#E8E6E1]'
-                : 'bg-[#111118] border border-[rgba(255,255,255,0.05)] text-[#8A8694] hover:border-[rgba(255,87,34,0.3)]'
-            }`}
-            style={{ fontFamily: "'DM Sans', sans-serif" }}
-          >
-            <span className={`w-2 h-2 rounded-full ${
-              pool.your_status === 'eliminated' ? 'bg-[#EF5350]' : 'bg-[#4CAF50]'
-            }`} />
-            {pool.pool_name}
-          </button>
-        );
-      })}
+    <div className="flex items-center gap-2 py-0.5">
+      <span className={`w-2 h-2 rounded-full flex-shrink-0 ${dotColor}`} />
+      <span className="text-sm text-[#E8E6E1] font-medium truncate" style={{ fontFamily: "'DM Sans', sans-serif" }}>
+        {entry.entry_label}
+      </span>
+      <span className="text-xs text-[#8A8694] flex-shrink-0" style={{ fontFamily: "'DM Sans', sans-serif" }}>
+        {statusText}
+      </span>
     </div>
   );
 }
 
-function BracketSwitcher({ entries, selectedId, onSelect }: { entries: MyPoolEntry[]; selectedId: string; onSelect: (id: string) => void }) {
+// ─── Pool Card ───────────────────────────────────────────────────
+
+function PoolCard({
+  pool,
+  isActive,
+  isCreator,
+  onActivate,
+  userId,
+}: {
+  pool: MyPool;
+  isActive: boolean;
+  isCreator: boolean;
+  onActivate: () => void;
+  userId: string | undefined;
+}) {
+  const router = useRouter();
+  const [copiedCode, setCopiedCode] = useState(false);
+
+  const handleCopy = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    try {
+      await navigator.clipboard.writeText(pool.join_code);
+    } catch {
+      const textarea = document.createElement('textarea');
+      textarea.value = pool.join_code;
+      document.body.appendChild(textarea);
+      textarea.select();
+      document.execCommand('copy');
+      document.body.removeChild(textarea);
+    }
+    setCopiedCode(true);
+    setTimeout(() => setCopiedCode(false), 2000);
+  };
+
+  const handleShare = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    const shareData = {
+      title: `Join ${pool.pool_name} on Survive the Dance`,
+      text: `Join my March Madness Survivor pool! Use code: ${pool.join_code}`,
+      url: `${window.location.origin}/pools/join?code=${pool.join_code}`,
+    };
+    if (navigator.share) {
+      try { await navigator.share(shareData); return; } catch { /* cancelled */ }
+    }
+    handleCopy(e);
+  };
+
+  // Status badge
+  const statusConfig = {
+    open: { label: 'PRE-TOURNAMENT', cls: 'bg-[rgba(255,87,34,0.15)] text-[#FF5722]' },
+    active: { label: 'ACTIVE', cls: 'bg-[rgba(76,175,80,0.15)] text-[#4CAF50]' },
+    complete: { label: 'COMPLETE', cls: 'bg-[rgba(138,134,148,0.15)] text-[#8A8694]' },
+  };
+  const status = statusConfig[pool.pool_status];
+
+  // Round context
+  let roundContext: string;
+  if (pool.pool_status === 'open') roundContext = 'Pre-Tournament';
+  else if (pool.pool_status === 'complete') roundContext = 'Tournament Complete';
+  else roundContext = pool.current_round_name || 'Active';
+
+  // Deadline
+  const deadline = pool.deadline_datetime ? formatDeadline(pool.deadline_datetime) : null;
+  const deadlineExpired = deadline?.text === 'Picks locked';
+
+  // CTA logic
+  const aliveEntries = pool.your_entries.filter(e => !e.is_eliminated);
+  const unpickedAliveEntries = aliveEntries.filter(e => !e.has_picked_today);
+  const showMakePick = pool.pool_status === 'active' && aliveEntries.length > 0 && !deadlineExpired && unpickedAliveEntries.length > 0;
+  const showChangePick = pool.pool_status === 'active' && aliveEntries.length > 0 && !deadlineExpired && unpickedAliveEntries.length === 0;
+  const showStandings = pool.pool_status === 'active' || pool.pool_status === 'complete';
+
+  // Add Entry logic
+  const canAddEntry = pool.max_entries_per_user > 1
+    && pool.your_entries.length < pool.max_entries_per_user
+    && pool.pool_status !== 'complete';
+
   return (
-    <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
-      {entries.map((entry) => {
-        const isSelected = entry.pool_player_id === selectedId;
-        return (
+    <div
+      onClick={onActivate}
+      className={`bg-[#111118] border rounded-[12px] p-5 cursor-pointer transition-colors ${
+        isActive ? 'border-[rgba(255,87,34,0.4)]' : 'border-[rgba(255,255,255,0.05)]'
+      }`}
+    >
+      {/* Row 1: Pool name + status badge */}
+      <div className="flex items-center justify-between mb-1">
+        <h2 className="font-bold text-[#E8E6E1] text-base truncate mr-2" style={{ fontFamily: "'Oswald', sans-serif", textTransform: 'uppercase' }}>
+          {pool.pool_name}
+        </h2>
+        <span
+          className={`flex-shrink-0 inline-flex items-center px-2 py-0.5 rounded-full font-bold ${status.cls}`}
+          style={{ fontFamily: "'Space Mono', monospace", fontSize: '0.55rem', letterSpacing: '0.15em', textTransform: 'uppercase' }}
+        >
+          {status.label}
+        </span>
+      </div>
+
+      {/* Row 2: Round context */}
+      <p className="text-xs text-[#8A8694] mb-3" style={{ fontFamily: "'DM Sans', sans-serif" }}>
+        {roundContext}
+      </p>
+
+      {/* Row 3: Per-entry status lines */}
+      <div className="mb-3">
+        {pool.your_entries.map(entry => (
+          <EntryStatusLine key={entry.pool_player_id} entry={entry} poolStatus={pool.pool_status} />
+        ))}
+
+        {/* Row 4: + Add Entry */}
+        {canAddEntry && (
           <button
-            key={entry.pool_player_id}
-            onClick={() => onSelect(entry.pool_player_id)}
-            className={`flex-shrink-0 flex items-center gap-2 px-4 py-2 rounded-full text-sm font-semibold transition-all ${
-              isSelected
-                ? 'bg-[#FF5722] text-[#E8E6E1]'
-                : 'bg-[#111118] border border-[rgba(255,255,255,0.05)] text-[#8A8694] hover:border-[rgba(255,87,34,0.3)]'
+            onClick={(e) => { e.stopPropagation(); router.push(`/pools/join?code=${pool.join_code}`); }}
+            className="text-xs text-[#FF5722] font-semibold mt-1 hover:text-[#E64A19] transition-colors"
+            style={{ fontFamily: "'DM Sans', sans-serif" }}
+          >
+            + Add Entry
+          </button>
+        )}
+      </div>
+
+      {/* Row 5: Pool stats + deadline */}
+      <div className="flex items-center justify-between mb-4">
+        <p className="text-xs text-[#8A8694]" style={{ fontFamily: "'DM Sans', sans-serif" }}>
+          <span className="font-bold text-[#E8E6E1]" style={{ fontFamily: "'Space Mono', monospace" }}>{pool.alive_players}</span>/{pool.total_players} alive
+        </p>
+        {deadline && (
+          <p className={`text-xs font-semibold ${deadline.color}`} style={{ fontFamily: "'Space Mono', monospace" }}>
+            {deadline.text}
+          </p>
+        )}
+      </div>
+
+      {/* Row 6: CTA buttons */}
+      <div className="flex gap-2 mb-4">
+        {showMakePick && (
+          <button
+            onClick={(e) => { e.stopPropagation(); router.push(`/pools/${pool.pool_id}/pick`); }}
+            className="flex-1 py-2.5 rounded-[12px] btn-orange text-sm font-bold"
+            style={{ fontFamily: "'DM Sans', sans-serif" }}
+          >
+            Make Pick
+          </button>
+        )}
+        {showChangePick && (
+          <button
+            onClick={(e) => { e.stopPropagation(); router.push(`/pools/${pool.pool_id}/pick`); }}
+            className="flex-1 py-2.5 rounded-[12px] border border-[rgba(255,179,0,0.3)] text-[#FFB300] text-sm font-bold hover:bg-[rgba(255,179,0,0.05)] transition-colors"
+            style={{ fontFamily: "'DM Sans', sans-serif" }}
+          >
+            Change Pick
+          </button>
+        )}
+        {showStandings && (
+          <button
+            onClick={(e) => { e.stopPropagation(); router.push(`/pools/${pool.pool_id}/standings`); }}
+            className="flex-1 py-2.5 rounded-[12px] border border-[rgba(255,255,255,0.05)] text-[#8A8694] text-sm font-semibold hover:text-[#E8E6E1] hover:border-[rgba(255,87,34,0.3)] transition-colors"
+            style={{ fontFamily: "'DM Sans', sans-serif" }}
+          >
+            Standings
+          </button>
+        )}
+        {isCreator && (
+          <button
+            onClick={(e) => { e.stopPropagation(); router.push(`/pools/${pool.pool_id}/admin`); }}
+            className="py-2.5 px-3 rounded-[12px] border border-[rgba(255,255,255,0.05)] text-[#8A8694] text-sm hover:text-[#E8E6E1] hover:border-[rgba(255,87,34,0.3)] transition-colors"
+            style={{ fontFamily: "'DM Sans', sans-serif" }}
+            title="Manage Pool"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.066 2.573c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.573 1.066c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.066-2.573c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+            </svg>
+          </button>
+        )}
+      </div>
+
+      {/* Row 7: Join Code + Share */}
+      <div className="flex items-center justify-between bg-[#1A1A24] border border-[rgba(255,255,255,0.05)] rounded-[8px] px-3 py-2">
+        <div className="flex items-center gap-2">
+          <span className="text-[10px] uppercase tracking-widest text-[#8A8694]" style={{ fontFamily: "'Space Mono', monospace", letterSpacing: '0.15em' }}>Code</span>
+          <span className="text-sm font-bold text-[#FF5722] tracking-[0.12em]" style={{ fontFamily: "'Space Mono', monospace" }}>
+            {pool.join_code}
+          </span>
+        </div>
+        <div className="flex gap-1.5">
+          <button
+            onClick={handleCopy}
+            className={`px-2.5 py-1 rounded-[6px] text-[11px] font-semibold transition-all ${
+              copiedCode
+                ? 'bg-[rgba(76,175,80,0.15)] text-[#4CAF50]'
+                : 'bg-[#111118] border border-[rgba(255,255,255,0.05)] text-[#8A8694] hover:text-[#E8E6E1]'
             }`}
             style={{ fontFamily: "'DM Sans', sans-serif" }}
           >
-            <span className={`w-2 h-2 rounded-full ${
-              entry.is_eliminated ? 'bg-[#EF5350]' : 'bg-[#4CAF50]'
-            }`} />
-            {entry.entry_label}
+            {copiedCode ? '✓' : 'Copy'}
           </button>
-        );
-      })}
+          <button
+            onClick={handleShare}
+            className="px-2.5 py-1 rounded-[6px] text-[11px] font-semibold bg-[#111118] border border-[rgba(255,255,255,0.05)] text-[#8A8694] hover:text-[#E8E6E1] transition-all"
+            style={{ fontFamily: "'DM Sans', sans-serif" }}
+          >
+            Share
+          </button>
+        </div>
+      </div>
     </div>
   );
 }
 
-function PoolHome({ pool, user }: { pool: MyPool; user: NonNullable<ReturnType<typeof useAuth>['user']> }) {
-  const { standings, deadline, loading, error } = usePoolDetail(pool.pool_id, user.id);
-
-  if (loading) {
-    return (
-      <div className="max-w-lg mx-auto px-5 py-6">
-        <div className="bg-[#111118] border border-[rgba(255,255,255,0.05)] rounded-[12px] p-8 text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-2 border-[rgba(255,255,255,0.08)] border-t-[#FF5722] mx-auto mb-3" />
-          <p className="text-[#8A8694] text-sm" style={{ fontFamily: "'DM Sans', sans-serif" }}>Loading pool...</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (error || !standings) {
-    return (
-      <div className="max-w-lg mx-auto px-5 py-6">
-        <div className="bg-[#111118] border border-[rgba(255,255,255,0.05)] rounded-[12px] p-8 text-center">
-          <p className="text-[#EF5350] text-sm" style={{ fontFamily: "'DM Sans', sans-serif" }}>{error || 'Failed to load pool'}</p>
-        </div>
-      </div>
-    );
-  }
-
-  return <PoolDetailView standings={standings} deadline={deadline} user={user} poolId={pool.pool_id} />;
-}
+// ─── Dashboard ───────────────────────────────────────────────────
 
 export default function Dashboard() {
   const { user } = useAuth();
   const { activePoolId, setActivePool, pools, loadingPools } = useActivePool();
-  const [selectedBracketId, setSelectedBracketId] = useState<string | null>(null);
 
-  const selectedPool = pools.find(p => p.pool_id === activePoolId) || null;
-
-  // Set default bracket when active pool changes
-  useEffect(() => {
-    if (selectedPool && selectedPool.your_entries.length > 0) {
-      setSelectedBracketId(selectedPool.your_entries[0].pool_player_id);
-    } else {
-      setSelectedBracketId(null);
-    }
-  }, [activePoolId, selectedPool]);
-
-  const handleSelectPool = (poolId: string) => {
-    const pool = pools.find(p => p.pool_id === poolId);
-    if (pool) {
-      setActivePool(poolId, pool.pool_name);
-    }
-  };
-
-  const handleSelectBracket = (bracketId: string) => {
-    setSelectedBracketId(bracketId);
-  };
+  if (loadingPools) return <LoadingSkeleton />;
+  if (pools.length === 0) return <EmptyState />;
 
   return (
-    <ProtectedRoute>
-      <div className="min-h-screen bg-[#0D1B2A] pb-24">
-        {loadingPools ? (
-          <div className="max-w-lg mx-auto px-5 py-6">
-            <div className="bg-[#111118] border border-[rgba(255,255,255,0.05)] rounded-[12px] p-8 text-center">
-              <div className="animate-spin rounded-full h-8 w-8 border-2 border-[rgba(255,255,255,0.08)] border-t-[#FF5722] mx-auto mb-3" />
-              <p className="text-[#8A8694] text-sm" style={{ fontFamily: "'DM Sans', sans-serif" }}>Loading your pools...</p>
-            </div>
-          </div>
-        ) : pools.length === 0 ? (
-          <EmptyState />
-        ) : (
-          <>
-            {/* Dashboard sub-header: pool actions + switchers */}
-            <div className="bg-[#111118] border-b border-[rgba(255,255,255,0.05)]">
-              <div className="max-w-lg mx-auto px-5">
-                <div className="flex items-center gap-3 py-2">
-                  <Link href="/pools/create" className="text-[#8A8694] hover:text-[#FF5722] text-xs font-medium transition-colors" style={{ fontFamily: "'DM Sans', sans-serif" }}>
-                    Create
-                  </Link>
-                  <Link href="/pools/join" className="text-[#8A8694] hover:text-[#FF5722] text-xs font-medium transition-colors" style={{ fontFamily: "'DM Sans', sans-serif" }}>
-                    Join
-                  </Link>
-                </div>
+    <div className="min-h-screen bg-[#0D1B2A] pb-24">
+      <div className="max-w-lg mx-auto px-5 py-4 space-y-4">
+        {/* Create / Join links at top */}
+        <div className="flex justify-center gap-4">
+          <Link href="/pools/create" className="text-sm text-[#8A8694] hover:text-[#FF5722] transition-colors" style={{ fontFamily: "'DM Sans', sans-serif" }}>
+            + Create Pool
+          </Link>
+          <Link href="/pools/join" className="text-sm text-[#8A8694] hover:text-[#FF5722] transition-colors" style={{ fontFamily: "'DM Sans', sans-serif" }}>
+            + Join Pool
+          </Link>
+        </div>
 
-                {/* Pool switcher for multiple pools */}
-                {pools.length > 1 && activePoolId && (
-                  <div className="pb-3">
-                    <PoolSwitcher pools={pools} selectedId={activePoolId} onSelect={handleSelectPool} />
-                  </div>
-                )}
-
-                {/* Bracket switcher for multi-entry pools */}
-                {selectedPool && selectedPool.your_entries.length > 1 && selectedBracketId && (
-                  <div className="pb-3">
-                    <BracketSwitcher entries={selectedPool.your_entries} selectedId={selectedBracketId} onSelect={handleSelectBracket} />
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* Pool Detail */}
-            {selectedPool && user && (
-              <PoolHome key={selectedPool.pool_id} pool={selectedPool} user={user} />
-            )}
-          </>
-        )}
+        {pools.map(pool => (
+          <PoolCard
+            key={pool.pool_id}
+            pool={pool}
+            isActive={pool.pool_id === activePoolId}
+            isCreator={pool.creator_id === user?.id}
+            onActivate={() => setActivePool(pool.pool_id, pool.pool_name)}
+            userId={user?.id}
+          />
+        ))}
       </div>
-    </ProtectedRoute>
+    </div>
   );
 }

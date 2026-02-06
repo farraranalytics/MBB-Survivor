@@ -12,6 +12,7 @@ import {
   submitPick,
   PickError
 } from '@/lib/picks';
+import { supabase } from '@/lib/supabase/client';
 import { PickableTeam, PickDeadline, Round, Pick } from '@/types/picks';
 
 // ─── Countdown Timer ──────────────────────────────────────────────
@@ -134,41 +135,6 @@ function ConfirmModal({
   );
 }
 
-// ─── Success Screen ───────────────────────────────────────────────
-
-function PickSuccess({ pick, poolId }: { pick: Pick; poolId: string }) {
-  const router = useRouter();
-
-  return (
-    <div className="min-h-screen bg-[#0D1B2A] flex items-center justify-center px-5">
-      <div className="text-center max-w-sm w-full animate-bounce-in">
-        <div className="w-20 h-20 bg-[rgba(76,175,80,0.15)] rounded-full flex items-center justify-center mx-auto mb-5">
-          <svg className="w-10 h-10 text-[#4CAF50]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M5 13l4 4L19 7" /></svg>
-        </div>
-        <h1 className="text-2xl font-bold text-[#E8E6E1] mb-2" style={{ fontFamily: "'Oswald', sans-serif", textTransform: 'uppercase' }}>Pick Submitted!</h1>
-        {pick.team && (
-          <p className="text-lg text-[#FF5722] font-bold mb-1" style={{ fontFamily: "'Oswald', sans-serif", textTransform: 'uppercase' }}>
-            ({pick.team.seed}) {pick.team.name}
-          </p>
-        )}
-        <p className="text-sm text-[#8A8694] mb-8" style={{ fontFamily: "'Space Mono', monospace" }}>
-          Submitted {new Date(pick.submitted_at).toLocaleTimeString([], {
-            hour: 'numeric',
-            minute: '2-digit'
-          })}
-        </p>
-        <button
-          onClick={() => router.push(`/pools/${poolId}`)}
-          className="w-full py-3.5 rounded-[12px] bg-[#111118] border border-[rgba(255,255,255,0.05)] text-[#E8E6E1] font-semibold hover:border-[rgba(255,87,34,0.3)] transition-colors"
-          style={{ fontFamily: "'DM Sans', sans-serif" }}
-        >
-          Back to Pool
-        </button>
-      </div>
-    </div>
-  );
-}
-
 // ─── Team Card ───────────────────────────────────────────────────
 
 function TeamCard({
@@ -202,7 +168,7 @@ function TeamCard({
       className={`
         w-full text-left px-4 py-4 transition-all min-h-[64px]
         ${isSelected
-          ? 'bg-[rgba(255,87,34,0.08)] ring-2 ring-inset ring-[#FF5722]'
+          ? 'bg-[rgba(255,87,34,0.08)] ring-2 ring-inset ring-[#FF5722] rounded-[12px]'
           : isUsed
           ? 'bg-[rgba(13,27,42,0.5)] opacity-40 cursor-not-allowed strikethrough'
           : 'hover:bg-[#1A1A24] active:bg-[#1A1A24]'
@@ -261,6 +227,8 @@ export default function PickPage() {
   const entryId = searchParams.get('entry') || undefined;
 
   const [poolPlayerId, setPoolPlayerId] = useState<string | null>(null);
+  const [entries, setEntries] = useState<{ id: string; entry_number: number; entry_label: string | null; is_eliminated: boolean }[]>([]);
+  const [activeEntryId, setActiveEntryId] = useState<string | undefined>(entryId);
   const [round, setRound] = useState<Round | null>(null);
   const [deadline, setDeadline] = useState<PickDeadline | null>(null);
   const [teams, setTeams] = useState<PickableTeam[]>([]);
@@ -270,7 +238,7 @@ export default function PickPage() {
   const [selectedTeam, setSelectedTeam] = useState<PickableTeam | null>(null);
   const [showConfirm, setShowConfirm] = useState(false);
   const [submitting, setSubmitting] = useState(false);
-  const [submittedPick, setSubmittedPick] = useState<Pick | null>(null);
+  const [showSuccess, setShowSuccess] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [filterUsed, setFilterUsed] = useState(false);
@@ -281,7 +249,17 @@ export default function PickPage() {
     if (!user) return;
 
     try {
-      const poolPlayer = await getPoolPlayer(poolId, user.id, entryId);
+      // Fetch all user entries for entry switcher
+      const { data: allEntries } = await supabase
+        .from('pool_players')
+        .select('id, entry_number, entry_label, is_eliminated')
+        .eq('pool_id', poolId)
+        .eq('user_id', user.id)
+        .order('entry_number', { ascending: true });
+
+      if (allEntries) setEntries(allEntries);
+
+      const poolPlayer = await getPoolPlayer(poolId, user.id, activeEntryId);
       if (!poolPlayer) { setError('You are not a member of this pool.'); setLoading(false); return; }
       setPoolPlayerId(poolPlayer.id);
       if (poolPlayer.is_eliminated) { setError('You have been eliminated from this pool.'); setLoading(false); return; }
@@ -296,7 +274,6 @@ export default function PickPage() {
       const existing = await getPlayerPick(poolPlayer.id, activeRound.id);
       if (existing) {
         setExistingPick(existing);
-        if (dl.is_expired) { setSubmittedPick(existing); setLoading(false); return; }
       }
 
       const pickable = await getPickableTeams(poolPlayer.id, activeRound.id);
@@ -313,19 +290,25 @@ export default function PickPage() {
     } finally {
       setLoading(false);
     }
-  }, [user, poolId, entryId]);
+  }, [user, poolId, activeEntryId]);
 
   useEffect(() => {
-    if (!loadedRef.current) { loadedRef.current = true; loadData(); }
+    if (!loadedRef.current) {
+      loadedRef.current = true;
+      loadData();
+    }
   }, [loadData]);
+
 
   const handleConfirm = async () => {
     if (!selectedTeam || !poolPlayerId || !round) return;
     setSubmitting(true);
     try {
       const pick = await submitPick({ pool_player_id: poolPlayerId, round_id: round.id, team_id: selectedTeam.id });
-      setSubmittedPick(pick);
+      setExistingPick(pick);
       setShowConfirm(false);
+      setShowSuccess(true);
+      setTimeout(() => setShowSuccess(false), 4000);
     } catch (err) {
       const message = err instanceof PickError ? err.message : 'Failed to submit pick. Please try again.';
       setError(message);
@@ -344,8 +327,6 @@ export default function PickPage() {
     );
   }
 
-  if (submittedPick) return <PickSuccess pick={submittedPick} poolId={poolId} />;
-
   if (error) {
     return (
       <div className="min-h-screen bg-[#0D1B2A] flex items-center justify-center px-5">
@@ -354,10 +335,7 @@ export default function PickPage() {
             <svg className="w-8 h-8 text-[#FFB300]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" /></svg>
           </div>
           <h1 className="text-xl font-bold text-[#E8E6E1] mb-2" style={{ fontFamily: "'Oswald', sans-serif", textTransform: 'uppercase' }}>Can&apos;t Make Pick</h1>
-          <p className="text-[#8A8694] mb-6 text-sm" style={{ fontFamily: "'DM Sans', sans-serif" }}>{error}</p>
-          <button onClick={() => router.push(`/pools/${poolId}`)} className="w-full py-3.5 rounded-[12px] bg-[#111118] border border-[rgba(255,255,255,0.05)] text-[#E8E6E1] font-semibold hover:border-[rgba(255,87,34,0.3)] transition-colors" style={{ fontFamily: "'DM Sans', sans-serif" }}>
-            Back to Pool
-          </button>
+          <p className="text-[#8A8694] text-sm" style={{ fontFamily: "'DM Sans', sans-serif" }}>{error}</p>
         </div>
       </div>
     );
@@ -371,12 +349,9 @@ export default function PickPage() {
             <svg className="w-8 h-8 text-[#EF5350]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
           </div>
           <h1 className="text-xl font-bold text-[#E8E6E1] mb-2" style={{ fontFamily: "'Oswald', sans-serif", textTransform: 'uppercase' }}>Deadline Passed</h1>
-          <p className="text-[#8A8694] mb-6 text-sm" style={{ fontFamily: "'DM Sans', sans-serif" }}>
+          <p className="text-[#8A8694] text-sm" style={{ fontFamily: "'DM Sans', sans-serif" }}>
             The pick deadline for {round?.name || 'this round'} has passed.
           </p>
-          <button onClick={() => router.push(`/pools/${poolId}`)} className="w-full py-3.5 rounded-[12px] bg-[#111118] border border-[rgba(255,255,255,0.05)] text-[#E8E6E1] font-semibold hover:border-[rgba(255,87,34,0.3)] transition-colors" style={{ fontFamily: "'DM Sans', sans-serif" }}>
-            Back to Pool
-          </button>
         </div>
       </div>
     );
@@ -418,6 +393,36 @@ export default function PickPage() {
           </p>
           {deadline && <DeadlineCountdown deadline={deadline} />}
         </div>
+        {entries.length > 1 && (
+          <div className="flex gap-2 px-5 py-2 overflow-x-auto scrollbar-hide">
+            {entries.map(entry => (
+              <button
+                key={entry.id}
+                onClick={() => {
+                  setActiveEntryId(entry.id);
+                  loadedRef.current = false;
+                  setLoading(true);
+                  setExistingPick(null);
+                  setSelectedTeam(null);
+                  setShowSuccess(false);
+                  router.replace(`/pools/${poolId}/pick?entry=${entry.id}`);
+                }}
+                className={`flex-shrink-0 px-3 py-1.5 rounded-full text-xs font-semibold border transition-colors ${
+                  (activeEntryId || poolPlayerId) === entry.id
+                    ? 'bg-[rgba(255,87,34,0.08)] border-[#FF5722] text-[#FF5722]'
+                    : entry.is_eliminated
+                    ? 'border-[rgba(255,255,255,0.05)] text-[#8A8694] opacity-50'
+                    : 'border-[rgba(255,255,255,0.05)] text-[#8A8694] hover:text-[#E8E6E1]'
+                }`}
+                disabled={entry.is_eliminated}
+                style={{ fontFamily: "'DM Sans', sans-serif" }}
+              >
+                {entry.entry_label || `Entry ${entry.entry_number}`}
+                {entry.is_eliminated && ' ☠️'}
+              </button>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Content */}
@@ -492,19 +497,30 @@ export default function PickPage() {
       </div>
 
       {/* Fixed Bottom Bar — sits above the bottom nav */}
-      {selectedTeam && (
-        <div className="fixed bottom-16 inset-x-0 z-20 bg-[#111118] border-t border-[rgba(255,255,255,0.05)] tab-bar-shadow">
-          <div className="max-w-lg mx-auto px-5 py-4">
-            <button
-              onClick={() => setShowConfirm(true)}
-              className="w-full py-4 rounded-[12px] btn-orange text-lg font-extrabold active:scale-[0.98] transition-all"
-              style={{ fontFamily: "'DM Sans', sans-serif", boxShadow: '0 4px 20px rgba(255, 87, 34, 0.3)' }}
-            >
-              {existingPick ? 'Change to' : 'Pick'} ({selectedTeam.seed}) {selectedTeam.name}
-            </button>
+      {selectedTeam && (() => {
+        const isSameAsExisting = selectedTeam.id === existingPick?.team_id;
+        return (
+          <div className="fixed bottom-16 inset-x-0 z-20 bg-[#111118] border-t border-[rgba(255,255,255,0.05)] tab-bar-shadow">
+            <div className="max-w-lg mx-auto px-5 py-4">
+              <button
+                onClick={() => !isSameAsExisting && setShowConfirm(true)}
+                disabled={isSameAsExisting}
+                className={`w-full py-4 rounded-[12px] text-lg font-extrabold transition-all ${
+                  isSameAsExisting
+                    ? 'bg-[#1A1A24] text-[#8A8694] cursor-default'
+                    : 'btn-orange active:scale-[0.98]'
+                }`}
+                style={{ fontFamily: "'DM Sans', sans-serif", boxShadow: isSameAsExisting ? 'none' : '0 4px 20px rgba(255, 87, 34, 0.3)' }}
+              >
+                {isSameAsExisting
+                  ? `Current Pick — (${selectedTeam.seed}) ${selectedTeam.name}`
+                  : `${existingPick ? 'Change to' : 'Pick'} (${selectedTeam.seed}) ${selectedTeam.name}`
+                }
+              </button>
+            </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
 
       {showConfirm && selectedTeam && (
         <ConfirmModal
@@ -513,6 +529,17 @@ export default function PickPage() {
           onCancel={() => setShowConfirm(false)}
           submitting={submitting}
         />
+      )}
+
+      {/* Success snackbar — fixed above bottom nav */}
+      {showSuccess && existingPick?.team && (
+        <div className="fixed bottom-20 left-0 right-0 z-30 max-w-lg mx-auto px-5 animate-slide-up">
+          <div className="bg-[#4CAF50] rounded-full px-4 py-2.5 shadow-lg" style={{ boxShadow: '0 4px 20px rgba(76,175,80,0.4)' }}>
+            <p className="text-sm text-white text-center font-semibold" style={{ fontFamily: "'DM Sans', sans-serif" }}>
+              ✓ Pick locked in — ({existingPick.team.seed}) {existingPick.team.name}
+            </p>
+          </div>
+        </div>
       )}
     </div>
   );

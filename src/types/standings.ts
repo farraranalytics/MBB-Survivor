@@ -69,6 +69,8 @@ export interface MyPool {
   pool_name: string;
   pool_status: 'open' | 'active' | 'complete';
   join_code: string;
+  creator_id: string;
+  max_entries_per_user: number;
   total_players: number;
   alive_players: number;
   your_status: 'active' | 'eliminated';
