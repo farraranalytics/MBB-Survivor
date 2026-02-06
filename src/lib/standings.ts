@@ -240,6 +240,8 @@ export async function getMyPools(userId: string): Promise<MyPool[]> {
       pool_id,
       user_id,
       is_eliminated,
+      entry_number,
+      entry_label,
       pools:pool_id(
         id,
         name,
@@ -247,13 +249,24 @@ export async function getMyPools(userId: string): Promise<MyPool[]> {
         join_code
       )
     `)
-    .eq('user_id', userId);
+    .eq('user_id', userId)
+    .order('entry_number', { ascending: true });
 
   if (memError) {
     throw new Error(`Failed to fetch pools: ${memError.message}`);
   }
 
   if (!memberships || memberships.length === 0) return [];
+
+  // Deduplicate: group memberships by pool_id
+  const poolGroups = new Map<string, typeof memberships>();
+  for (const m of memberships) {
+    const pool = m.pools as unknown as { id: string } | null;
+    if (!pool) continue;
+    const key = pool.id;
+    if (!poolGroups.has(key)) poolGroups.set(key, []);
+    poolGroups.get(key)!.push(m);
+  }
 
   // 2. Get active round
   const { data: activeRounds } = await supabase
@@ -264,11 +277,12 @@ export async function getMyPools(userId: string): Promise<MyPool[]> {
 
   const currentRound = activeRounds?.[0] || null;
 
-  // 3. Build pool data
+  // 3. Build pool data (deduplicated by pool)
   const myPools: MyPool[] = [];
 
-  for (const membership of memberships) {
-    const pool = membership.pools as unknown as {
+  for (const [, entries] of poolGroups) {
+    const firstEntry = entries[0];
+    const pool = firstEntry.pools as unknown as {
       id: string;
       name: string;
       status: string;
@@ -289,27 +303,45 @@ export async function getMyPools(userId: string): Promise<MyPool[]> {
       .eq('pool_id', pool.id)
       .eq('is_eliminated', false);
 
-    // User's picks (through pool_player_id)
-    const { data: userPicks } = await supabase
-      .from('picks')
-      .select('id, is_correct, round_id')
-      .eq('pool_player_id', membership.id);
+    // Aggregate across all user entries in this pool
+    let totalPicks = 0;
+    let bestStreak = 0;
+    let anyAlive = false;
+    let anyPicked = false;
+    const yourEntries: import('@/types/standings').MyPoolEntry[] = [];
 
-    const picksCount = userPicks?.length || 0;
+    for (const entry of entries) {
+      if (!entry.is_eliminated) anyAlive = true;
 
-    // Check if picked for current round
-    const hasPicked = currentRound
-      ? userPicks?.some(p => p.round_id === currentRound.id) || false
-      : false;
+      const { data: userPicks } = await supabase
+        .from('picks')
+        .select('id, is_correct, round_id')
+        .eq('pool_player_id', entry.id);
 
-    // Survival streak
-    let streak = 0;
-    if (userPicks && userPicks.length > 0) {
-      const sorted = [...userPicks].reverse();
-      for (const p of sorted) {
-        if (p.is_correct === true) streak++;
-        else break;
+      const entryPickCount = userPicks?.length || 0;
+      totalPicks += entryPickCount;
+
+      const entryPickedToday = !!(currentRound && userPicks?.some(p => p.round_id === currentRound.id));
+      if (entryPickedToday) anyPicked = true;
+
+      let streak = 0;
+      if (userPicks && userPicks.length > 0) {
+        const sorted = [...userPicks].reverse();
+        for (const p of sorted) {
+          if (p.is_correct === true) streak++;
+          else break;
+        }
       }
+      if (streak > bestStreak) bestStreak = streak;
+
+      yourEntries.push({
+        pool_player_id: entry.id,
+        entry_number: (entry as any).entry_number ?? 1,
+        entry_label: (entry as any).entry_label || `Bracket ${(entry as any).entry_number ?? 1}`,
+        is_eliminated: entry.is_eliminated,
+        picks_count: entryPickCount,
+        has_picked_today: entryPickedToday,
+      });
     }
 
     myPools.push({
@@ -319,11 +351,13 @@ export async function getMyPools(userId: string): Promise<MyPool[]> {
       join_code: pool.join_code,
       total_players: totalPlayers || 0,
       alive_players: alivePlayers || 0,
-      your_status: membership.is_eliminated ? 'eliminated' : 'active',
-      your_picks_count: picksCount,
-      your_streak: streak,
+      your_status: anyAlive ? 'active' : 'eliminated',
+      your_picks_count: totalPicks,
+      your_streak: bestStreak,
+      your_entry_count: entries.length,
+      your_entries: yourEntries,
       current_round_name: currentRound?.name || null,
-      has_picked_today: hasPicked,
+      has_picked_today: anyPicked,
       deadline_datetime: currentRound?.deadline_datetime || null,
     });
   }

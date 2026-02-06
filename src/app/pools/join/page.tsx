@@ -14,7 +14,9 @@ export default function JoinPool() {
   const [displayName, setDisplayName] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [bracketName, setBracketName] = useState('');
   const [poolInfo, setPoolInfo] = useState<any>(null);
+  const [existingEntryCount, setExistingEntryCount] = useState(0);
   const router = useRouter();
 
   useState(() => {
@@ -42,16 +44,23 @@ export default function JoinPool() {
       }
       if (pool.status === 'complete') throw new Error('This pool has already finished.');
 
-      const { data: existingPlayer } = await supabase
+      const { data: existingEntries } = await supabase
         .from('pool_players')
         .select('id')
         .eq('pool_id', pool.id)
-        .eq('user_id', user?.id)
-        .single();
+        .eq('user_id', user?.id);
 
-      if (existingPlayer) throw new Error('You are already a member of this pool.');
-      if (pool.max_players && pool.pool_players.length >= pool.max_players) throw new Error('This pool is full.');
+      const entryCount = existingEntries?.length || 0;
+      const maxEntries = pool.max_entries_per_user ?? 1;
 
+      if (entryCount >= maxEntries) {
+        throw new Error(entryCount > 0
+          ? `You've reached the max entries (${maxEntries}) for this pool.`
+          : 'You are already a member of this pool.');
+      }
+      if (pool.max_players && pool.pool_players?.[0]?.count >= pool.max_players) throw new Error('This pool is full.');
+
+      setExistingEntryCount(entryCount);
       setPoolInfo(pool);
     } catch (err: any) {
       setError(err.message || 'Failed to find pool');
@@ -66,12 +75,17 @@ export default function JoinPool() {
     setError('');
 
     try {
+      const entryNumber = existingEntryCount + 1;
+      const baseName = displayName.trim() || user.email?.split('@')[0] || 'Player';
+      const entryLabel = bracketName.trim() || `${baseName}'s Bracket${entryNumber > 1 ? ` ${entryNumber}` : ''}`;
       const { error: joinError } = await supabase
         .from('pool_players')
         .insert({
           pool_id: poolInfo.id,
           user_id: user.id,
-          display_name: displayName.trim() || user.email?.split('@')[0] || 'Player',
+          display_name: baseName,
+          entry_number: entryNumber,
+          entry_label: entryLabel,
         });
 
       if (joinError) throw joinError;
@@ -173,6 +187,29 @@ export default function JoinPool() {
                 <label htmlFor="displayName" className="block text-sm font-medium text-[#8A8694] mb-2" style={{ fontFamily: "'DM Sans', sans-serif" }}>Your Display Name *</label>
                 <input id="displayName" type="text" value={displayName} onChange={(e) => setDisplayName(e.target.value)} required maxLength={50} className={inputClass} placeholder="How you'll appear in the pool" style={{ fontFamily: "'DM Sans', sans-serif" }} />
                 <p className="text-xs text-[#8A8694] mt-1.5" style={{ fontFamily: "'DM Sans', sans-serif" }}>This is how other players will see you</p>
+              </div>
+            )}
+
+            {poolInfo && (
+              <div>
+                <label htmlFor="bracketName" className="block text-sm font-medium text-[#8A8694] mb-2" style={{ fontFamily: "'DM Sans', sans-serif" }}>
+                  Bracket Name {existingEntryCount > 0 ? '*' : ''}
+                </label>
+                <input
+                  id="bracketName"
+                  type="text"
+                  value={bracketName}
+                  onChange={(e) => setBracketName(e.target.value)}
+                  maxLength={60}
+                  className={inputClass}
+                  placeholder={existingEntryCount > 0 ? 'e.g., Chaos Bracket' : "e.g., Main Bracket"}
+                  style={{ fontFamily: "'DM Sans', sans-serif" }}
+                />
+                <p className="text-xs text-[#8A8694] mt-1.5" style={{ fontFamily: "'DM Sans', sans-serif" }}>
+                  {existingEntryCount > 0
+                    ? `This is entry #${existingEntryCount + 1} — give it a unique name`
+                    : 'Name your bracket (you can add more later if the pool allows)'}
+                </p>
               </div>
             )}
 

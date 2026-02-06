@@ -67,21 +67,42 @@ export async function getTodaysGames(roundId: string): Promise<Game[]> {
 // ─── Player Queries ───────────────────────────────────────────────
 
 /**
- * Get player's pool_player record
+ * Get player's pool_player record.
+ * If poolPlayerId is provided, fetch that specific entry.
+ * Otherwise, fetch all entries for the user and return the first non-eliminated one.
  */
-export async function getPoolPlayer(poolId: string, userId: string): Promise<PoolPlayer | null> {
-  const { data, error } = await supabase
+export async function getPoolPlayer(poolId: string, userId: string, poolPlayerId?: string): Promise<PoolPlayer | null> {
+  if (poolPlayerId) {
+    const { data, error } = await supabase
+      .from('pool_players')
+      .select('*')
+      .eq('id', poolPlayerId)
+      .eq('pool_id', poolId)
+      .eq('user_id', userId)
+      .single();
+
+    if (error && error.code !== 'PGRST116') {
+      throw new PickError(`Failed to fetch pool player: ${error.message}`, 'FETCH_ERROR');
+    }
+    return data;
+  }
+
+  // Multi-entry: fetch all entries, prefer first non-eliminated
+  const { data: entries, error } = await supabase
     .from('pool_players')
     .select('*')
     .eq('pool_id', poolId)
     .eq('user_id', userId)
-    .single();
+    .order('entry_number', { ascending: true });
 
-  if (error && error.code !== 'PGRST116') {
+  if (error) {
     throw new PickError(`Failed to fetch pool player: ${error.message}`, 'FETCH_ERROR');
   }
 
-  return data;
+  if (!entries || entries.length === 0) return null;
+
+  // Return first non-eliminated entry, or first entry if all eliminated
+  return entries.find(e => !e.is_eliminated) || entries[0];
 }
 
 /**
@@ -386,7 +407,7 @@ export async function getPoolStandings(poolId: string, currentUserId?: string): 
   // Pool info
   const { data: pool, error: poolError } = await supabase
     .from('pools')
-    .select('id, name, creator_id, join_code')
+    .select('id, name, creator_id, join_code, max_entries_per_user')
     .eq('id', poolId)
     .single();
 
@@ -410,7 +431,7 @@ export async function getPoolStandings(poolId: string, currentUserId?: string): 
 
   // Build per-player status
   const playerStatuses: PlayerStatus[] = [];
-  let yourStatus: PlayerStatus | null = null;
+  const yourEntries: PlayerStatus[] = [];
 
   for (const player of players || []) {
     const { data: picks } = await supabase
@@ -441,6 +462,8 @@ export async function getPoolStandings(poolId: string, currentUserId?: string): 
     const status: PlayerStatus = {
       pool_player_id: player.id,
       display_name: player.display_name,
+      entry_number: player.entry_number ?? 1,
+      entry_label: player.entry_label ?? null,
       is_eliminated: player.is_eliminated,
       elimination_reason: player.elimination_reason,
       current_pick: currentPick,
@@ -452,7 +475,7 @@ export async function getPoolStandings(poolId: string, currentUserId?: string): 
     playerStatuses.push(status);
 
     if (currentUserId && player.user_id === currentUserId) {
-      yourStatus = status;
+      yourEntries.push(status);
     }
   }
 
@@ -461,11 +484,12 @@ export async function getPoolStandings(poolId: string, currentUserId?: string): 
     pool_name: pool.name,
     creator_id: pool.creator_id,
     join_code: pool.join_code,
+    max_entries_per_user: pool.max_entries_per_user ?? 1,
     total_players: players?.length || 0,
     alive_players: players?.filter(p => !p.is_eliminated).length || 0,
     eliminated_players: players?.filter(p => p.is_eliminated).length || 0,
     current_round: activeRound,
     players: playerStatuses,
-    your_status: yourStatus
+    your_entries: yourEntries
   };
 }

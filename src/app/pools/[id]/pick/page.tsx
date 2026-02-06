@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState, useCallback, useRef } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/components/auth/AuthProvider';
 import {
   getPoolPlayer,
@@ -255,8 +255,10 @@ function TeamCard({
 export default function PickPage() {
   const params = useParams();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { user } = useAuth();
   const poolId = params.id as string;
+  const entryId = searchParams.get('entry') || undefined;
 
   const [poolPlayerId, setPoolPlayerId] = useState<string | null>(null);
   const [round, setRound] = useState<Round | null>(null);
@@ -279,7 +281,7 @@ export default function PickPage() {
     if (!user) return;
 
     try {
-      const poolPlayer = await getPoolPlayer(poolId, user.id);
+      const poolPlayer = await getPoolPlayer(poolId, user.id, entryId);
       if (!poolPlayer) { setError('You are not a member of this pool.'); setLoading(false); return; }
       setPoolPlayerId(poolPlayer.id);
       if (poolPlayer.is_eliminated) { setError('You have been eliminated from this pool.'); setLoading(false); return; }
@@ -311,7 +313,7 @@ export default function PickPage() {
     } finally {
       setLoading(false);
     }
-  }, [user, poolId]);
+  }, [user, poolId, entryId]);
 
   useEffect(() => {
     if (!loadedRef.current) { loadedRef.current = true; loadData(); }

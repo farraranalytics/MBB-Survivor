@@ -7,6 +7,7 @@ export interface CreatedPool {
   status: 'open' | 'active' | 'complete';
   entry_fee: number;
   max_players: number | null;
+  max_entries_per_user: number;
   is_private: boolean;
   player_count: number;
   created_at: string;
@@ -15,7 +16,7 @@ export interface CreatedPool {
 export async function getCreatedPools(userId: string): Promise<CreatedPool[]> {
   const { data: pools, error } = await supabase
     .from('pools')
-    .select('id, name, join_code, status, entry_fee, max_players, is_private, created_at, pool_players(count)')
+    .select('id, name, join_code, status, entry_fee, max_players, max_entries_per_user, is_private, created_at, pool_players(count)')
     .eq('creator_id', userId)
     .order('created_at', { ascending: false });
 
@@ -28,6 +29,7 @@ export async function getCreatedPools(userId: string): Promise<CreatedPool[]> {
     status: pool.status,
     entry_fee: pool.entry_fee,
     max_players: pool.max_players,
+    max_entries_per_user: pool.max_entries_per_user ?? 1,
     is_private: pool.is_private,
     player_count: pool.pool_players?.[0]?.count || 0,
     created_at: pool.created_at,

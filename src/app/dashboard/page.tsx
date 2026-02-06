@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import ProtectedRoute from '@/components/auth/ProtectedRoute';
 import { useAuth } from '@/components/auth/AuthProvider';
 import { getMyPools } from '@/lib/standings';
-import { MyPool } from '@/types/standings';
+import { MyPool, MyPoolEntry } from '@/types/standings';
 import { usePoolDetail } from '@/hooks/usePoolDetail';
 import PoolDetailView from '@/components/pool/PoolDetailView';
 import Link from 'next/link';
@@ -70,6 +70,33 @@ function PoolSwitcher({ pools, selectedId, onSelect }: { pools: MyPool[]; select
   );
 }
 
+function BracketSwitcher({ entries, selectedId, onSelect }: { entries: MyPoolEntry[]; selectedId: string; onSelect: (id: string) => void }) {
+  return (
+    <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
+      {entries.map((entry) => {
+        const isSelected = entry.pool_player_id === selectedId;
+        return (
+          <button
+            key={entry.pool_player_id}
+            onClick={() => onSelect(entry.pool_player_id)}
+            className={`flex-shrink-0 flex items-center gap-2 px-4 py-2 rounded-full text-sm font-semibold transition-all ${
+              isSelected
+                ? 'bg-[#FF5722] text-[#E8E6E1]'
+                : 'bg-[#111118] border border-[rgba(255,255,255,0.05)] text-[#8A8694] hover:border-[rgba(255,87,34,0.3)]'
+            }`}
+            style={{ fontFamily: "'DM Sans', sans-serif" }}
+          >
+            <span className={`w-2 h-2 rounded-full ${
+              entry.is_eliminated ? 'bg-[#EF5350]' : 'bg-[#4CAF50]'
+            }`} />
+            {entry.entry_label}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
 function PoolHome({ pool, user }: { pool: MyPool; user: NonNullable<ReturnType<typeof useAuth>['user']> }) {
   const { standings, deadline, loading, error } = usePoolDetail(pool.pool_id, user.id);
 
@@ -102,6 +129,7 @@ export default function Dashboard() {
   const [pools, setPools] = useState<MyPool[]>([]);
   const [loadingPools, setLoadingPools] = useState(true);
   const [selectedPoolId, setSelectedPoolId] = useState<string | null>(null);
+  const [selectedBracketId, setSelectedBracketId] = useState<string | null>(null);
 
   useEffect(() => {
     if (!user) return;
@@ -115,7 +143,12 @@ export default function Dashboard() {
         if (myPools.length > 0) {
           const saved = localStorage.getItem(SELECTED_POOL_KEY);
           const savedExists = saved && myPools.some(p => p.pool_id === saved);
-          setSelectedPoolId(savedExists ? saved : myPools[0].pool_id);
+          const firstPool = savedExists ? myPools.find(p => p.pool_id === saved)! : myPools[0];
+          setSelectedPoolId(firstPool.pool_id);
+          // Default to first bracket
+          if (firstPool.your_entries.length > 0) {
+            setSelectedBracketId(firstPool.your_entries[0].pool_player_id);
+          }
         }
       } catch (err) {
         console.error('Failed to fetch pools:', err);
@@ -130,6 +163,17 @@ export default function Dashboard() {
   const handleSelectPool = (poolId: string) => {
     setSelectedPoolId(poolId);
     localStorage.setItem(SELECTED_POOL_KEY, poolId);
+    // Reset bracket selection to first entry of new pool
+    const pool = pools.find(p => p.pool_id === poolId);
+    if (pool && pool.your_entries.length > 0) {
+      setSelectedBracketId(pool.your_entries[0].pool_player_id);
+    } else {
+      setSelectedBracketId(null);
+    }
+  };
+
+  const handleSelectBracket = (bracketId: string) => {
+    setSelectedBracketId(bracketId);
   };
 
   const selectedPool = pools.find(p => p.pool_id === selectedPoolId) || null;
@@ -176,6 +220,13 @@ export default function Dashboard() {
                 {pools.length > 1 && (
                   <div className="pb-3">
                     <PoolSwitcher pools={pools} selectedId={selectedPoolId!} onSelect={handleSelectPool} />
+                  </div>
+                )}
+
+                {/* Bracket switcher for multi-entry pools */}
+                {selectedPool && selectedPool.your_entries.length > 1 && selectedBracketId && (
+                  <div className="pb-3">
+                    <BracketSwitcher entries={selectedPool.your_entries} selectedId={selectedBracketId} onSelect={handleSelectBracket} />
                   </div>
                 )}
               </div>

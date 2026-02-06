@@ -113,6 +113,8 @@ export default function CreatePool() {
   const [name, setName] = useState('');
   const [entryFee, setEntryFee] = useState('');
   const [maxPlayers, setMaxPlayers] = useState('');
+  const [maxEntries, setMaxEntries] = useState('1');
+  const [bracketName, setBracketName] = useState('');
   const [isPrivate, setIsPrivate] = useState(true);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -163,6 +165,7 @@ export default function CreatePool() {
           creator_id: authUser.id,
           entry_fee: entryFee ? parseFloat(entryFee) : 0,
           max_players: maxPlayers ? parseInt(maxPlayers) : null,
+          max_entries_per_user: maxEntries ? parseInt(maxEntries) : 1,
           is_private: isPrivate,
           tournament_year: 2025,
           status: 'open'
@@ -172,12 +175,15 @@ export default function CreatePool() {
 
       if (poolError) throw poolError;
 
+      const creatorName = authUser.user_metadata?.display_name || authUser.email?.split('@')[0] || 'Player';
       const { error: playerError } = await supabase
         .from('pool_players')
         .insert({
           pool_id: pool.id,
           user_id: authUser.id,
-          display_name: authUser.user_metadata?.display_name || authUser.email?.split('@')[0] || 'Player',
+          display_name: creatorName,
+          entry_number: 1,
+          entry_label: bracketName.trim() || `${creatorName}'s Bracket`,
         });
 
       if (playerError) throw playerError;
@@ -232,6 +238,12 @@ export default function CreatePool() {
             </div>
 
             <div>
+              <label htmlFor="bracketName" className="block text-sm font-medium text-[#8A8694] mb-2" style={{ fontFamily: "'DM Sans', sans-serif" }}>Your Bracket Name</label>
+              <input id="bracketName" type="text" value={bracketName} onChange={(e) => setBracketName(e.target.value)} maxLength={60} className={inputClass} placeholder="e.g., Main Bracket" style={{ fontFamily: "'DM Sans', sans-serif" }} />
+              <p className="text-xs text-[#8A8694] mt-1.5" style={{ fontFamily: "'DM Sans', sans-serif" }}>Name for your first bracket in this pool</p>
+            </div>
+
+            <div>
               <label htmlFor="entryFee" className="block text-sm font-medium text-[#8A8694] mb-2" style={{ fontFamily: "'DM Sans', sans-serif" }}>Entry Fee (optional)</label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
@@ -254,6 +266,12 @@ export default function CreatePool() {
                 <span className="text-sm font-medium text-[#8A8694]" style={{ fontFamily: "'DM Sans', sans-serif" }}>Private Pool</span>
               </label>
               <p className="text-xs text-[#8A8694] mt-1.5 ml-8" style={{ fontFamily: "'DM Sans', sans-serif" }}>Private pools require a join code to enter.</p>
+            </div>
+
+            <div>
+              <label htmlFor="maxEntries" className="block text-sm font-medium text-[#8A8694] mb-2" style={{ fontFamily: "'DM Sans', sans-serif" }}>Brackets Per Player</label>
+              <input id="maxEntries" type="number" min="1" max="10" value={maxEntries} onChange={(e) => setMaxEntries(e.target.value)} className={inputClass} placeholder="1" style={{ fontFamily: "'DM Sans', sans-serif" }} />
+              <p className="text-xs text-[#8A8694] mt-1.5" style={{ fontFamily: "'DM Sans', sans-serif" }}>Allow players to run multiple brackets in this pool</p>
             </div>
 
             <div className="bg-[#1A1A24] border border-[rgba(255,255,255,0.05)] rounded-[8px] p-4">

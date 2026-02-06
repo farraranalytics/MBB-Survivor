@@ -91,7 +91,7 @@ interface PoolDetailViewProps {
 export default function PoolDetailView({ standings, deadline, user, poolId, showBackButton = false }: PoolDetailViewProps) {
   const router = useRouter();
 
-  const { your_status: yourStatus } = standings;
+  const yourStatus = standings.your_entries[0] ?? null;
   const canMakePick = yourStatus && !yourStatus.is_eliminated && standings.current_round && !deadline?.is_expired;
   const hasMadePick = yourStatus?.current_pick != null;
   const topPlayers = standings.players.slice(0, 5);
@@ -151,77 +151,92 @@ export default function PoolDetailView({ standings, deadline, user, poolId, show
         <JoinCodeCard joinCode={standings.join_code} poolName={standings.pool_name} />
       )}
 
-      {/* Your Status */}
-      {yourStatus && (
+      {/* Your Entries */}
+      {standings.your_entries.length > 0 && (
         <div className="bg-[#111118] border border-[rgba(255,255,255,0.05)] rounded-[12px] p-5 mb-4">
           <div className="flex items-center justify-between mb-4">
-            <p className="label">Your Status</p>
-            <span
-              className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wide ${
-                yourStatus.is_eliminated
-                  ? 'bg-[rgba(239,83,80,0.15)] text-[#EF5350]'
-                  : 'bg-[rgba(76,175,80,0.15)] text-[#4CAF50]'
-              }`}
-              style={{ fontFamily: "'Space Mono', monospace", letterSpacing: '0.1em' }}
-            >
-              {yourStatus.is_eliminated ? 'ELIMINATED' : 'ALIVE'}
-            </span>
+            <p className="label">{standings.your_entries.length > 1 ? 'Your Entries' : 'Your Status'}</p>
           </div>
 
-          <div className="flex items-center justify-between">
-            <div>
-              <div className="flex items-center gap-3 mb-2">
-                <span className="text-sm text-[#8A8694]" style={{ fontFamily: "'DM Sans', sans-serif" }}>
-                  {yourStatus.picks_count} pick{yourStatus.picks_count !== 1 ? 's' : ''}
-                </span>
-                {yourStatus.survival_streak > 1 && (
-                  <span className="text-sm text-[#FF5722] font-bold" style={{ fontFamily: "'Space Mono', monospace" }}>
-                    {yourStatus.survival_streak} streak
-                  </span>
-                )}
-              </div>
+          <div className={standings.your_entries.length > 1 ? 'space-y-3' : ''}>
+            {standings.your_entries.map((entry) => {
+              const entryCanPick = !entry.is_eliminated && standings.current_round && !deadline?.is_expired;
+              const entryHasPick = entry.current_pick != null;
+              const entryLabel = entry.entry_label || `Bracket ${entry.entry_number}`;
 
-              {yourStatus.is_eliminated && yourStatus.elimination_reason && (
-                <p className="text-sm text-[#EF5350]" style={{ fontFamily: "'DM Sans', sans-serif" }}>
-                  {yourStatus.elimination_reason.replace('_', ' ')}
-                </p>
-              )}
+              return (
+                <div key={entry.pool_player_id} className={standings.your_entries.length > 1 ? 'bg-[#1A1A24] border border-[rgba(255,255,255,0.05)] rounded-[8px] p-4' : ''}>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-xs font-semibold text-[#FF5722] mb-1.5" style={{ fontFamily: "'Space Mono', monospace", letterSpacing: '0.1em', textTransform: 'uppercase' }}>
+                        {entryLabel}
+                      </p>
+                      <div className="flex items-center gap-3 mb-1">
+                        <span
+                          className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wide ${
+                            entry.is_eliminated
+                              ? 'bg-[rgba(239,83,80,0.15)] text-[#EF5350]'
+                              : 'bg-[rgba(76,175,80,0.15)] text-[#4CAF50]'
+                          }`}
+                          style={{ fontFamily: "'Space Mono', monospace", letterSpacing: '0.1em' }}
+                        >
+                          {entry.is_eliminated ? 'OUT' : 'ALIVE'}
+                        </span>
+                        <span className="text-sm text-[#8A8694]" style={{ fontFamily: "'DM Sans', sans-serif" }}>
+                          {entry.picks_count} pick{entry.picks_count !== 1 ? 's' : ''}
+                        </span>
+                        {entry.survival_streak > 1 && (
+                          <span className="text-sm text-[#FF5722] font-bold" style={{ fontFamily: "'Space Mono', monospace" }}>
+                            {entry.survival_streak} streak
+                          </span>
+                        )}
+                      </div>
 
-              {yourStatus.current_pick?.team && (
-                <p className="text-sm text-[#8A8694]" style={{ fontFamily: "'DM Sans', sans-serif" }}>
-                  Pick:{' '}
-                  <span className="font-semibold text-[#E8E6E1]">
-                    ({yourStatus.current_pick.team.seed}) {yourStatus.current_pick.team.name}
-                  </span>
-                </p>
-              )}
-            </div>
+                      {entry.is_eliminated && entry.elimination_reason && (
+                        <p className="text-xs text-[#EF5350]" style={{ fontFamily: "'DM Sans', sans-serif" }}>
+                          {entry.elimination_reason.replace('_', ' ')}
+                        </p>
+                      )}
 
-            <div className="flex-shrink-0 ml-3">
-              {canMakePick && !hasMadePick && (
-                <button
-                  onClick={() => router.push(`/pools/${poolId}/pick`)}
-                  className="btn-orange text-[#E8E6E1] px-5 py-3 rounded-[12px] font-bold text-sm"
-                  style={{ fontFamily: "'DM Sans', sans-serif", boxShadow: '0 4px 16px rgba(255, 87, 34, 0.3)' }}
-                >
-                  Make Pick
-                </button>
-              )}
+                      {entry.current_pick?.team && (
+                        <p className="text-sm text-[#8A8694]" style={{ fontFamily: "'DM Sans', sans-serif" }}>
+                          Pick:{' '}
+                          <span className="font-semibold text-[#E8E6E1]">
+                            ({entry.current_pick.team.seed}) {entry.current_pick.team.name}
+                          </span>
+                        </p>
+                      )}
+                    </div>
 
-              {hasMadePick && !deadline?.is_expired && (
-                <button
-                  onClick={() => router.push(`/pools/${poolId}/pick`)}
-                  className="bg-[rgba(255,179,0,0.15)] text-[#FFB300] border border-[rgba(255,179,0,0.3)] px-5 py-3 rounded-[12px] font-bold text-sm hover:bg-[rgba(255,179,0,0.25)] transition-colors"
-                  style={{ fontFamily: "'DM Sans', sans-serif" }}
-                >
-                  Change
-                </button>
-              )}
+                    <div className="flex-shrink-0 ml-3">
+                      {entryCanPick && !entryHasPick && (
+                        <button
+                          onClick={() => router.push(`/pools/${poolId}/pick?entry=${entry.pool_player_id}`)}
+                          className="btn-orange text-[#E8E6E1] px-4 py-2.5 rounded-[12px] font-bold text-sm"
+                          style={{ fontFamily: "'DM Sans', sans-serif", boxShadow: '0 4px 16px rgba(255, 87, 34, 0.3)' }}
+                        >
+                          Pick
+                        </button>
+                      )}
 
-              {hasMadePick && deadline?.is_expired && (
-                <span className="text-[#4CAF50] font-semibold text-sm" style={{ fontFamily: "'DM Sans', sans-serif" }}>Locked</span>
-              )}
-            </div>
+                      {entryHasPick && !deadline?.is_expired && (
+                        <button
+                          onClick={() => router.push(`/pools/${poolId}/pick?entry=${entry.pool_player_id}`)}
+                          className="bg-[rgba(255,179,0,0.15)] text-[#FFB300] border border-[rgba(255,179,0,0.3)] px-4 py-2.5 rounded-[12px] font-bold text-sm hover:bg-[rgba(255,179,0,0.25)] transition-colors"
+                          style={{ fontFamily: "'DM Sans', sans-serif" }}
+                        >
+                          Change
+                        </button>
+                      )}
+
+                      {entryHasPick && deadline?.is_expired && (
+                        <span className="text-[#4CAF50] font-semibold text-sm" style={{ fontFamily: "'DM Sans', sans-serif" }}>Locked</span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
           </div>
 
           {/* Deadline */}
@@ -233,9 +248,7 @@ export default function PoolDetailView({ standings, deadline, user, poolId, show
                     {standings.current_round.name}
                   </p>
                   <p className="text-xs text-[#8A8694] mt-0.5" style={{ fontFamily: "'DM Sans', sans-serif" }}>
-                    {hasMadePick
-                      ? deadline?.is_expired ? 'Pick locked' : 'Change before deadline'
-                      : "Clock's ticking"}
+                    {deadline?.is_expired ? 'Picks locked' : "Clock's ticking"}
                   </p>
                 </div>
                 <div className="text-right">

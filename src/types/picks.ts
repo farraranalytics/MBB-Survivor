@@ -8,6 +8,7 @@ export interface Pool {
   entry_fee: number;
   prize_pool: number;
   max_players: number | null;
+  max_entries_per_user: number;
   is_private: boolean;
   tournament_year: number;
   status: 'open' | 'active' | 'complete';
@@ -21,6 +22,8 @@ export interface PoolPlayer {
   pool_id: string;
   user_id: string;
   display_name: string;
+  entry_number: number;
+  entry_label: string | null;
   is_eliminated: boolean;
   elimination_round_id: string | null;
   elimination_reason: 'wrong_pick' | 'missed_pick' | 'manual' | null;
@@ -102,6 +105,8 @@ export interface PickableTeam {
 export interface PlayerStatus {
   pool_player_id: string;
   display_name: string;
+  entry_number: number;
+  entry_label: string | null;
   is_eliminated: boolean;
   elimination_reason: string | null;
   current_pick: Pick | null;
@@ -137,10 +142,11 @@ export interface PoolStandings {
   pool_name: string;
   creator_id: string;
   join_code: string;
+  max_entries_per_user: number;
   total_players: number;
   alive_players: number;
   eliminated_players: number;
   current_round: Round | null;
   players: PlayerStatus[];
-  your_status: PlayerStatus | null;
+  your_entries: PlayerStatus[];
 }

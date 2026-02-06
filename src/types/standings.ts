@@ -54,6 +54,15 @@ export interface PoolLeaderboard {
 export type StandingsFilter = 'all' | 'alive' | 'eliminated';
 export type StandingsSort = 'rank' | 'name' | 'streak' | 'picks';
 
+export interface MyPoolEntry {
+  pool_player_id: string;
+  entry_number: number;
+  entry_label: string;
+  is_eliminated: boolean;
+  picks_count: number;
+  has_picked_today: boolean;
+}
+
 export interface MyPool {
   pool_id: string;
   pool_name: string;
@@ -64,6 +73,8 @@ export interface MyPool {
   your_status: 'active' | 'eliminated';
   your_picks_count: number;
   your_streak: number;
+  your_entry_count: number;
+  your_entries: MyPoolEntry[];
   current_round_name: string | null;
   has_picked_today: boolean;
   deadline_datetime: string | null;
