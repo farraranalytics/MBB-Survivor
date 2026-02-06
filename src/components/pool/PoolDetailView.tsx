@@ -355,7 +355,7 @@ export default function PoolDetailView({ standings, deadline, user, poolId, show
           <span className="text-xs font-semibold text-[#E8E6E1] block" style={{ fontFamily: "'Oswald', sans-serif", textTransform: 'uppercase', letterSpacing: '0.02em' }}>Full Standings</span>
         </button>
         <button
-          onClick={() => router.push('/tournament')}
+          onClick={() => router.push(`/pools/${poolId}/bracket`)}
           className="bg-[#111118] border border-[rgba(255,255,255,0.05)] rounded-[12px] p-4 text-center hover:border-[rgba(255,87,34,0.3)] transition-colors"
         >
           <div className="w-10 h-10 bg-[rgba(255,87,34,0.08)] rounded-[8px] flex items-center justify-center mx-auto mb-2">
