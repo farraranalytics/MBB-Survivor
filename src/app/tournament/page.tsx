@@ -1,111 +1,61 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { useAuth } from '@/components/auth/AuthProvider';
+import { useState, useEffect, useCallback } from 'react';
 import ProtectedRoute from '@/components/auth/ProtectedRoute';
-import { fetchTournamentBracket, fetchLiveScores, ESPNApiError } from '@/lib/espn';
-import type { Tournament, Game, GameScore, TournamentRound } from '@/types/tournament';
+import RegionBracketComponent from '@/components/bracket/RegionBracket';
+import BracketMatchupCard from '@/components/bracket/BracketMatchupCard';
+import { getAllRounds, getAllGamesWithTeams, buildRegionBracket, buildFinalFour } from '@/lib/bracket';
+import type { Round } from '@/types/picks';
+import type { BracketGame, RegionBracket, BracketRound } from '@/types/bracket';
+
+const REGIONS = ['East', 'West', 'South', 'Midwest'];
+const REGION_TABS = [...REGIONS, 'Final Four'];
 
 export default function TournamentPage() {
-  const { user } = useAuth();
-  const [tournament, setTournament] = useState<Tournament | null>(null);
-  const [liveScores, setLiveScores] = useState<GameScore[]>([]);
+  const [rounds, setRounds] = useState<Round[]>([]);
+  const [games, setGames] = useState<BracketGame[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [selectedRound, setSelectedRound] = useState<number>(1);
-  const [viewMode, setViewMode] = useState<'schedule' | 'bracket'>('schedule');
+  const [viewMode, setViewMode] = useState<'schedule' | 'bracket'>('bracket');
+  const [selectedRound, setSelectedRound] = useState<string>('');
+  const [selectedRegion, setSelectedRegion] = useState('East');
 
-  useEffect(() => {
-    loadTournamentData();
-    
-    // Set up live score updates every 30 seconds during tournament
-    const interval = setInterval(() => {
-      if (tournament?.status === 'in-progress') {
-        updateLiveScores();
-      }
-    }, 30000);
-
-    return () => clearInterval(interval);
-  }, []);
-
-  const loadTournamentData = async () => {
+  const loadData = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
-      
-      const tournamentData = await fetchTournamentBracket();
-      setTournament(tournamentData);
-      
-      // Load initial live scores
-      await updateLiveScores();
+      const [roundsData, gamesData] = await Promise.all([
+        getAllRounds(),
+        getAllGamesWithTeams(),
+      ]);
+      setRounds(roundsData);
+      setGames(gamesData);
+      if (roundsData.length > 0 && !selectedRound) {
+        setSelectedRound(roundsData[0].id);
+      }
     } catch (err) {
       console.error('Failed to load tournament data:', err);
-      if (err instanceof ESPNApiError) {
-        setError(`ESPN API Error: ${err.message}`);
-      } else {
-        setError('Failed to load tournament data. Please try again later.');
-      }
+      setError(err instanceof Error ? err.message : 'Failed to load tournament data.');
     } finally {
       setLoading(false);
     }
-  };
+  }, [selectedRound]);
 
-  const updateLiveScores = async () => {
-    try {
-      const scores = await fetchLiveScores();
-      setLiveScores(scores);
-    } catch (err) {
-      console.error('Failed to update live scores:', err);
-      // Don't show error for live score updates, just log it
-    }
-  };
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
 
-  const getLiveScoreForGame = (gameId: string): GameScore | null => {
-    return liveScores.find(score => score.gameId === gameId) || null;
-  };
+  // Build bracket data for the selected region
+  const regionBracket: RegionBracket | null =
+    REGIONS.includes(selectedRegion) && rounds.length > 0
+      ? buildRegionBracket(selectedRegion, games, rounds)
+      : null;
 
-  const formatGameTime = (dateString: string): string => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', {
-      weekday: 'short',
-      month: 'short',
-      day: 'numeric',
-      hour: 'numeric',
-      minute: '2-digit',
-      timeZoneName: 'short',
-    });
-  };
+  const finalFourRounds: BracketRound[] =
+    selectedRegion === 'Final Four' ? buildFinalFour(games, rounds) : [];
 
-  const getGameStatus = (game: Game): { text: string; color: string } => {
-    const liveScore = getLiveScoreForGame(game.id);
-    
-    if (liveScore?.completed) {
-      return { text: 'Final', color: 'text-green-600' };
-    }
-    
-    if (game.status.type.state === 'in') {
-      return { text: game.status.displayClock || 'Live', color: 'text-red-600 animate-pulse' };
-    }
-    
-    if (game.status.type.state === 'post') {
-      return { text: 'Final', color: 'text-green-600' };
-    }
-    
-    const gameTime = new Date(game.date);
-    const now = new Date();
-    
-    if (gameTime > now) {
-      return { 
-        text: gameTime.toLocaleTimeString('en-US', { 
-          hour: 'numeric', 
-          minute: '2-digit' 
-        }), 
-        color: 'text-gray-600' 
-      };
-    }
-    
-    return { text: 'Scheduled', color: 'text-gray-600' };
-  };
+  // Schedule view: games for the selected round
+  const scheduleGames = games.filter(g => g.round_id === selectedRound);
 
   if (loading) {
     return (
@@ -130,7 +80,7 @@ export default function TournamentPage() {
               <span>{error}</span>
             </div>
             <button
-              onClick={loadTournamentData}
+              onClick={loadData}
               className="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700 transition-colors"
             >
               Try Again
@@ -141,42 +91,20 @@ export default function TournamentPage() {
     );
   }
 
-  if (!tournament) {
-    return (
-      <ProtectedRoute>
-        <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-          <div className="text-center">
-            <p className="text-gray-600">No tournament data available.</p>
-          </div>
-        </div>
-      </ProtectedRoute>
-    );
-  }
-
   return (
     <ProtectedRoute>
       <div className="min-h-screen bg-gray-50">
+        {/* Header */}
         <div className="bg-white shadow">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="py-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h1 className="text-3xl font-bold text-gray-900">
-                    {tournament.name}
-                  </h1>
-                  <p className="mt-1 text-sm text-gray-500">
-                    {tournament.status === 'in-progress' && (
-                      <span className="inline-flex items-center">
-                        <span className="flex w-2 h-2 bg-red-500 rounded-full animate-pulse mr-2"></span>
-                        Live Tournament
-                      </span>
-                    )}
-                    {tournament.status === 'upcoming' && 'Tournament Upcoming'}
-                    {tournament.status === 'completed' && 'Tournament Complete'}
-                  </p>
-                </div>
-                
-                <div className="flex space-x-4">
+              <div className="flex items-center justify-between flex-wrap gap-4">
+                <h1 className="text-3xl font-bold text-gray-900">
+                  NCAA Tournament
+                </h1>
+
+                <div className="flex items-center gap-3">
+                  {/* View toggle */}
                   <div className="flex bg-gray-100 rounded-lg p-1">
                     <button
                       onClick={() => setViewMode('schedule')}
@@ -199,12 +127,12 @@ export default function TournamentPage() {
                       Bracket
                     </button>
                   </div>
-                  
+
                   <button
-                    onClick={updateLiveScores}
+                    onClick={loadData}
                     className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors text-sm font-medium"
                   >
-                    Refresh Scores
+                    Refresh
                   </button>
                 </div>
               </div>
@@ -212,23 +140,21 @@ export default function TournamentPage() {
           </div>
         </div>
 
+        {/* Content */}
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          {viewMode === 'schedule' && (
-            <ScheduleView 
-              tournament={tournament}
+          {viewMode === 'schedule' ? (
+            <ScheduleView
+              rounds={rounds}
+              games={scheduleGames}
               selectedRound={selectedRound}
               onRoundChange={setSelectedRound}
-              getLiveScoreForGame={getLiveScoreForGame}
-              getGameStatus={getGameStatus}
-              formatGameTime={formatGameTime}
             />
-          )}
-          
-          {viewMode === 'bracket' && (
-            <BracketView 
-              tournament={tournament}
-              getLiveScoreForGame={getLiveScoreForGame}
-              getGameStatus={getGameStatus}
+          ) : (
+            <BracketView
+              selectedRegion={selectedRegion}
+              onRegionChange={setSelectedRegion}
+              regionBracket={regionBracket}
+              finalFourRounds={finalFourRounds}
             />
           )}
         </div>
@@ -237,35 +163,28 @@ export default function TournamentPage() {
   );
 }
 
+// ─── Schedule View ─────────────────────────────────────────────────
+
 interface ScheduleViewProps {
-  tournament: Tournament;
-  selectedRound: number;
-  onRoundChange: (round: number) => void;
-  getLiveScoreForGame: (gameId: string) => GameScore | null;
-  getGameStatus: (game: Game) => { text: string; color: string };
-  formatGameTime: (dateString: string) => string;
+  rounds: Round[];
+  games: BracketGame[];
+  selectedRound: string;
+  onRoundChange: (roundId: string) => void;
 }
 
-function ScheduleView({ 
-  tournament, 
-  selectedRound, 
-  onRoundChange, 
-  getLiveScoreForGame, 
-  getGameStatus, 
-  formatGameTime 
-}: ScheduleViewProps) {
-  const currentRound = tournament.rounds.find(r => r.number === selectedRound);
+function ScheduleView({ rounds, games, selectedRound, onRoundChange }: ScheduleViewProps) {
+  const currentRound = rounds.find(r => r.id === selectedRound);
 
   return (
     <div>
-      {/* Round Selector */}
+      {/* Round selector */}
       <div className="flex space-x-2 mb-8 overflow-x-auto pb-2">
-        {tournament.rounds.map((round) => (
+        {rounds.map(round => (
           <button
-            key={round.number}
-            onClick={() => onRoundChange(round.number)}
+            key={round.id}
+            onClick={() => onRoundChange(round.id)}
             className={`flex-shrink-0 px-4 py-2 rounded-lg font-medium transition-colors ${
-              selectedRound === round.number
+              selectedRound === round.id
                 ? 'bg-blue-600 text-white'
                 : 'bg-white text-gray-700 hover:bg-gray-50 border border-gray-300'
             }`}
@@ -275,156 +194,169 @@ function ScheduleView({
         ))}
       </div>
 
-      {/* Games List */}
-      {currentRound && (
-        <div className="space-y-4">
-          {currentRound.games.length === 0 ? (
-            <div className="text-center py-12 bg-white rounded-lg">
-              <p className="text-gray-500">No games scheduled for {currentRound.name}</p>
-            </div>
-          ) : (
-            currentRound.games.map((game) => (
-              <GameCard
-                key={game.id}
-                game={game}
-                liveScore={getLiveScoreForGame(game.id)}
-                status={getGameStatus(game)}
-                formatGameTime={formatGameTime}
-              />
-            ))
-          )}
+      {/* Games list */}
+      {games.length === 0 ? (
+        <div className="text-center py-12 bg-white rounded-lg">
+          <p className="text-gray-500">
+            No games scheduled{currentRound ? ` for ${currentRound.name}` : ''}
+          </p>
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {games.map(game => (
+            <ScheduleGameCard key={game.id} game={game} />
+          ))}
         </div>
       )}
     </div>
   );
 }
 
-interface BracketViewProps {
-  tournament: Tournament;
-  getLiveScoreForGame: (gameId: string) => GameScore | null;
-  getGameStatus: (game: Game) => { text: string; color: string };
-}
+function ScheduleGameCard({ game }: { game: BracketGame }) {
+  const team1 = game.team1;
+  const team2 = game.team2;
+  const hasWinner = game.winner_id !== null;
+  const team1Wins = hasWinner && game.winner_id === game.team1_id;
+  const team2Wins = hasWinner && game.winner_id === game.team2_id;
 
-function BracketView({ tournament, getLiveScoreForGame, getGameStatus }: BracketViewProps) {
+  let statusText: string;
+  let statusColor: string;
+  if (game.status === 'final') {
+    statusText = 'Final';
+    statusColor = 'text-green-600';
+  } else if (game.status === 'in_progress') {
+    statusText = 'Live';
+    statusColor = 'text-red-600 animate-pulse';
+  } else {
+    const dt = new Date(game.game_datetime);
+    statusText = dt.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+    statusColor = 'text-gray-600';
+  }
+
+  const formatDate = (dt: string) =>
+    new Date(dt).toLocaleDateString('en-US', {
+      weekday: 'short',
+      month: 'short',
+      day: 'numeric',
+    });
+
   return (
-    <div className="bg-white rounded-lg p-6">
-      <h2 className="text-xl font-bold text-gray-900 mb-6">Tournament Bracket</h2>
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        {tournament.regions.map((region) => (
-          <div key={region.id} className="space-y-4">
-            <h3 className="text-lg font-semibold text-gray-800 text-center">
-              {region.name} Region
-            </h3>
-            <div className="space-y-2">
-              {region.teams.slice(0, 8).map((team) => (
-                <div
-                  key={team.id}
-                  className="flex items-center space-x-3 p-2 bg-gray-50 rounded"
-                >
-                  <span className="text-sm font-medium text-gray-600 w-6">
-                    {team.seed}
-                  </span>
-                  <img
-                    src={team.logo}
-                    alt={team.name}
-                    className="w-6 h-6 object-contain"
-                  />
-                  <span className="text-sm font-medium text-gray-900 truncate">
-                    {team.displayName}
-                  </span>
-                </div>
-              ))}
+    <div className="bg-white rounded-lg shadow border border-gray-200 p-4">
+      <div className="flex items-center justify-between">
+        <div className="flex-1 space-y-2">
+          {/* Team 1 */}
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <span className="text-sm font-semibold text-gray-500 w-6 text-center">
+                {team1?.seed ?? '-'}
+              </span>
+              <span className={`font-medium ${team1Wins ? 'text-gray-900 font-bold' : team2Wins ? 'text-gray-400' : 'text-gray-900'}`}>
+                {team1?.name ?? 'TBD'}
+              </span>
             </div>
+            {game.team1_score !== null && (
+              <span className={`text-lg font-bold ${team1Wins ? 'text-gray-900' : 'text-gray-500'}`}>
+                {game.team1_score}
+              </span>
+            )}
           </div>
-        ))}
+          {/* Team 2 */}
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <span className="text-sm font-semibold text-gray-500 w-6 text-center">
+                {team2?.seed ?? '-'}
+              </span>
+              <span className={`font-medium ${team2Wins ? 'text-gray-900 font-bold' : team1Wins ? 'text-gray-400' : 'text-gray-900'}`}>
+                {team2?.name ?? 'TBD'}
+              </span>
+            </div>
+            {game.team2_score !== null && (
+              <span className={`text-lg font-bold ${team2Wins ? 'text-gray-900' : 'text-gray-500'}`}>
+                {game.team2_score}
+              </span>
+            )}
+          </div>
+        </div>
+
+        <div className="ml-6 text-right">
+          <div className={`font-medium ${statusColor}`}>{statusText}</div>
+          <div className="text-sm text-gray-500 mt-1">{formatDate(game.game_datetime)}</div>
+        </div>
       </div>
     </div>
   );
 }
 
-interface GameCardProps {
-  game: Game;
-  liveScore: GameScore | null;
-  status: { text: string; color: string };
-  formatGameTime: (dateString: string) => string;
+// ─── Bracket View ──────────────────────────────────────────────────
+
+interface BracketViewProps {
+  selectedRegion: string;
+  onRegionChange: (region: string) => void;
+  regionBracket: RegionBracket | null;
+  finalFourRounds: BracketRound[];
 }
 
-function GameCard({ game, liveScore, status, formatGameTime }: GameCardProps) {
-  const team1 = game.competitors[0];
-  const team2 = game.competitors[1];
-  
-  const team1Score = liveScore?.homeTeam.id === team1.team.id 
-    ? liveScore.homeTeam.score 
-    : liveScore?.awayTeam.score || team1.score;
-  
-  const team2Score = liveScore?.homeTeam.id === team2.team.id 
-    ? liveScore.homeTeam.score 
-    : liveScore?.awayTeam.score || team2.score;
+function BracketView({ selectedRegion, onRegionChange, regionBracket, finalFourRounds }: BracketViewProps) {
+  return (
+    <div>
+      {/* Region tabs */}
+      <div className="flex gap-2 mb-6 overflow-x-auto pb-2">
+        {REGION_TABS.map(tab => (
+          <button
+            key={tab}
+            onClick={() => onRegionChange(tab)}
+            className={`flex-shrink-0 px-4 py-2 rounded-full text-sm font-medium transition-colors ${
+              selectedRegion === tab
+                ? 'bg-blue-600 text-white'
+                : 'bg-white text-gray-700 hover:bg-gray-50 border border-gray-300'
+            }`}
+          >
+            {tab}
+          </button>
+        ))}
+      </div>
+
+      {/* Bracket content */}
+      {selectedRegion === 'Final Four' ? (
+        <FinalFourBracket rounds={finalFourRounds} />
+      ) : regionBracket ? (
+        <RegionBracketComponent bracket={regionBracket} />
+      ) : (
+        <div className="text-center py-12 bg-white rounded-lg">
+          <p className="text-gray-500">No bracket data available.</p>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function FinalFourBracket({ rounds }: { rounds: BracketRound[] }) {
+  const hasGames = rounds.some(r => r.games.length > 0);
+
+  if (!hasGames) {
+    return (
+      <div className="text-center py-12 bg-white rounded-lg">
+        <p className="text-lg font-medium text-gray-500">Final Four</p>
+        <p className="text-gray-400 mt-2">Games TBD</p>
+      </div>
+    );
+  }
 
   return (
-    <div className="bg-white rounded-lg shadow border border-gray-200 p-4">
-      <div className="flex items-center justify-between">
-        <div className="flex-1">
-          <div className="flex items-center justify-between mb-2">
-            <div className="flex items-center space-x-3">
-              <img
-                src={team1.team.logo}
-                alt={team1.team.name}
-                className="w-8 h-8 object-contain"
-              />
-              <div>
-                <span className="font-medium text-gray-900">
-                  {team1.team.displayName}
-                </span>
-                <span className="ml-2 text-sm text-gray-500">
-                  ({team1.seed})
-                </span>
-              </div>
+    <div className="overflow-x-auto pb-4">
+      <div className="flex gap-8 min-w-max px-2 items-center" style={{ minHeight: '300px' }}>
+        {rounds.map(bracketRound => (
+          <div key={bracketRound.round.id} className="flex flex-col flex-shrink-0" style={{ width: '208px' }}>
+            <div className="text-xs font-semibold text-gray-500 uppercase tracking-wide text-center mb-3">
+              {bracketRound.round.name}
             </div>
-            <div className="text-right">
-              <span className="text-lg font-bold text-gray-900">
-                {team1Score}
-              </span>
+            <div className="flex flex-col justify-around flex-1 gap-4">
+              {bracketRound.games.map(game => (
+                <BracketMatchupCard key={game.id} game={game} />
+              ))}
             </div>
           </div>
-          
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-3">
-              <img
-                src={team2.team.logo}
-                alt={team2.team.name}
-                className="w-8 h-8 object-contain"
-              />
-              <div>
-                <span className="font-medium text-gray-900">
-                  {team2.team.displayName}
-                </span>
-                <span className="ml-2 text-sm text-gray-500">
-                  ({team2.seed})
-                </span>
-              </div>
-            </div>
-            <div className="text-right">
-              <span className="text-lg font-bold text-gray-900">
-                {team2Score}
-              </span>
-            </div>
-          </div>
-        </div>
-        
-        <div className="ml-6 text-right">
-          <div className={`font-medium ${status.color}`}>
-            {status.text}
-          </div>
-          <div className="text-sm text-gray-500 mt-1">
-            {formatGameTime(game.date)}
-          </div>
-          {game.venue && (
-            <div className="text-xs text-gray-400 mt-1">
-              {game.venue.address.city}, {game.venue.address.state}
-            </div>
-          )}
-        </div>
+        ))}
       </div>
     </div>
   );
