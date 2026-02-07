@@ -1,6 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase/admin';
 import { verifyCronAuth } from '@/lib/cron-auth';
+import {
+  processCompletedGame,
+  processMissedPicks,
+  checkRoundCompletion,
+} from '@/lib/game-processing';
 
 const ESPN_BASE_URL = 'https://site.api.espn.com/apis/site/v2/sports/basketball/mens-college-basketball';
 
@@ -139,52 +144,9 @@ export async function GET(request: NextRequest) {
         await supabaseAdmin.from('games').update(updateData).eq('id', game.id);
         results.gamesUpdated++;
 
-        // 5. If game just completed, process picks
+        // 5. If game just completed, process picks using shared logic
         if (isCompleted && winnerId && loserId && game.status !== 'final') {
-          results.gamesCompleted++;
-
-          // Mark winning picks correct
-          const { data: correctPicks } = await supabaseAdmin
-            .from('picks')
-            .update({ is_correct: true })
-            .eq('round_id', activeRound.id)
-            .eq('team_id', winnerId)
-            .is('is_correct', null)
-            .select('id');
-          results.picksMarkedCorrect += correctPicks?.length || 0;
-
-          // Mark losing picks incorrect
-          const { data: incorrectPicks } = await supabaseAdmin
-            .from('picks')
-            .update({ is_correct: false })
-            .eq('round_id', activeRound.id)
-            .eq('team_id', loserId)
-            .is('is_correct', null)
-            .select('pool_player_id');
-          results.picksMarkedIncorrect += incorrectPicks?.length || 0;
-
-          // Eliminate losing team
-          await supabaseAdmin
-            .from('teams')
-            .update({ is_eliminated: true })
-            .eq('id', loserId);
-
-          // 6. Eliminate players who picked the loser
-          if (incorrectPicks && incorrectPicks.length > 0) {
-            const poolPlayerIds = incorrectPicks.map(p => p.pool_player_id);
-
-            const { data: eliminated } = await supabaseAdmin
-              .from('pool_players')
-              .update({
-                is_eliminated: true,
-                elimination_round_id: activeRound.id,
-                elimination_reason: 'wrong_pick',
-              })
-              .in('id', poolPlayerIds)
-              .eq('is_eliminated', false)
-              .select('id');
-            results.playersEliminated += eliminated?.length || 0;
-          }
+          await processCompletedGame(activeRound.id, winnerId, loserId, results);
         }
 
       } catch (err: any) {
@@ -204,125 +166,4 @@ export async function GET(request: NextRequest) {
     console.error('process-results error:', err);
     return NextResponse.json({ error: err.message }, { status: 500 });
   }
-}
-
-/**
- * After ALL games in a round are final, eliminate players who didn't submit a pick.
- * We wait until all games are done to avoid false positives.
- */
-async function processMissedPicks(
-  roundId: string,
-  results: { missedPickEliminations: number; errors: string[] }
-) {
-  // Check if all games in this round are final
-  const { data: pendingGames } = await supabaseAdmin
-    .from('games')
-    .select('id')
-    .eq('round_id', roundId)
-    .in('status', ['scheduled', 'in_progress']);
-
-  if (pendingGames && pendingGames.length > 0) {
-    return; // Still games in progress — don't process missed picks yet
-  }
-
-  // Find alive players who have no pick for this round
-  const { data: alivePlayers } = await supabaseAdmin
-    .from('pool_players')
-    .select('id, pool_id')
-    .eq('is_eliminated', false);
-
-  if (!alivePlayers || alivePlayers.length === 0) return;
-
-  // For each alive player, check if they have a pick for this round
-  const alivePlayerIds = alivePlayers.map(p => p.id);
-  const { data: picksForRound } = await supabaseAdmin
-    .from('picks')
-    .select('pool_player_id')
-    .eq('round_id', roundId)
-    .in('pool_player_id', alivePlayerIds);
-
-  const playerIdsWithPicks = new Set(picksForRound?.map(p => p.pool_player_id) || []);
-  const playersWithoutPicks = alivePlayers.filter(p => !playerIdsWithPicks.has(p.id));
-
-  if (playersWithoutPicks.length === 0) return;
-
-  // Eliminate players who missed their pick
-  const missedIds = playersWithoutPicks.map(p => p.id);
-  const { data: missedEliminated } = await supabaseAdmin
-    .from('pool_players')
-    .update({
-      is_eliminated: true,
-      elimination_round_id: roundId,
-      elimination_reason: 'missed_pick',
-    })
-    .in('id', missedIds)
-    .eq('is_eliminated', false)
-    .select('id');
-
-  results.missedPickEliminations = missedEliminated?.length || 0;
-}
-
-/**
- * Check if a round is complete (all games final) and handle advancement.
- */
-async function checkRoundCompletion(
-  roundId: string,
-  results: { roundsCompleted: number; poolsCompleted: number; errors: string[] }
-) {
-  // Check if all games in this round are final
-  const { data: nonFinalGames } = await supabaseAdmin
-    .from('games')
-    .select('id')
-    .eq('round_id', roundId)
-    .neq('status', 'final');
-
-  if (nonFinalGames && nonFinalGames.length > 0) {
-    return; // Not all games are done
-  }
-
-  // Round is complete — deactivate it
-  await supabaseAdmin
-    .from('rounds')
-    .update({ is_active: false })
-    .eq('id', roundId);
-  results.roundsCompleted++;
-
-  // Check if this was the LAST round (Championship)
-  const { data: currentRound } = await supabaseAdmin
-    .from('rounds')
-    .select('date')
-    .eq('id', roundId)
-    .single();
-
-  const { data: futureRounds } = await supabaseAdmin
-    .from('rounds')
-    .select('id, name, date')
-    .gt('date', currentRound?.date || '')
-    .order('date', { ascending: true });
-
-  if (!futureRounds || futureRounds.length === 0) {
-    // Tournament is over — complete all active pools
-    const { data: pools } = await supabaseAdmin
-      .from('pools')
-      .select('id')
-      .eq('status', 'active');
-
-    for (const pool of (pools || [])) {
-      const { data: alivePlayers } = await supabaseAdmin
-        .from('pool_players')
-        .select('user_id')
-        .eq('pool_id', pool.id)
-        .eq('is_eliminated', false)
-        .limit(1);
-
-      const winnerId = alivePlayers?.[0]?.user_id || null;
-
-      await supabaseAdmin
-        .from('pools')
-        .update({ status: 'complete', winner_id: winnerId })
-        .eq('id', pool.id);
-      results.poolsCompleted++;
-    }
-  }
-  // If there are future rounds, the activate-rounds cron will handle activating the next one
 }

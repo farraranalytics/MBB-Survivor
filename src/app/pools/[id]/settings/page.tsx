@@ -272,6 +272,13 @@ export default function PoolSettingsPage() {
   // Join code copy
   const [copiedCode, setCopiedCode] = useState(false);
 
+  // Tournament Simulator state
+  const [simRound, setSimRound] = useState<any>(null);
+  const [simGames, setSimGames] = useState<any[]>([]);
+  const [simStats, setSimStats] = useState<{ alive: number; eliminated: number; scheduled: number; inProgress: number; final: number } | null>(null);
+  const [simLog, setSimLog] = useState<string>('');
+  const [simLoading, setSimLoading] = useState(false);
+
   const isCreator = pool?.creator_id === user?.id;
   const currentName = user?.user_metadata?.display_name || user?.email?.split('@')[0] || 'Player';
 
@@ -279,6 +286,11 @@ export default function PoolSettingsPage() {
     if (!user) return;
     loadData();
   }, [user, poolId]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Load simulator data once pool is loaded and user is creator
+  useEffect(() => {
+    if (isCreator) loadSimulatorData();
+  }, [isCreator]); // eslint-disable-line react-hooks/exhaustive-deps
 
   async function loadData() {
     try {
@@ -421,6 +433,71 @@ export default function PoolSettingsPage() {
     setCopiedCode(true);
     setTimeout(() => setCopiedCode(false), 2000);
   };
+
+  // ── Simulator Helpers ──────────────────────────────────────────
+
+  async function loadSimulatorData() {
+    const { data: round } = await supabase
+      .from('rounds')
+      .select('id, name, date, is_active')
+      .eq('is_active', true)
+      .single();
+
+    if (!round) {
+      setSimRound(null);
+      setSimGames([]);
+      setSimStats(null);
+      return;
+    }
+
+    const { data: games } = await supabase
+      .from('games')
+      .select(`
+        id, status, team1_score, team2_score, winner_id,
+        team1:team1_id(id, name, abbreviation, seed),
+        team2:team2_id(id, name, abbreviation, seed)
+      `)
+      .eq('round_id', round.id)
+      .order('game_datetime', { ascending: true });
+
+    const { count: aliveCount } = await supabase
+      .from('pool_players')
+      .select('id', { count: 'exact', head: true })
+      .eq('is_eliminated', false);
+
+    const { count: eliminatedCount } = await supabase
+      .from('pool_players')
+      .select('id', { count: 'exact', head: true })
+      .eq('is_eliminated', true);
+
+    setSimRound(round);
+    setSimGames(games || []);
+    setSimStats({
+      alive: aliveCount || 0,
+      eliminated: eliminatedCount || 0,
+      scheduled: (games || []).filter(g => g.status === 'scheduled').length,
+      inProgress: (games || []).filter(g => g.status === 'in_progress').length,
+      final: (games || []).filter(g => g.status === 'final').length,
+    });
+  }
+
+  async function simAction(url: string, body?: any) {
+    setSimLoading(true);
+    try {
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: body ? JSON.stringify(body) : undefined,
+      });
+      const data = await res.json();
+      setSimLog(JSON.stringify(data, null, 2));
+      await loadSimulatorData();
+    } catch (err: any) {
+      setSimLog(`Error: ${err.message}`);
+    } finally {
+      setSimLoading(false);
+    }
+  }
 
   const handleShare = async () => {
     if (!pool) return;
@@ -789,6 +866,146 @@ export default function PoolSettingsPage() {
                         />
                       );
                     })}
+                  </div>
+                )}
+              </div>
+            </section>
+
+            {/* ─── SECTION 6: TOURNAMENT SIMULATOR (creator only) ────── */}
+            <section>
+              <div className="flex items-center gap-3 pt-2 mb-3">
+                <div className="flex-1 h-px bg-[rgba(255,87,34,0.2)]" />
+                <span className="text-[10px] font-bold tracking-[0.2em] text-[#FF5722] uppercase" style={{ fontFamily: "'Space Mono', monospace" }}>
+                  Tournament Simulator
+                </span>
+                <div className="flex-1 h-px bg-[rgba(255,87,34,0.2)]" />
+              </div>
+
+              <div className="bg-[#111827] border border-[rgba(255,255,255,0.05)] rounded-[14px] p-5 space-y-4">
+                <p className="text-xs text-[#9BA3AE]" style={{ fontFamily: "'DM Sans', sans-serif" }}>
+                  Test round advancement and eliminations with simulated game results.
+                </p>
+
+                {/* Active round info */}
+                {simRound ? (
+                  <div className="space-y-1">
+                    <p className="text-sm font-medium text-[#E8E6E1]" style={{ fontFamily: "'DM Sans', sans-serif" }}>
+                      Active Round: <span className="text-[#FF5722]">{simRound.name}</span>
+                    </p>
+                    {simStats && (
+                      <>
+                        <p className="text-xs text-[#9BA3AE]" style={{ fontFamily: "'Space Mono', monospace" }}>
+                          Games: {simStats.scheduled} scheduled · {simStats.inProgress} in progress · {simStats.final} final
+                        </p>
+                        <p className="text-xs text-[#9BA3AE]" style={{ fontFamily: "'Space Mono', monospace" }}>
+                          Players: {simStats.alive} alive · {simStats.eliminated} eliminated
+                        </p>
+                      </>
+                    )}
+                  </div>
+                ) : (
+                  <p className="text-sm text-[#9BA3AE]" style={{ fontFamily: "'DM Sans', sans-serif" }}>
+                    No active round. Use &quot;Activate Next Round&quot; to start.
+                  </p>
+                )}
+
+                {/* Games list */}
+                {simGames.length > 0 && (
+                  <div className="space-y-2">
+                    <p className="label text-label-accent">Games In This Round</p>
+                    <div className="space-y-2">
+                      {simGames.map((game: any) => {
+                        const t1 = game.team1;
+                        const t2 = game.team2;
+                        const isFinal = game.status === 'final';
+
+                        return (
+                          <div key={game.id} className="bg-[#1B2A3D] rounded-[10px] p-3">
+                            <div className="flex items-center justify-between mb-2">
+                              <p className="text-xs text-[#E8E6E1]" style={{ fontFamily: "'DM Sans', sans-serif" }}>
+                                ({t1?.seed}) {t1?.name} vs ({t2?.seed}) {t2?.name}
+                              </p>
+                              <span
+                                className={`text-[10px] font-bold tracking-wider uppercase ${
+                                  isFinal ? 'text-[#4CAF50]' : 'text-[#9BA3AE]'
+                                }`}
+                                style={{ fontFamily: "'Space Mono', monospace" }}
+                              >
+                                {isFinal ? `${game.team1_score}-${game.team2_score}` : game.status}
+                              </span>
+                            </div>
+                            {!isFinal && (
+                              <div className="flex gap-2">
+                                <button
+                                  onClick={() => simAction('/api/admin/test/complete-game', { gameId: game.id, winnerId: t1?.id })}
+                                  disabled={simLoading}
+                                  className="flex-1 py-1.5 rounded-[6px] text-xs font-semibold bg-[#243447] text-[#E8E6E1] hover:bg-[#2D3E52] transition-colors disabled:opacity-50"
+                                  style={{ fontFamily: "'DM Sans', sans-serif" }}
+                                >
+                                  {t1?.abbreviation || t1?.name} Wins
+                                </button>
+                                <button
+                                  onClick={() => simAction('/api/admin/test/complete-game', { gameId: game.id, winnerId: t2?.id })}
+                                  disabled={simLoading}
+                                  className="flex-1 py-1.5 rounded-[6px] text-xs font-semibold bg-[#243447] text-[#E8E6E1] hover:bg-[#2D3E52] transition-colors disabled:opacity-50"
+                                  style={{ fontFamily: "'DM Sans', sans-serif" }}
+                                >
+                                  {t2?.abbreviation || t2?.name} Wins
+                                </button>
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                {/* Bulk actions */}
+                <div className="space-y-2 pt-2">
+                  <button
+                    onClick={() => simAction('/api/admin/test/complete-round', { mode: 'favorites' })}
+                    disabled={simLoading || !simRound}
+                    className="w-full py-2.5 rounded-[8px] text-xs font-semibold bg-[#243447] text-[#E8E6E1] hover:bg-[#2D3E52] transition-colors disabled:opacity-50"
+                    style={{ fontFamily: "'DM Sans', sans-serif" }}
+                  >
+                    Complete Round — Favorites Win
+                  </button>
+                  <button
+                    onClick={() => simAction('/api/admin/test/complete-round', { mode: 'random' })}
+                    disabled={simLoading || !simRound}
+                    className="w-full py-2.5 rounded-[8px] text-xs font-semibold bg-[#243447] text-[#E8E6E1] hover:bg-[#2D3E52] transition-colors disabled:opacity-50"
+                    style={{ fontFamily: "'DM Sans', sans-serif" }}
+                  >
+                    Complete Round — Random Winners
+                  </button>
+                  <button
+                    onClick={() => simAction('/api/admin/test/activate-next-round')}
+                    disabled={simLoading}
+                    className="w-full py-2.5 rounded-[8px] text-xs font-semibold btn-orange disabled:opacity-50"
+                    style={{ fontFamily: "'DM Sans', sans-serif" }}
+                  >
+                    Activate Next Round
+                  </button>
+                  <button
+                    onClick={() => simAction('/api/admin/test/reset-round')}
+                    disabled={simLoading}
+                    className="w-full py-2.5 rounded-[8px] text-xs font-semibold text-[#EF5350] bg-[rgba(239,83,80,0.1)] border border-[rgba(239,83,80,0.2)] hover:border-[rgba(239,83,80,0.4)] transition-colors disabled:opacity-50"
+                    style={{ fontFamily: "'DM Sans', sans-serif" }}
+                  >
+                    Reset This Round
+                  </button>
+                </div>
+
+                {/* Response log */}
+                {simLog && (
+                  <div className="pt-2">
+                    <p className="text-[10px] font-bold tracking-wider text-[#9BA3AE] uppercase mb-1" style={{ fontFamily: "'Space Mono', monospace" }}>
+                      Response Log
+                    </p>
+                    <pre className="bg-[#0D1B2A] rounded-[8px] p-3 text-[11px] text-[#9BA3AE] overflow-x-auto max-h-48 overflow-y-auto whitespace-pre-wrap" style={{ fontFamily: "'Space Mono', monospace" }}>
+                      {simLog}
+                    </pre>
                   </div>
                 )}
               </div>
