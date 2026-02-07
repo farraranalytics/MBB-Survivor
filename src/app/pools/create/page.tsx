@@ -117,7 +117,7 @@ export default function CreatePool() {
   const [maxPlayers, setMaxPlayers] = useState('');
   const [maxEntries, setMaxEntries] = useState('1');
   const [entryName, setEntryName] = useState('');
-  const [isPrivate, setIsPrivate] = useState(true);
+
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [createdPool, setCreatedPool] = useState<CreatedPoolResult | null>(null);
@@ -168,7 +168,7 @@ export default function CreatePool() {
           entry_fee: entryFee ? parseFloat(entryFee) : 0,
           max_players: maxPlayers ? parseInt(maxPlayers) : null,
           max_entries_per_user: maxEntries ? parseInt(maxEntries) : 1,
-          is_private: isPrivate,
+          is_private: true,
           tournament_year: 2025,
           status: 'open'
         })
@@ -262,14 +262,6 @@ export default function CreatePool() {
               <label htmlFor="maxPlayers" className="block text-sm font-medium text-[#9BA3AE] mb-2" style={{ fontFamily: "'DM Sans', sans-serif" }}>Max Players (optional)</label>
               <input id="maxPlayers" type="number" min="2" max="1000" value={maxPlayers} onChange={(e) => setMaxPlayers(e.target.value)} className={inputClass} placeholder="No limit" style={{ fontFamily: "'DM Sans', sans-serif" }} />
               <p className="text-xs text-[#9BA3AE] mt-1.5" style={{ fontFamily: "'DM Sans', sans-serif" }}>Leave blank for unlimited</p>
-            </div>
-
-            <div>
-              <label className="flex items-center space-x-3 cursor-pointer">
-                <input type="checkbox" checked={isPrivate} onChange={(e) => setIsPrivate(e.target.checked)} className="w-5 h-5 rounded bg-[#1B2A3D] border-[rgba(255,255,255,0.08)] text-[#FF5722] focus:ring-[#FF5722] focus:ring-offset-0" />
-                <span className="text-sm font-medium text-[#9BA3AE]" style={{ fontFamily: "'DM Sans', sans-serif" }}>Private Pool</span>
-              </label>
-              <p className="text-xs text-[#9BA3AE] mt-1.5 ml-8" style={{ fontFamily: "'DM Sans', sans-serif" }}>Private pools require a join code to enter.</p>
             </div>
 
             <div>

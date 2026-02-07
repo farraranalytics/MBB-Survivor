@@ -100,12 +100,14 @@ export async function getPoolMembers(poolId: string): Promise<PoolMember[]> {
 
 // Remove a player from pool
 export async function removePoolMember(poolPlayerId: string): Promise<void> {
-  const { error } = await supabase
+  const { error, data } = await supabase
     .from('pool_players')
     .delete()
-    .eq('id', poolPlayerId);
+    .eq('id', poolPlayerId)
+    .select('id');
 
   if (error) throw new Error(error.message);
+  if (!data || data.length === 0) throw new Error('Delete failed — you may not have permission. Check RLS policies.');
 }
 
 // Leave a pool (remove all of user's entries)
@@ -121,12 +123,14 @@ export async function leavePool(poolId: string, userId: string): Promise<void> {
 
 // Update entry label
 export async function updateEntryLabel(poolPlayerId: string, newLabel: string): Promise<void> {
-  const { error } = await supabase
+  const { error, data } = await supabase
     .from('pool_players')
     .update({ entry_label: newLabel.trim() })
-    .eq('id', poolPlayerId);
+    .eq('id', poolPlayerId)
+    .select('id');
 
   if (error) throw new Error(error.message);
+  if (!data || data.length === 0) throw new Error('Update failed — you may not have permission to edit this entry.');
 }
 
 export async function updatePoolSettings(poolId: string, updates: PoolAdminUpdate): Promise<void> {

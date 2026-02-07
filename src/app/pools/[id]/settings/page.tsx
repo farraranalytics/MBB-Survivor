@@ -162,11 +162,52 @@ function EntryRow({ entry, onSave }: {
 
 // ─── Member Row (creator's member list) ─────────────────────────
 
-function MemberRow({ member, isOwnEntry, onRemove }: {
+function MemberRow({ member, canRemove, onRemove }: {
   member: PoolMember;
-  isOwnEntry: boolean;
-  onRemove: (id: string, name: string) => void;
+  canRemove: boolean;
+  onRemove: (id: string, name: string) => Promise<void>;
 }) {
+  const [confirming, setConfirming] = useState(false);
+  const [removing, setRemoving] = useState(false);
+
+  const handleRemove = async () => {
+    setRemoving(true);
+    try {
+      await onRemove(member.id, member.display_name);
+    } finally {
+      setRemoving(false);
+      setConfirming(false);
+    }
+  };
+
+  if (confirming) {
+    return (
+      <div className="flex items-center justify-between py-2">
+        <span className="text-sm text-[#9BA3AE] truncate" style={{ fontFamily: "'DM Sans', sans-serif" }}>
+          Remove {member.display_name}?
+        </span>
+        <div className="flex items-center gap-3 flex-shrink-0">
+          <button
+            onClick={handleRemove}
+            disabled={removing}
+            className="text-xs font-semibold text-[#EF5350] hover:text-[#E53935] transition-colors disabled:opacity-50"
+            style={{ fontFamily: "'DM Sans', sans-serif" }}
+          >
+            {removing ? '...' : 'Yes'}
+          </button>
+          <button
+            onClick={() => setConfirming(false)}
+            disabled={removing}
+            className="text-xs font-semibold text-[#9BA3AE] hover:text-[#E8E6E1] transition-colors disabled:opacity-50"
+            style={{ fontFamily: "'DM Sans', sans-serif" }}
+          >
+            Cancel
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="flex items-center justify-between py-2">
       <div className="flex items-center gap-2 min-w-0 flex-1">
@@ -185,13 +226,13 @@ function MemberRow({ member, isOwnEntry, onRemove }: {
           {member.is_eliminated ? 'Eliminated' : 'Alive'}
         </span>
       </div>
-      {!isOwnEntry && (
-        <ConfirmButton
-          label="✕"
-          confirmLabel={`Remove ${member.display_name}?`}
-          onConfirm={() => onRemove(member.id, member.display_name)}
+      {canRemove && (
+        <button
+          onClick={() => setConfirming(true)}
           className="ml-2 w-6 h-6 flex items-center justify-center rounded text-[#EF5350] hover:bg-[rgba(239,83,80,0.1)] transition-colors text-xs flex-shrink-0"
-        />
+        >
+          ✕
+        </button>
       )}
     </div>
   );
@@ -215,7 +256,7 @@ export default function PoolSettingsPage() {
 
   // Creator form state
   const [name, setName] = useState('');
-  const [isPrivate, setIsPrivate] = useState(true);
+
   const [maxPlayers, setMaxPlayers] = useState('');
   const [entryFee, setEntryFee] = useState('');
   const [maxEntries, setMaxEntries] = useState('1');
@@ -248,7 +289,6 @@ export default function PoolSettingsPage() {
       }
       setPool(poolData);
       setName(poolData.name);
-      setIsPrivate(poolData.is_private);
       setMaxPlayers(poolData.max_players?.toString() || '');
       setEntryFee(poolData.entry_fee > 0 ? poolData.entry_fee.toString() : '');
       setMaxEntries(poolData.max_entries_per_user?.toString() || '1');
@@ -289,7 +329,6 @@ export default function PoolSettingsPage() {
     try {
       const updates: PoolAdminUpdate = {
         name: name.trim(),
-        is_private: isPrivate,
         max_players: maxPlayers ? parseInt(maxPlayers) : null,
         entry_fee: entryFee ? parseFloat(entryFee) : 0,
         max_entries_per_user: maxEntries ? parseInt(maxEntries) : 1,
@@ -308,14 +347,36 @@ export default function PoolSettingsPage() {
   const handleSaveDisplayName = async () => {
     if (!newDisplayName.trim()) return;
     setSavingName(true);
+    setError('');
     try {
-      const { error } = await supabase.auth.updateUser({
+      const { data: updateData, error: updateError } = await supabase.auth.updateUser({
         data: { display_name: newDisplayName.trim() }
       });
-      if (error) throw error;
+      if (updateError) throw updateError;
+
+      // Verify the update actually persisted
+      const { data: { user: freshUser } } = await supabase.auth.getUser();
+      const savedName = freshUser?.user_metadata?.display_name;
+      if (savedName !== newDisplayName.trim()) {
+        throw new Error(`Display name did not save. Expected "${newDisplayName.trim()}" but got "${savedName}". Check Supabase Auth settings.`);
+      }
+
+      // Also update display_name in all pool_players rows for this user
+      await supabase
+        .from('pool_players')
+        .update({ display_name: newDisplayName.trim() })
+        .eq('user_id', user!.id);
+
+      // Update local members list if creator
+      setMembers(prev => prev.map(m =>
+        m.user_id === user!.id ? { ...m, display_name: newDisplayName.trim() } : m
+      ));
+
+      // Force session refresh so AuthProvider picks up the change
+      await supabase.auth.refreshSession();
       setEditingName(false);
-    } catch (err) {
-      console.error('Failed to update display name:', err);
+    } catch (err: any) {
+      setError(err.message || 'Failed to update display name');
     } finally {
       setSavingName(false);
     }
@@ -329,8 +390,7 @@ export default function PoolSettingsPage() {
   const handleRemoveMember = async (memberId: string, memberName: string) => {
     try {
       await removePoolMember(memberId);
-      setMembers(prev => prev.filter(m => m.id !== memberId));
-      setPool(prev => prev ? { ...prev, player_count: prev.player_count - 1 } : prev);
+      await loadData();
     } catch (err: any) {
       setError(err.message || `Failed to remove ${memberName}`);
     }
@@ -628,19 +688,6 @@ export default function PoolSettingsPage() {
                   </div>
 
                   <div>
-                    <label className="flex items-center space-x-3 cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={isPrivate}
-                        onChange={(e) => setIsPrivate(e.target.checked)}
-                        className="w-5 h-5 rounded bg-[#1B2A3D] border-[rgba(255,255,255,0.08)] text-[#FF5722] focus:ring-[#FF5722] focus:ring-offset-0"
-                      />
-                      <span className="text-sm font-medium text-[#9BA3AE]" style={{ fontFamily: "'DM Sans', sans-serif" }}>Private Pool</span>
-                    </label>
-                    <p className="text-xs text-[#9BA3AE] mt-1.5 ml-8" style={{ fontFamily: "'DM Sans', sans-serif" }}>Private pools require a join code to enter.</p>
-                  </div>
-
-                  <div>
                     <label htmlFor="maxPlayersInput" className="block text-sm font-medium text-[#9BA3AE] mb-2" style={{ fontFamily: "'DM Sans', sans-serif" }}>Max Players</label>
                     <input
                       id="maxPlayersInput"
@@ -729,14 +776,19 @@ export default function PoolSettingsPage() {
                   <p className="text-sm text-[#9BA3AE]" style={{ fontFamily: "'DM Sans', sans-serif" }}>No members yet.</p>
                 ) : (
                   <div className="divide-y divide-[rgba(255,255,255,0.05)]">
-                    {members.map(member => (
-                      <MemberRow
-                        key={member.id}
-                        member={member}
-                        isOwnEntry={member.user_id === user?.id}
-                        onRemove={handleRemoveMember}
-                      />
-                    ))}
+                    {members.map(member => {
+                      const isOwnEntry = member.user_id === user?.id;
+                      const ownEntryCount = isOwnEntry ? members.filter(m => m.user_id === user?.id).length : 0;
+                      const canRemove = !isOwnEntry || ownEntryCount > 1;
+                      return (
+                        <MemberRow
+                          key={member.id}
+                          member={member}
+                          canRemove={canRemove}
+                          onRemove={handleRemoveMember}
+                        />
+                      );
+                    })}
                   </div>
                 )}
               </div>

@@ -201,17 +201,31 @@ function PoolCard({
         isActive ? 'border-[rgba(255,87,34,0.4)]' : 'border-[rgba(255,255,255,0.05)]'
       }`}
     >
-      {/* Row 1: Pool name + status badge */}
+      {/* Row 1: Pool name + status badge + gear */}
       <div className="flex items-center justify-between mb-1">
         <h2 className="font-bold text-[#E8E6E1] text-base truncate mr-2" style={{ fontFamily: "'Oswald', sans-serif", textTransform: 'uppercase' }}>
           {pool.pool_name}
         </h2>
-        <span
-          className={`flex-shrink-0 inline-flex items-center px-2 py-0.5 rounded-full font-bold ${status.cls}`}
-          style={{ fontFamily: "'Space Mono', monospace", fontSize: '0.55rem', letterSpacing: '0.15em', textTransform: 'uppercase' }}
-        >
-          {status.label}
-        </span>
+        <div className="flex items-center gap-2 flex-shrink-0">
+          <span
+            className={`inline-flex items-center px-2 py-0.5 rounded-full font-bold ${status.cls}`}
+            style={{ fontFamily: "'Space Mono', monospace", fontSize: '0.55rem', letterSpacing: '0.15em', textTransform: 'uppercase' }}
+          >
+            {status.label}
+          </span>
+          {isCreator && (
+            <button
+              onClick={(e) => { e.stopPropagation(); router.push(`/pools/${pool.pool_id}/settings`); }}
+              className="text-[#9BA3AE] hover:text-[#E8E6E1] transition-colors p-0.5"
+              title="Pool Settings"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.066 2.573c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.573 1.066c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.066-2.573c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+              </svg>
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Row 2: Round context */}
@@ -276,19 +290,6 @@ function PoolCard({
             style={{ fontFamily: "'DM Sans', sans-serif" }}
           >
             Standings
-          </button>
-        )}
-        {isCreator && (
-          <button
-            onClick={(e) => { e.stopPropagation(); router.push(`/pools/${pool.pool_id}/settings`); }}
-            className="py-2.5 px-3 rounded-[12px] border border-[rgba(255,255,255,0.05)] text-[#9BA3AE] text-sm hover:text-[#E8E6E1] hover:border-[rgba(255,87,34,0.3)] transition-colors"
-            style={{ fontFamily: "'DM Sans', sans-serif" }}
-            title="Manage Pool"
-          >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.066 2.573c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.573 1.066c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.066-2.573c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-            </svg>
           </button>
         )}
       </div>
