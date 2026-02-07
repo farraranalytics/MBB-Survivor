@@ -114,7 +114,7 @@ export default function HomePage() {
               </div>
               <div>
                 <h3 className="text-base font-semibold text-[#E8E6E1] mb-1" style={{ fontFamily: "'Oswald', sans-serif", textTransform: 'uppercase', letterSpacing: '0.02em' }}>Compete with Friends</h3>
-                <p className="text-sm text-[#9BA3AE] leading-relaxed" style={{ fontFamily: "'DM Sans', sans-serif" }}>Create private pools or join existing ones with unique codes.</p>
+                <p className="text-sm text-[#9BA3AE] leading-relaxed" style={{ fontFamily: "'DM Sans', sans-serif" }}>Create a pool and invite friends with a unique join code.</p>
               </div>
             </div>
 
