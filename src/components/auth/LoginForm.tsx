@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from './AuthProvider';
 
-const inputClass = "w-full px-4 py-3 bg-[#1A1A24] border border-[rgba(255,255,255,0.05)] rounded-[12px] text-[#E8E6E1] placeholder-[#8A8694] focus:outline-none focus:ring-2 focus:ring-[#FF5722] focus:border-transparent transition-colors";
+const inputClass = "w-full px-4 py-3 bg-[#1B2A3D] border border-[rgba(255,255,255,0.05)] rounded-[12px] text-[#E8E6E1] placeholder-[#9BA3AE] focus:outline-none focus:ring-2 focus:ring-[#FF5722] focus:border-transparent transition-colors";
 
 export default function LoginForm() {
   const [email, setEmail] = useState('');
@@ -40,15 +40,15 @@ export default function LoginForm() {
   return (
     <div className="min-h-screen bg-[#0D1B2A] flex items-center justify-center px-5">
       <div className="max-w-md w-full animate-fade-in">
-        <Link href="/" className="inline-flex items-center text-sm text-[#8A8694] hover:text-[#E8E6E1] mb-8 transition-colors" style={{ fontFamily: "'DM Sans', sans-serif" }}>
+        <Link href="/" className="inline-flex items-center text-sm text-[#9BA3AE] hover:text-[#E8E6E1] mb-8 transition-colors" style={{ fontFamily: "'DM Sans', sans-serif" }}>
           <svg className="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7" /></svg>
           Back
         </Link>
 
-        <div className="bg-[#111118] border border-[rgba(255,255,255,0.05)] rounded-[12px] p-6 sm:p-8">
+        <div className="bg-[#111827] border border-[rgba(255,255,255,0.05)] rounded-[12px] p-6 sm:p-8">
           <div className="text-center mb-8">
             <h1 className="text-2xl font-bold text-[#E8E6E1] mb-2" style={{ fontFamily: "'Oswald', sans-serif", textTransform: 'uppercase' }}>Welcome Back</h1>
-            <p className="text-[#8A8694] text-sm" style={{ fontFamily: "'DM Sans', sans-serif" }}>Sign in to Survive the Dance</p>
+            <p className="text-[#9BA3AE] text-sm" style={{ fontFamily: "'DM Sans', sans-serif" }}>Sign in to Survive the Dance</p>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-5">
@@ -59,7 +59,7 @@ export default function LoginForm() {
             )}
 
             <div>
-              <label htmlFor="email" className="block text-sm font-medium text-[#8A8694] mb-2" style={{ fontFamily: "'DM Sans', sans-serif" }}>
+              <label htmlFor="email" className="block text-sm font-medium text-[#9BA3AE] mb-2" style={{ fontFamily: "'DM Sans', sans-serif" }}>
                 Email
               </label>
               <input
@@ -75,7 +75,7 @@ export default function LoginForm() {
             </div>
 
             <div>
-              <label htmlFor="password" className="block text-sm font-medium text-[#8A8694] mb-2" style={{ fontFamily: "'DM Sans', sans-serif" }}>
+              <label htmlFor="password" className="block text-sm font-medium text-[#9BA3AE] mb-2" style={{ fontFamily: "'DM Sans', sans-serif" }}>
                 Password
               </label>
               <input
@@ -101,7 +101,7 @@ export default function LoginForm() {
           </form>
 
           <div className="mt-6 text-center">
-            <p className="text-[#8A8694] text-sm" style={{ fontFamily: "'DM Sans', sans-serif" }}>
+            <p className="text-[#9BA3AE] text-sm" style={{ fontFamily: "'DM Sans', sans-serif" }}>
               Don&apos;t have an account?{' '}
               <Link href="/auth/signup" className="text-[#FF5722] hover:text-[#E64A19] font-medium transition-colors">
                 Sign up

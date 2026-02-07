@@ -5,7 +5,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { useAuth } from '@/components/auth/AuthProvider';
 import { getPoolAdmin, updatePoolSettings, PoolAdminData } from '@/lib/admin';
 
-const inputClass = "w-full px-4 py-3 bg-[#1A1A24] border border-[rgba(255,255,255,0.05)] rounded-[12px] text-[#E8E6E1] placeholder-[#8A8694] focus:outline-none focus:ring-2 focus:ring-[#FF5722] focus:border-transparent transition-colors";
+const inputClass = "w-full px-4 py-3 bg-[#1B2A3D] border border-[rgba(255,255,255,0.05)] rounded-[12px] text-[#E8E6E1] placeholder-[#9BA3AE] focus:outline-none focus:ring-2 focus:ring-[#FF5722] focus:border-transparent transition-colors";
 
 export default function PoolAdminPage() {
   const params = useParams();
@@ -84,7 +84,7 @@ export default function PoolAdminPage() {
       <div className="min-h-screen bg-[#0D1B2A] flex items-center justify-center">
         <div className="text-center px-5">
           <h1 className="text-2xl font-bold text-[#E8E6E1] mb-2" style={{ fontFamily: "'Oswald', sans-serif", textTransform: 'uppercase' }}>Not Authorized</h1>
-          <p className="text-[#8A8694] mb-6" style={{ fontFamily: "'DM Sans', sans-serif" }}>Only the pool creator can access admin settings.</p>
+          <p className="text-[#9BA3AE] mb-6" style={{ fontFamily: "'DM Sans', sans-serif" }}>Only the pool creator can access admin settings.</p>
           <button onClick={() => router.push(`/pools/${poolId}`)} className="btn-orange text-[#E8E6E1] px-6 py-3 rounded-[12px] font-semibold" style={{ fontFamily: "'DM Sans', sans-serif" }}>
             Back to Pool
           </button>
@@ -96,11 +96,11 @@ export default function PoolAdminPage() {
   return (
     <div className="min-h-screen bg-[#0D1B2A] pb-24">
       {/* Header */}
-      <header className="bg-[#111118] border-b border-[rgba(255,255,255,0.05)]">
+      <header className="bg-[#111827] border-b border-[rgba(255,255,255,0.05)]">
         <div className="max-w-lg mx-auto px-5">
           <div className="flex items-center justify-between py-4">
             <h1 className="text-xl font-bold text-[#E8E6E1]" style={{ fontFamily: "'Oswald', sans-serif", textTransform: 'uppercase' }}>Pool Admin</h1>
-            <button onClick={() => router.push(`/pools/${poolId}`)} className="text-[#8A8694] hover:text-[#E8E6E1] text-sm font-medium transition-colors" style={{ fontFamily: "'DM Sans', sans-serif" }}>
+            <button onClick={() => router.push(`/pools/${poolId}`)} className="text-[#9BA3AE] hover:text-[#E8E6E1] text-sm font-medium transition-colors" style={{ fontFamily: "'DM Sans', sans-serif" }}>
               <svg className="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7" /></svg>
               Back
             </button>
@@ -113,14 +113,14 @@ export default function PoolAdminPage() {
         <div className="flex items-center justify-between mb-6">
           <div>
             <p className="text-sm font-semibold text-[#E8E6E1]" style={{ fontFamily: "'Oswald', sans-serif", textTransform: 'uppercase' }}>{pool.name}</p>
-            <p className="text-xs text-[#8A8694]" style={{ fontFamily: "'DM Sans', sans-serif" }}>{pool.player_count} player{pool.player_count !== 1 ? 's' : ''}</p>
+            <p className="text-xs text-[#9BA3AE]" style={{ fontFamily: "'DM Sans', sans-serif" }}>{pool.player_count} player{pool.player_count !== 1 ? 's' : ''}</p>
           </div>
           <span
             className={`inline-flex items-center px-2 py-0.5 rounded-full font-bold ${
               pool.status === 'active'
-                ? 'bg-[rgba(76,175,80,0.15)] text-[#4CAF50]'
+                ? 'bg-[rgba(76,175,80,0.12)] text-[#4CAF50]'
                 : pool.status === 'complete'
-                  ? 'bg-[rgba(138,134,148,0.15)] text-[#8A8694]'
+                  ? 'bg-[rgba(138,134,148,0.15)] text-[#9BA3AE]'
                   : 'bg-[rgba(255,87,34,0.15)] text-[#FF5722]'
             }`}
             style={{ fontFamily: "'Space Mono', monospace", fontSize: '0.6rem', letterSpacing: '0.2em', textTransform: 'uppercase' }}
@@ -145,12 +145,12 @@ export default function PoolAdminPage() {
         )}
 
         {/* Settings Form */}
-        <div className="bg-[#111118] border border-[rgba(255,255,255,0.05)] rounded-[12px] p-6">
+        <div className="bg-[#111827] border border-[rgba(255,255,255,0.05)] rounded-[12px] p-6">
           <p className="label mb-4">Pool Settings</p>
 
           <form onSubmit={handleSave} className="space-y-5">
             <div>
-              <label htmlFor="name" className="block text-sm font-medium text-[#8A8694] mb-2" style={{ fontFamily: "'DM Sans', sans-serif" }}>Pool Name *</label>
+              <label htmlFor="name" className="block text-sm font-medium text-[#9BA3AE] mb-2" style={{ fontFamily: "'DM Sans', sans-serif" }}>Pool Name *</label>
               <input
                 id="name"
                 type="text"
@@ -169,15 +169,15 @@ export default function PoolAdminPage() {
                   type="checkbox"
                   checked={isPrivate}
                   onChange={(e) => setIsPrivate(e.target.checked)}
-                  className="w-5 h-5 rounded bg-[#1A1A24] border-[rgba(255,255,255,0.08)] text-[#FF5722] focus:ring-[#FF5722] focus:ring-offset-0"
+                  className="w-5 h-5 rounded bg-[#1B2A3D] border-[rgba(255,255,255,0.08)] text-[#FF5722] focus:ring-[#FF5722] focus:ring-offset-0"
                 />
-                <span className="text-sm font-medium text-[#8A8694]" style={{ fontFamily: "'DM Sans', sans-serif" }}>Private Pool</span>
+                <span className="text-sm font-medium text-[#9BA3AE]" style={{ fontFamily: "'DM Sans', sans-serif" }}>Private Pool</span>
               </label>
-              <p className="text-xs text-[#8A8694] mt-1.5 ml-8" style={{ fontFamily: "'DM Sans', sans-serif" }}>Private pools require a join code to enter.</p>
+              <p className="text-xs text-[#9BA3AE] mt-1.5 ml-8" style={{ fontFamily: "'DM Sans', sans-serif" }}>Private pools require a join code to enter.</p>
             </div>
 
             <div>
-              <label htmlFor="maxPlayers" className="block text-sm font-medium text-[#8A8694] mb-2" style={{ fontFamily: "'DM Sans', sans-serif" }}>Max Players</label>
+              <label htmlFor="maxPlayers" className="block text-sm font-medium text-[#9BA3AE] mb-2" style={{ fontFamily: "'DM Sans', sans-serif" }}>Max Players</label>
               <input
                 id="maxPlayers"
                 type="number"
@@ -189,14 +189,14 @@ export default function PoolAdminPage() {
                 placeholder="No limit"
                 style={{ fontFamily: "'DM Sans', sans-serif" }}
               />
-              <p className="text-xs text-[#8A8694] mt-1.5" style={{ fontFamily: "'DM Sans', sans-serif" }}>Leave blank for unlimited</p>
+              <p className="text-xs text-[#9BA3AE] mt-1.5" style={{ fontFamily: "'DM Sans', sans-serif" }}>Leave blank for unlimited</p>
             </div>
 
             <div>
-              <label htmlFor="entryFee" className="block text-sm font-medium text-[#8A8694] mb-2" style={{ fontFamily: "'DM Sans', sans-serif" }}>Entry Fee</label>
+              <label htmlFor="entryFee" className="block text-sm font-medium text-[#9BA3AE] mb-2" style={{ fontFamily: "'DM Sans', sans-serif" }}>Entry Fee</label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                  <span className="text-[#8A8694] text-sm">$</span>
+                  <span className="text-[#9BA3AE] text-sm">$</span>
                 </div>
                 <input
                   id="entryFee"
@@ -211,11 +211,11 @@ export default function PoolAdminPage() {
                   style={{ fontFamily: "'DM Sans', sans-serif" }}
                 />
               </div>
-              <p className="text-xs text-[#8A8694] mt-1.5" style={{ fontFamily: "'DM Sans', sans-serif" }}>Leave blank or 0 for free pools</p>
+              <p className="text-xs text-[#9BA3AE] mt-1.5" style={{ fontFamily: "'DM Sans', sans-serif" }}>Leave blank or 0 for free pools</p>
             </div>
 
             <div>
-              <label htmlFor="maxEntries" className="block text-sm font-medium text-[#8A8694] mb-2" style={{ fontFamily: "'DM Sans', sans-serif" }}>Entries Per Player</label>
+              <label htmlFor="maxEntries" className="block text-sm font-medium text-[#9BA3AE] mb-2" style={{ fontFamily: "'DM Sans', sans-serif" }}>Entries Per Player</label>
               <input
                 id="maxEntries"
                 type="number"
@@ -227,7 +227,7 @@ export default function PoolAdminPage() {
                 placeholder="1"
                 style={{ fontFamily: "'DM Sans', sans-serif" }}
               />
-              <p className="text-xs text-[#8A8694] mt-1.5" style={{ fontFamily: "'DM Sans', sans-serif" }}>Allow players to run multiple brackets in this pool</p>
+              <p className="text-xs text-[#9BA3AE] mt-1.5" style={{ fontFamily: "'DM Sans', sans-serif" }}>Allow players to run multiple brackets in this pool</p>
             </div>
 
             <button
@@ -242,12 +242,12 @@ export default function PoolAdminPage() {
         </div>
 
         {/* Join Code (read-only reference) */}
-        <div className="bg-[#111118] border border-[rgba(255,255,255,0.05)] rounded-[12px] p-5 mt-4">
+        <div className="bg-[#111827] border border-[rgba(255,255,255,0.05)] rounded-[12px] p-5 mt-4">
           <p className="label mb-2">Join Code</p>
           <p className="text-2xl font-bold text-[#FF5722] tracking-[0.2em]" style={{ fontFamily: "'Space Mono', monospace" }}>
             {pool.join_code}
           </p>
-          <p className="text-xs text-[#8A8694] mt-2" style={{ fontFamily: "'DM Sans', sans-serif" }}>Share this code with players to join your pool.</p>
+          <p className="text-xs text-[#9BA3AE] mt-2" style={{ fontFamily: "'DM Sans', sans-serif" }}>Share this code with players to join your pool.</p>
         </div>
       </main>
     </div>

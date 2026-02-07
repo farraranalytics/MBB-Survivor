@@ -37,10 +37,10 @@ export default function SettingsPage() {
         {/* Account */}
         <section>
           <p className="label mb-3">Account</p>
-          <div className="bg-[#111118] border border-[rgba(255,255,255,0.05)] rounded-[12px] p-5 space-y-4">
+          <div className="bg-[#111827] border border-[rgba(255,255,255,0.05)] rounded-[12px] p-5 space-y-4">
             <div>
               <div className="flex items-center justify-between mb-1">
-                <p className="text-xs text-[#8A8694]" style={{ fontFamily: "'DM Sans', sans-serif" }}>Display Name</p>
+                <p className="text-xs text-[#9BA3AE]" style={{ fontFamily: "'DM Sans', sans-serif" }}>Display Name</p>
                 {!editingName && (
                   <button
                     onClick={() => { setNewDisplayName(currentName); setEditingName(true); }}
@@ -59,7 +59,7 @@ export default function SettingsPage() {
                     onChange={(e) => setNewDisplayName(e.target.value)}
                     maxLength={30}
                     autoFocus
-                    className="w-full bg-[#1A1A24] border border-[rgba(255,255,255,0.1)] rounded-[8px] px-3 py-2 text-sm text-[#E8E6E1] focus:outline-none focus:border-[#FF5722] transition-colors"
+                    className="w-full bg-[#1B2A3D] border border-[rgba(255,255,255,0.1)] rounded-[8px] px-3 py-2 text-sm text-[#E8E6E1] focus:outline-none focus:border-[#FF5722] transition-colors"
                     style={{ fontFamily: "'DM Sans', sans-serif" }}
                     onKeyDown={(e) => { if (e.key === 'Enter') handleSaveName(); if (e.key === 'Escape') setEditingName(false); }}
                   />
@@ -67,7 +67,7 @@ export default function SettingsPage() {
                     <button
                       onClick={() => setEditingName(false)}
                       disabled={savingName}
-                      className="flex-1 py-2 rounded-[8px] text-xs font-semibold border border-[rgba(255,255,255,0.05)] text-[#8A8694] hover:bg-[#1A1A24] transition-colors disabled:opacity-50"
+                      className="flex-1 py-2 rounded-[8px] text-xs font-semibold border border-[rgba(255,255,255,0.05)] text-[#9BA3AE] hover:bg-[#1B2A3D] transition-colors disabled:opacity-50"
                       style={{ fontFamily: "'DM Sans', sans-serif" }}
                     >
                       Cancel
@@ -94,8 +94,8 @@ export default function SettingsPage() {
             </div>
             <div className="border-t border-[rgba(255,255,255,0.05)]" />
             <div>
-              <p className="text-xs text-[#8A8694] mb-1" style={{ fontFamily: "'DM Sans', sans-serif" }}>Email</p>
-              <p className="text-sm text-[#8A8694]" style={{ fontFamily: "'DM Sans', sans-serif" }}>
+              <p className="text-xs text-[#9BA3AE] mb-1" style={{ fontFamily: "'DM Sans', sans-serif" }}>Email</p>
+              <p className="text-sm text-[#9BA3AE]" style={{ fontFamily: "'DM Sans', sans-serif" }}>
                 {user?.email}
               </p>
             </div>
@@ -114,7 +114,7 @@ export default function SettingsPage() {
         </section>
 
         {/* Version */}
-        <p className="text-center text-xs text-[#8A8694] opacity-50 pt-4" style={{ fontFamily: "'DM Sans', sans-serif" }}>
+        <p className="text-center text-xs text-[#9BA3AE] opacity-50 pt-4" style={{ fontFamily: "'DM Sans', sans-serif" }}>
           v1.0.0 · © 2026 Survive the Dance
         </p>
       </main>

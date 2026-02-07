@@ -57,7 +57,7 @@ export async function getPoolLeaderboard(poolId: string): Promise<PoolLeaderboar
           team_id,
           is_correct,
           submitted_at,
-          team:team_id(id, name, abbreviation, seed)
+          team:team_id(id, name, abbreviation, seed, logo_url)
         `)
         .in('pool_player_id', playerIds)
     : { data: [] };
@@ -96,7 +96,7 @@ export async function getPoolLeaderboard(poolId: string): Promise<PoolLeaderboar
         const round = roundMap.get(pick.round_id);
         if (!round) return null;
 
-        const team = pick.team as unknown as { id: string; name: string; abbreviation: string; seed: number } | null;
+        const team = pick.team as unknown as { id: string; name: string; abbreviation: string; seed: number; logo_url: string | null } | null;
         const game = findGame(pick.round_id, pick.team_id);
 
         let opponentName: string | null = null;
@@ -129,6 +129,7 @@ export async function getPoolLeaderboard(poolId: string): Promise<PoolLeaderboar
           team_name: team?.name || 'Unknown',
           team_seed: team?.seed || 0,
           team_abbreviation: team?.abbreviation || '???',
+          team_logo_url: team?.logo_url || null,
           opponent_name: opponentName,
           opponent_seed: opponentSeed,
           is_correct: pick.is_correct,
@@ -205,7 +206,7 @@ export async function getPoolLeaderboard(poolId: string): Promise<PoolLeaderboar
   const roundsWithPicks = new Set(picks.map(p => p.round_id));
   const roundsPlayed = allRounds
     .filter(r => roundsWithPicks.has(r.id))
-    .map(r => ({ id: r.id, name: r.name, date: r.date }));
+    .map(r => ({ id: r.id, name: r.name, date: r.date, deadline_datetime: r.deadline_datetime }));
 
   return {
     pool_id: poolId,

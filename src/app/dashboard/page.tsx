@@ -36,20 +36,20 @@ function LoadingSkeleton() {
     <div className="min-h-screen bg-[#0D1B2A] pb-24">
       <div className="max-w-lg mx-auto px-5 py-4 space-y-4">
         {[1, 2].map(i => (
-          <div key={i} className="bg-[#111118] border border-[rgba(255,255,255,0.05)] rounded-[12px] p-5 animate-pulse">
+          <div key={i} className="bg-[#111827] border border-[rgba(255,255,255,0.05)] rounded-[12px] p-5 animate-pulse">
             <div className="flex items-center justify-between mb-3">
-              <div className="h-5 w-32 bg-[#1A1A24] rounded" />
-              <div className="h-5 w-16 bg-[#1A1A24] rounded-full" />
+              <div className="h-5 w-32 bg-[#1B2A3D] rounded" />
+              <div className="h-5 w-16 bg-[#1B2A3D] rounded-full" />
             </div>
-            <div className="h-4 w-24 bg-[#1A1A24] rounded mb-4" />
+            <div className="h-4 w-24 bg-[#1B2A3D] rounded mb-4" />
             <div className="space-y-2 mb-4">
-              <div className="h-4 w-48 bg-[#1A1A24] rounded" />
-              <div className="h-4 w-40 bg-[#1A1A24] rounded" />
+              <div className="h-4 w-48 bg-[#1B2A3D] rounded" />
+              <div className="h-4 w-40 bg-[#1B2A3D] rounded" />
             </div>
-            <div className="h-4 w-36 bg-[#1A1A24] rounded mb-4" />
+            <div className="h-4 w-36 bg-[#1B2A3D] rounded mb-4" />
             <div className="flex gap-2">
-              <div className="h-10 flex-1 bg-[#1A1A24] rounded-[12px]" />
-              <div className="h-10 flex-1 bg-[#1A1A24] rounded-[12px]" />
+              <div className="h-10 flex-1 bg-[#1B2A3D] rounded-[12px]" />
+              <div className="h-10 flex-1 bg-[#1B2A3D] rounded-[12px]" />
             </div>
           </div>
         ))}
@@ -64,17 +64,17 @@ function EmptyState() {
   return (
     <div className="min-h-screen bg-[#0D1B2A] pb-24">
       <main className="max-w-lg mx-auto px-5 py-6">
-        <div className="bg-[#111118] border border-[rgba(255,255,255,0.05)] rounded-[12px] p-8 text-center">
+        <div className="bg-[#111827] border border-[rgba(255,255,255,0.05)] rounded-[12px] p-8 text-center">
           <div className="w-16 h-16 bg-[rgba(255,87,34,0.08)] rounded-[16px] flex items-center justify-center mx-auto mb-4">
             <svg className="w-8 h-8 text-[#FF5722]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
           </div>
           <p className="text-[#E8E6E1] font-semibold text-lg mb-1" style={{ fontFamily: "'Oswald', sans-serif", textTransform: 'uppercase' }}>No Pools Yet</p>
-          <p className="text-[#8A8694] text-sm mb-6" style={{ fontFamily: "'DM Sans', sans-serif" }}>Create or join a pool to start playing.</p>
+          <p className="text-[#9BA3AE] text-sm mb-6" style={{ fontFamily: "'DM Sans', sans-serif" }}>Create or join a pool to start playing.</p>
           <div className="flex justify-center gap-3">
             <Link href="/pools/create" className="btn-orange px-5 py-2.5 text-sm font-semibold rounded-[12px]" style={{ fontFamily: "'DM Sans', sans-serif" }}>
               Create Pool
             </Link>
-            <Link href="/pools/join" className="px-5 py-2.5 bg-[#1A1A24] border border-[rgba(255,255,255,0.05)] text-[#8A8694] text-sm font-semibold rounded-[12px] hover:border-[rgba(255,87,34,0.3)] transition-colors" style={{ fontFamily: "'DM Sans', sans-serif" }}>
+            <Link href="/pools/join" className="px-5 py-2.5 bg-[#1B2A3D] border border-[rgba(255,255,255,0.05)] text-[#9BA3AE] text-sm font-semibold rounded-[12px] hover:border-[rgba(255,87,34,0.3)] transition-colors" style={{ fontFamily: "'DM Sans', sans-serif" }}>
               Join Pool
             </Link>
           </div>
@@ -86,7 +86,7 @@ function EmptyState() {
 
 // ─── Entry Status Line ───────────────────────────────────────────
 
-function EntryStatusLine({ entry, poolStatus }: { entry: MyPoolEntry; poolStatus: string }) {
+function EntryStatusLine({ entry, poolStatus, hasActiveRound }: { entry: MyPoolEntry; poolStatus: string; hasActiveRound: boolean }) {
   let dotColor: string;
   let statusText: string;
 
@@ -96,7 +96,7 @@ function EntryStatusLine({ entry, poolStatus }: { entry: MyPoolEntry; poolStatus
   } else if (entry.has_picked_today) {
     dotColor = 'bg-[#4CAF50]';
     statusText = 'Alive · Picked ✓';
-  } else if (poolStatus === 'active') {
+  } else if (poolStatus === 'active' && hasActiveRound) {
     dotColor = 'bg-[#FFB300]';
     statusText = 'Alive · Needs Pick';
   } else {
@@ -110,7 +110,7 @@ function EntryStatusLine({ entry, poolStatus }: { entry: MyPoolEntry; poolStatus
       <span className="text-sm text-[#E8E6E1] font-medium truncate" style={{ fontFamily: "'DM Sans', sans-serif" }}>
         {entry.entry_label}
       </span>
-      <span className="text-xs text-[#8A8694] flex-shrink-0" style={{ fontFamily: "'DM Sans', sans-serif" }}>
+      <span className="text-xs text-[#9BA3AE] flex-shrink-0" style={{ fontFamily: "'DM Sans', sans-serif" }}>
         {statusText}
       </span>
     </div>
@@ -167,8 +167,8 @@ function PoolCard({
   // Status badge
   const statusConfig = {
     open: { label: 'PRE-TOURNAMENT', cls: 'bg-[rgba(255,87,34,0.15)] text-[#FF5722]' },
-    active: { label: 'ACTIVE', cls: 'bg-[rgba(76,175,80,0.15)] text-[#4CAF50]' },
-    complete: { label: 'COMPLETE', cls: 'bg-[rgba(138,134,148,0.15)] text-[#8A8694]' },
+    active: { label: 'ACTIVE', cls: 'bg-[rgba(76,175,80,0.12)] text-[#4CAF50]' },
+    complete: { label: 'COMPLETE', cls: 'bg-[rgba(138,134,148,0.15)] text-[#9BA3AE]' },
   };
   const status = statusConfig[pool.pool_status];
 
@@ -176,7 +176,7 @@ function PoolCard({
   let roundContext: string;
   if (pool.pool_status === 'open') roundContext = 'Pre-Tournament';
   else if (pool.pool_status === 'complete') roundContext = 'Tournament Complete';
-  else roundContext = pool.current_round_name || 'Active';
+  else roundContext = pool.current_round_name || 'Waiting for next round';
 
   // Deadline
   const deadline = pool.deadline_datetime ? formatDeadline(pool.deadline_datetime) : null;
@@ -197,7 +197,7 @@ function PoolCard({
   return (
     <div
       onClick={onActivate}
-      className={`bg-[#111118] border rounded-[12px] p-5 cursor-pointer transition-colors ${
+      className={`bg-[#111827] border rounded-[12px] p-5 cursor-pointer transition-colors ${
         isActive ? 'border-[rgba(255,87,34,0.4)]' : 'border-[rgba(255,255,255,0.05)]'
       }`}
     >
@@ -215,14 +215,14 @@ function PoolCard({
       </div>
 
       {/* Row 2: Round context */}
-      <p className="text-xs text-[#8A8694] mb-3" style={{ fontFamily: "'DM Sans', sans-serif" }}>
+      <p className="text-xs text-[#9BA3AE] mb-3" style={{ fontFamily: "'DM Sans', sans-serif" }}>
         {roundContext}
       </p>
 
       {/* Row 3: Per-entry status lines */}
       <div className="mb-3">
         {pool.your_entries.map(entry => (
-          <EntryStatusLine key={entry.pool_player_id} entry={entry} poolStatus={pool.pool_status} />
+          <EntryStatusLine key={entry.pool_player_id} entry={entry} poolStatus={pool.pool_status} hasActiveRound={pool.current_round_name !== null} />
         ))}
 
         {/* Row 4: + Add Entry */}
@@ -239,7 +239,7 @@ function PoolCard({
 
       {/* Row 5: Pool stats + deadline */}
       <div className="flex items-center justify-between mb-4">
-        <p className="text-xs text-[#8A8694]" style={{ fontFamily: "'DM Sans', sans-serif" }}>
+        <p className="text-xs text-[#9BA3AE]" style={{ fontFamily: "'DM Sans', sans-serif" }}>
           <span className="font-bold text-[#E8E6E1]" style={{ fontFamily: "'Space Mono', monospace" }}>{pool.alive_players}</span>/{pool.total_players} alive
         </p>
         {deadline && (
@@ -272,7 +272,7 @@ function PoolCard({
         {showStandings && (
           <button
             onClick={(e) => { e.stopPropagation(); router.push(`/pools/${pool.pool_id}/standings`); }}
-            className="flex-1 py-2.5 rounded-[12px] border border-[rgba(255,255,255,0.05)] text-[#8A8694] text-sm font-semibold hover:text-[#E8E6E1] hover:border-[rgba(255,87,34,0.3)] transition-colors"
+            className="flex-1 py-2.5 rounded-[12px] border border-[rgba(255,255,255,0.05)] text-[#9BA3AE] text-sm font-semibold hover:text-[#E8E6E1] hover:border-[rgba(255,87,34,0.3)] transition-colors"
             style={{ fontFamily: "'DM Sans', sans-serif" }}
           >
             Standings
@@ -281,7 +281,7 @@ function PoolCard({
         {isCreator && (
           <button
             onClick={(e) => { e.stopPropagation(); router.push(`/pools/${pool.pool_id}/admin`); }}
-            className="py-2.5 px-3 rounded-[12px] border border-[rgba(255,255,255,0.05)] text-[#8A8694] text-sm hover:text-[#E8E6E1] hover:border-[rgba(255,87,34,0.3)] transition-colors"
+            className="py-2.5 px-3 rounded-[12px] border border-[rgba(255,255,255,0.05)] text-[#9BA3AE] text-sm hover:text-[#E8E6E1] hover:border-[rgba(255,87,34,0.3)] transition-colors"
             style={{ fontFamily: "'DM Sans', sans-serif" }}
             title="Manage Pool"
           >
@@ -293,10 +293,10 @@ function PoolCard({
         )}
       </div>
 
-      {/* Row 7: Join Code + Share */}
-      <div className="flex items-center justify-between bg-[#1A1A24] border border-[rgba(255,255,255,0.05)] rounded-[8px] px-3 py-2">
+      {/* Row 7: Join Code + Share (hidden for complete pools) */}
+      {pool.pool_status !== 'complete' && <div className="flex items-center justify-between bg-[#1B2A3D] border border-[rgba(255,255,255,0.05)] rounded-[8px] px-3 py-2">
         <div className="flex items-center gap-2">
-          <span className="text-[10px] uppercase tracking-widest text-[#8A8694]" style={{ fontFamily: "'Space Mono', monospace", letterSpacing: '0.15em' }}>Code</span>
+          <span className="text-[10px] uppercase tracking-widest text-[#9BA3AE]" style={{ fontFamily: "'Space Mono', monospace", letterSpacing: '0.15em' }}>Code</span>
           <span className="text-sm font-bold text-[#FF5722] tracking-[0.12em]" style={{ fontFamily: "'Space Mono', monospace" }}>
             {pool.join_code}
           </span>
@@ -306,8 +306,8 @@ function PoolCard({
             onClick={handleCopy}
             className={`px-2.5 py-1 rounded-[6px] text-[11px] font-semibold transition-all ${
               copiedCode
-                ? 'bg-[rgba(76,175,80,0.15)] text-[#4CAF50]'
-                : 'bg-[#111118] border border-[rgba(255,255,255,0.05)] text-[#8A8694] hover:text-[#E8E6E1]'
+                ? 'bg-[rgba(76,175,80,0.12)] text-[#4CAF50]'
+                : 'bg-[#111827] border border-[rgba(255,255,255,0.05)] text-[#9BA3AE] hover:text-[#E8E6E1]'
             }`}
             style={{ fontFamily: "'DM Sans', sans-serif" }}
           >
@@ -315,13 +315,13 @@ function PoolCard({
           </button>
           <button
             onClick={handleShare}
-            className="px-2.5 py-1 rounded-[6px] text-[11px] font-semibold bg-[#111118] border border-[rgba(255,255,255,0.05)] text-[#8A8694] hover:text-[#E8E6E1] transition-all"
+            className="px-2.5 py-1 rounded-[6px] text-[11px] font-semibold bg-[#111827] border border-[rgba(255,255,255,0.05)] text-[#9BA3AE] hover:text-[#E8E6E1] transition-all"
             style={{ fontFamily: "'DM Sans', sans-serif" }}
           >
             Share
           </button>
         </div>
-      </div>
+      </div>}
     </div>
   );
 }
@@ -340,10 +340,10 @@ export default function Dashboard() {
       <div className="max-w-lg mx-auto px-5 py-4 space-y-4">
         {/* Create / Join links at top */}
         <div className="flex justify-center gap-4">
-          <Link href="/pools/create" className="text-sm text-[#8A8694] hover:text-[#FF5722] transition-colors" style={{ fontFamily: "'DM Sans', sans-serif" }}>
+          <Link href="/pools/create" className="text-sm text-[#9BA3AE] hover:text-[#FF5722] transition-colors" style={{ fontFamily: "'DM Sans', sans-serif" }}>
             + Create Pool
           </Link>
-          <Link href="/pools/join" className="text-sm text-[#8A8694] hover:text-[#FF5722] transition-colors" style={{ fontFamily: "'DM Sans', sans-serif" }}>
+          <Link href="/pools/join" className="text-sm text-[#9BA3AE] hover:text-[#FF5722] transition-colors" style={{ fontFamily: "'DM Sans', sans-serif" }}>
             + Join Pool
           </Link>
         </div>

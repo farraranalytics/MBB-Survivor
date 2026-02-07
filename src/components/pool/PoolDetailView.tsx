@@ -38,7 +38,7 @@ function JoinCodeCard({ joinCode, poolName }: { joinCode: string; poolName: stri
   };
 
   return (
-    <div className="bg-[#111118] border border-[rgba(255,255,255,0.05)] rounded-[12px] p-5 mb-4">
+    <div className="bg-[#111827] border border-[rgba(255,255,255,0.05)] rounded-[12px] p-5 mb-4">
       <p className="label mb-2">Join Code</p>
       <div className="flex items-center justify-between">
         <span className="text-2xl font-bold text-[#FF5722] tracking-[0.2em]" style={{ fontFamily: "'Space Mono', monospace" }}>
@@ -49,8 +49,8 @@ function JoinCodeCard({ joinCode, poolName }: { joinCode: string; poolName: stri
             onClick={handleCopy}
             className={`px-3 py-2 rounded-[8px] text-xs font-semibold transition-all ${
               copied
-                ? 'bg-[rgba(76,175,80,0.15)] text-[#4CAF50]'
-                : 'bg-[#1A1A24] border border-[rgba(255,255,255,0.05)] text-[#8A8694] hover:text-[#E8E6E1] hover:border-[rgba(255,87,34,0.3)]'
+                ? 'bg-[rgba(76,175,80,0.12)] text-[#4CAF50]'
+                : 'bg-[#1B2A3D] border border-[rgba(255,255,255,0.05)] text-[#9BA3AE] hover:text-[#E8E6E1] hover:border-[rgba(255,87,34,0.3)]'
             }`}
             style={{ fontFamily: "'DM Sans', sans-serif" }}
           >
@@ -64,7 +64,7 @@ function JoinCodeCard({ joinCode, poolName }: { joinCode: string; poolName: stri
           </button>
           <button
             onClick={handleShare}
-            className="px-3 py-2 rounded-[8px] text-xs font-semibold bg-[#1A1A24] border border-[rgba(255,255,255,0.05)] text-[#8A8694] hover:text-[#E8E6E1] hover:border-[rgba(255,87,34,0.3)] transition-all"
+            className="px-3 py-2 rounded-[8px] text-xs font-semibold bg-[#1B2A3D] border border-[rgba(255,255,255,0.05)] text-[#9BA3AE] hover:text-[#E8E6E1] hover:border-[rgba(255,87,34,0.3)] transition-all"
             style={{ fontFamily: "'DM Sans', sans-serif" }}
           >
             <span className="flex items-center gap-1">
@@ -113,11 +113,11 @@ export default function PoolDetailView({ standings, deadline, user, poolId, show
   return (
     <div className="max-w-lg mx-auto px-5 py-6">
       {/* Pool Header */}
-      <div className="bg-[#111118] border border-[rgba(255,255,255,0.05)] rounded-[12px] p-5 mb-4">
+      <div className="bg-[#111827] border border-[rgba(255,255,255,0.05)] rounded-[12px] p-5 mb-4">
         <div className="flex items-center justify-between mb-4">
           <h1 className="text-xl font-bold text-[#E8E6E1] truncate mr-3" style={{ fontFamily: "'Oswald', sans-serif", textTransform: 'uppercase' }}>{standings.pool_name}</h1>
           {showBackButton && (
-            <button onClick={() => router.push('/dashboard')} className="text-[#8A8694] hover:text-[#E8E6E1] text-sm flex-shrink-0 transition-colors" style={{ fontFamily: "'DM Sans', sans-serif" }}>
+            <button onClick={() => router.push('/dashboard')} className="text-[#9BA3AE] hover:text-[#E8E6E1] text-sm flex-shrink-0 transition-colors" style={{ fontFamily: "'DM Sans', sans-serif" }}>
               <svg className="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7" /></svg>
               Back
             </button>
@@ -125,7 +125,7 @@ export default function PoolDetailView({ standings, deadline, user, poolId, show
         </div>
 
         <div className="text-center mb-3">
-          <p className="text-[#8A8694] text-sm" style={{ fontFamily: "'DM Sans', sans-serif" }}>
+          <p className="text-[#9BA3AE] text-sm" style={{ fontFamily: "'DM Sans', sans-serif" }}>
             {standings.alive_players} alive. {standings.eliminated_players} eliminated. {standings.total_players} entered.
           </p>
         </div>
@@ -139,9 +139,9 @@ export default function PoolDetailView({ standings, deadline, user, poolId, show
             <p className="text-2xl font-bold text-[#EF5350]" style={{ fontFamily: "'Oswald', sans-serif" }}>{standings.eliminated_players}</p>
             <p className="label text-[#EF5350]" style={{ fontSize: '0.6rem' }}>Out</p>
           </div>
-          <div className="bg-[#1A1A24] rounded-[8px] p-3">
+          <div className="bg-[#1B2A3D] rounded-[8px] p-3">
             <p className="text-2xl font-bold text-[#E8E6E1]" style={{ fontFamily: "'Oswald', sans-serif" }}>{standings.total_players}</p>
-            <p className="label text-[#8A8694]" style={{ fontSize: '0.6rem' }}>Total</p>
+            <p className="label text-[#9BA3AE]" style={{ fontSize: '0.6rem' }}>Total</p>
           </div>
         </div>
       </div>
@@ -153,7 +153,7 @@ export default function PoolDetailView({ standings, deadline, user, poolId, show
 
       {/* Your Entries */}
       {standings.your_entries.length > 0 && (
-        <div className="bg-[#111118] border border-[rgba(255,255,255,0.05)] rounded-[12px] p-5 mb-4">
+        <div className="bg-[#111827] border border-[rgba(255,255,255,0.05)] rounded-[12px] p-5 mb-4">
           <div className="flex items-center justify-between mb-4">
             <p className="label">{standings.your_entries.length > 1 ? 'Your Entries' : 'Your Status'}</p>
           </div>
@@ -165,7 +165,7 @@ export default function PoolDetailView({ standings, deadline, user, poolId, show
               const entryLabel = entry.entry_label || `Entry ${entry.entry_number}`;
 
               return (
-                <div key={entry.pool_player_id} className={standings.your_entries.length > 1 ? 'bg-[#1A1A24] border border-[rgba(255,255,255,0.05)] rounded-[8px] p-4' : ''}>
+                <div key={entry.pool_player_id} className={standings.your_entries.length > 1 ? 'bg-[#1B2A3D] border border-[rgba(255,255,255,0.05)] rounded-[8px] p-4' : ''}>
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-xs font-semibold text-[#FF5722] mb-1.5" style={{ fontFamily: "'Space Mono', monospace", letterSpacing: '0.1em', textTransform: 'uppercase' }}>
@@ -175,14 +175,14 @@ export default function PoolDetailView({ standings, deadline, user, poolId, show
                         <span
                           className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wide ${
                             entry.is_eliminated
-                              ? 'bg-[rgba(239,83,80,0.15)] text-[#EF5350]'
-                              : 'bg-[rgba(76,175,80,0.15)] text-[#4CAF50]'
+                              ? 'bg-[rgba(239,83,80,0.12)] text-[#EF5350]'
+                              : 'bg-[rgba(76,175,80,0.12)] text-[#4CAF50]'
                           }`}
                           style={{ fontFamily: "'Space Mono', monospace", letterSpacing: '0.1em' }}
                         >
                           {entry.is_eliminated ? 'OUT' : 'ALIVE'}
                         </span>
-                        <span className="text-sm text-[#8A8694]" style={{ fontFamily: "'DM Sans', sans-serif" }}>
+                        <span className="text-sm text-[#9BA3AE]" style={{ fontFamily: "'DM Sans', sans-serif" }}>
                           {entry.picks_count} pick{entry.picks_count !== 1 ? 's' : ''}
                         </span>
                         {entry.survival_streak > 1 && (
@@ -199,7 +199,7 @@ export default function PoolDetailView({ standings, deadline, user, poolId, show
                       )}
 
                       {entry.current_pick?.team && (
-                        <p className="text-sm text-[#8A8694]" style={{ fontFamily: "'DM Sans', sans-serif" }}>
+                        <p className="text-sm text-[#9BA3AE]" style={{ fontFamily: "'DM Sans', sans-serif" }}>
                           Pick:{' '}
                           <span className="font-semibold text-[#E8E6E1]">
                             ({entry.current_pick.team.seed}) {entry.current_pick.team.name}
@@ -222,7 +222,7 @@ export default function PoolDetailView({ standings, deadline, user, poolId, show
                       {entryHasPick && !deadline?.is_expired && (
                         <button
                           onClick={() => router.push(`/pools/${poolId}/pick?entry=${entry.pool_player_id}`)}
-                          className="bg-[rgba(255,179,0,0.15)] text-[#FFB300] border border-[rgba(255,179,0,0.3)] px-4 py-2.5 rounded-[12px] font-bold text-sm hover:bg-[rgba(255,179,0,0.25)] transition-colors"
+                          className="bg-[rgba(255,179,0,0.12)] text-[#FFB300] border border-[rgba(255,179,0,0.3)] px-4 py-2.5 rounded-[12px] font-bold text-sm hover:bg-[rgba(255,179,0,0.25)] transition-colors"
                           style={{ fontFamily: "'DM Sans', sans-serif" }}
                         >
                           Change
@@ -241,13 +241,13 @@ export default function PoolDetailView({ standings, deadline, user, poolId, show
 
           {/* Deadline */}
           {standings.current_round && deadline && (
-            <div className="mt-4 p-4 bg-[#1A1A24] border border-[rgba(255,255,255,0.05)] rounded-[8px]">
+            <div className="mt-4 p-4 bg-[#1B2A3D] border border-[rgba(255,255,255,0.05)] rounded-[8px]">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-semibold text-[#E8E6E1]" style={{ fontFamily: "'Oswald', sans-serif", textTransform: 'uppercase' }}>
                     {standings.current_round.name}
                   </p>
-                  <p className="text-xs text-[#8A8694] mt-0.5" style={{ fontFamily: "'DM Sans', sans-serif" }}>
+                  <p className="text-xs text-[#9BA3AE] mt-0.5" style={{ fontFamily: "'DM Sans', sans-serif" }}>
                     {deadline?.is_expired ? 'Picks locked' : "Clock's ticking"}
                   </p>
                 </div>
@@ -259,7 +259,7 @@ export default function PoolDetailView({ standings, deadline, user, poolId, show
                       <p className={`text-lg font-bold ${getDeadlineColor()}`} style={{ fontFamily: "'Space Mono', monospace" }}>
                         {formatTimeRemaining(deadline.minutes_remaining)}
                       </p>
-                      <p className="text-[10px] text-[#8A8694]" style={{ fontFamily: "'Space Mono', monospace" }}>
+                      <p className="text-[10px] text-[#9BA3AE]" style={{ fontFamily: "'Space Mono', monospace" }}>
                         {new Date(deadline.deadline_datetime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                       </p>
                     </>
@@ -272,7 +272,7 @@ export default function PoolDetailView({ standings, deadline, user, poolId, show
       )}
 
       {/* Standings */}
-      <div className="bg-[#111118] border border-[rgba(255,255,255,0.05)] rounded-[12px] p-5">
+      <div className="bg-[#111827] border border-[rgba(255,255,255,0.05)] rounded-[12px] p-5">
         <div className="flex items-center justify-between mb-4">
           <p className="label">Standings</p>
           <button onClick={() => router.push(`/pools/${poolId}/standings`)} className="text-[#FF5722] hover:text-[#E64A19] text-xs font-semibold transition-colors" style={{ fontFamily: "'DM Sans', sans-serif" }}>
@@ -287,21 +287,21 @@ export default function PoolDetailView({ standings, deadline, user, poolId, show
               <div
                 key={player.pool_player_id}
                 className={`flex items-center justify-between p-3 rounded-[8px] ${
-                  isYou ? 'bg-[rgba(255,87,34,0.06)] border border-[rgba(255,87,34,0.2)]' : 'bg-[#1A1A24]'
+                  isYou ? 'bg-[rgba(255,87,34,0.06)] border border-[rgba(255,87,34,0.2)]' : 'bg-[#1B2A3D]'
                 }`}
               >
                 <div className="flex items-center space-x-3 min-w-0 flex-1">
-                  <span className="text-xs font-bold text-[#8A8694] w-5 text-right flex-shrink-0" style={{ fontFamily: "'Space Mono', monospace" }}>
+                  <span className="text-xs font-bold text-[#9BA3AE] w-5 text-right flex-shrink-0" style={{ fontFamily: "'Space Mono', monospace" }}>
                     {index + 1}
                   </span>
                   <div className="min-w-0">
                     <p className="font-semibold text-[#E8E6E1] text-xs truncate" style={{ fontFamily: "'Oswald', sans-serif", textTransform: 'uppercase', letterSpacing: '0.02em' }}>
-                      {player.display_name} <span className="text-[#8A8694] font-normal" style={{ fontFamily: "'DM Sans', sans-serif", textTransform: 'none' }}>&mdash; {player.entry_label}</span>
+                      {player.display_name} <span className="text-[#9BA3AE] font-normal" style={{ fontFamily: "'DM Sans', sans-serif", textTransform: 'none' }}>&mdash; {player.entry_label}</span>
                       {isYou && <span className="text-[#FF5722] ml-1.5" style={{ fontFamily: "'Space Mono', monospace" }}>YOU</span>}
                     </p>
                     <div className="flex items-center gap-2 mt-0.5">
                       <span className={`inline-flex items-center w-2 h-2 rounded-full ${player.is_eliminated ? 'bg-[#EF5350]' : 'bg-[#4CAF50]'}`} />
-                      <span className="text-[11px] text-[#8A8694]" style={{ fontFamily: "'DM Sans', sans-serif" }}>
+                      <span className="text-[11px] text-[#9BA3AE]" style={{ fontFamily: "'DM Sans', sans-serif" }}>
                         {player.picks_count} pick{player.picks_count !== 1 ? 's' : ''}
                       </span>
                       {player.survival_streak > 1 && (
@@ -318,7 +318,7 @@ export default function PoolDetailView({ standings, deadline, user, poolId, show
                     <p className="text-xs font-semibold text-[#E8E6E1]" style={{ fontFamily: "'DM Sans', sans-serif" }}>
                       {player.current_pick.team.name}
                     </p>
-                    <p className="text-[10px] text-[#8A8694]" style={{ fontFamily: "'Space Mono', monospace" }}>
+                    <p className="text-[10px] text-[#9BA3AE]" style={{ fontFamily: "'Space Mono', monospace" }}>
                       {player.current_pick.team.seed} SEED
                     </p>
                   </div>
@@ -329,7 +329,7 @@ export default function PoolDetailView({ standings, deadline, user, poolId, show
         </div>
 
         {standings.players.length === 0 && (
-          <p className="text-center text-[#8A8694] py-8" style={{ fontFamily: "'DM Sans', sans-serif" }}>No players in this pool yet.</p>
+          <p className="text-center text-[#9BA3AE] py-8" style={{ fontFamily: "'DM Sans', sans-serif" }}>No players in this pool yet.</p>
         )}
 
         {standings.players.length > 5 && (
@@ -347,7 +347,7 @@ export default function PoolDetailView({ standings, deadline, user, poolId, show
       <div className="mt-4 grid grid-cols-2 gap-3">
         <button
           onClick={() => router.push(`/pools/${poolId}/standings`)}
-          className="bg-[#111118] border border-[rgba(255,255,255,0.05)] rounded-[12px] p-4 text-center hover:border-[rgba(255,87,34,0.3)] transition-colors"
+          className="bg-[#111827] border border-[rgba(255,255,255,0.05)] rounded-[12px] p-4 text-center hover:border-[rgba(255,87,34,0.3)] transition-colors"
         >
           <div className="w-10 h-10 bg-[rgba(27,58,92,0.3)] rounded-[8px] flex items-center justify-center mx-auto mb-2">
             <svg className="w-5 h-5 text-[#1B3A5C]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg>
@@ -356,7 +356,7 @@ export default function PoolDetailView({ standings, deadline, user, poolId, show
         </button>
         <button
           onClick={() => router.push(`/pools/${poolId}/bracket`)}
-          className="bg-[#111118] border border-[rgba(255,255,255,0.05)] rounded-[12px] p-4 text-center hover:border-[rgba(255,87,34,0.3)] transition-colors"
+          className="bg-[#111827] border border-[rgba(255,255,255,0.05)] rounded-[12px] p-4 text-center hover:border-[rgba(255,87,34,0.3)] transition-colors"
         >
           <div className="w-10 h-10 bg-[rgba(255,87,34,0.08)] rounded-[8px] flex items-center justify-center mx-auto mb-2">
             <svg className="w-5 h-5 text-[#FF5722]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>

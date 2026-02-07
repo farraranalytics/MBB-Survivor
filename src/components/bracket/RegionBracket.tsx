@@ -9,18 +9,18 @@ interface RegionBracketProps {
 
 function TBDMatchupCard() {
   return (
-    <div className="w-52 border border-dashed border-[rgba(255,255,255,0.05)] rounded-[12px] overflow-hidden bg-[#1A1A24]">
+    <div className="w-52 border border-dashed border-[rgba(255,255,255,0.05)] rounded-[12px] overflow-hidden bg-[#1B2A3D]">
       <div className="flex items-center justify-between px-2.5 py-2">
         <div className="flex items-center gap-1.5">
-          <span className="text-xs text-[#8A8694] w-5 text-center" style={{ fontFamily: "'Space Mono', monospace" }}>-</span>
-          <span className="text-xs text-[#8A8694] italic" style={{ fontFamily: "'DM Sans', sans-serif" }}>TBD</span>
+          <span className="text-xs text-[#9BA3AE] w-5 text-center" style={{ fontFamily: "'Space Mono', monospace" }}>-</span>
+          <span className="text-xs text-[#9BA3AE] italic" style={{ fontFamily: "'DM Sans', sans-serif" }}>TBD</span>
         </div>
       </div>
       <div className="border-t border-[rgba(255,255,255,0.05)]" />
       <div className="flex items-center justify-between px-2.5 py-2">
         <div className="flex items-center gap-1.5">
-          <span className="text-xs text-[#8A8694] w-5 text-center" style={{ fontFamily: "'Space Mono', monospace" }}>-</span>
-          <span className="text-xs text-[#8A8694] italic" style={{ fontFamily: "'DM Sans', sans-serif" }}>TBD</span>
+          <span className="text-xs text-[#9BA3AE] w-5 text-center" style={{ fontFamily: "'Space Mono', monospace" }}>-</span>
+          <span className="text-xs text-[#9BA3AE] italic" style={{ fontFamily: "'DM Sans', sans-serif" }}>TBD</span>
         </div>
       </div>
     </div>

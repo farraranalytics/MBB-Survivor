@@ -13,6 +13,7 @@ import {
   PickError
 } from '@/lib/picks';
 import { supabase } from '@/lib/supabase/client';
+import { getSeedWinProbability } from '@/lib/analyze';
 import { PickableTeam, PickDeadline, Round, Pick } from '@/types/picks';
 
 // ─── Countdown Timer ──────────────────────────────────────────────
@@ -43,19 +44,18 @@ function DeadlineCountdown({ deadline }: { deadline: PickDeadline }) {
     : 'bg-[#4CAF50]';
 
   return (
-    <div className={`${urgencyBg} text-[#E8E6E1] rounded-[8px] px-4 py-3 text-center`}>
+    <span className={`${urgencyBg} text-[#E8E6E1] rounded-[6px] px-2.5 py-1 inline-flex items-center gap-1.5`}>
       {expired ? (
-        <p className="font-bold text-lg" style={{ fontFamily: "'Oswald', sans-serif", textTransform: 'uppercase' }}>Deadline Passed</p>
+        <span className="font-bold text-xs" style={{ fontFamily: "'Oswald', sans-serif", textTransform: 'uppercase' }}>Locked</span>
       ) : (
         <>
-          <p className="text-[10px] uppercase tracking-widest opacity-80 mb-0.5" style={{ fontFamily: "'Space Mono', monospace", letterSpacing: '0.2em' }}>Pick locks in</p>
-          <p className="text-2xl font-extrabold tracking-wider" style={{ fontFamily: "'Space Mono', monospace" }}>
-            {hours > 0 && `${hours}:`}
-            {String(minutes).padStart(2, '0')}:{String(seconds).padStart(2, '0')}
-          </p>
+          <span className="text-[9px] uppercase opacity-70" style={{ fontFamily: "'Space Mono', monospace" }}>in</span>
+          <span className="text-sm font-extrabold tracking-wide" style={{ fontFamily: "'Space Mono', monospace" }}>
+            {hours > 0 && `${hours}:`}{String(minutes).padStart(2, '0')}:{String(seconds).padStart(2, '0')}
+          </span>
         </>
       )}
-    </div>
+    </span>
   );
 }
 
@@ -76,24 +76,24 @@ function ConfirmModal({
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center">
       <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={onCancel} />
 
-      <div className="relative bg-[#111118] border border-[rgba(255,255,255,0.05)] rounded-t-[16px] sm:rounded-[16px] w-full max-w-md mx-auto p-6 pb-8 sm:pb-6 shadow-2xl animate-slide-up">
+      <div className="relative bg-[#111827] border border-[rgba(255,255,255,0.05)] rounded-t-[16px] sm:rounded-[16px] w-full max-w-md mx-auto p-6 pb-8 sm:pb-6 shadow-2xl animate-slide-up">
         <h3 className="text-lg font-bold text-[#E8E6E1] text-center mb-1" style={{ fontFamily: "'Oswald', sans-serif", textTransform: 'uppercase' }}>
           Confirm Your Pick
         </h3>
-        <p className="text-sm text-[#8A8694] text-center mb-6" style={{ fontFamily: "'DM Sans', sans-serif" }}>
+        <p className="text-sm text-[#9BA3AE] text-center mb-6" style={{ fontFamily: "'DM Sans', sans-serif" }}>
           This team will be burned for the rest of the tournament
         </p>
 
         <div className="bg-[rgba(255,87,34,0.08)] border-2 border-[rgba(255,87,34,0.3)] rounded-[12px] p-5 mb-5">
           <div className="text-center">
-            <p className="label mb-2">Your pick</p>
+            <p className="text-label-accent mb-2">Your pick</p>
             <p className="text-2xl font-extrabold text-[#E8E6E1]" style={{ fontFamily: "'Oswald', sans-serif", textTransform: 'uppercase' }}>
               ({team.seed}) {team.name}
             </p>
-            <p className="text-sm text-[#8A8694] mt-1" style={{ fontFamily: "'DM Sans', sans-serif" }}>
+            <p className="text-sm text-[#9BA3AE] mt-1" style={{ fontFamily: "'DM Sans', sans-serif" }}>
               vs ({team.opponent.seed}) {team.opponent.name}
             </p>
-            <p className="text-xs text-[#8A8694] mt-1" style={{ fontFamily: "'Space Mono', monospace" }}>
+            <p className="text-xs text-[#9BA3AE] mt-1" style={{ fontFamily: "'Space Mono', monospace" }}>
               {new Date(team.game_datetime).toLocaleTimeString([], {
                 hour: 'numeric',
                 minute: '2-digit'
@@ -112,7 +112,7 @@ function ConfirmModal({
           <button
             onClick={onCancel}
             disabled={submitting}
-            className="flex-1 py-3.5 rounded-[12px] border border-[rgba(255,255,255,0.05)] text-[#8A8694] font-semibold hover:bg-[#1A1A24] transition-colors disabled:opacity-50"
+            className="flex-1 py-3.5 rounded-[12px] border border-[rgba(255,255,255,0.05)] text-[#9BA3AE] font-semibold hover:bg-[#1B2A3D] transition-colors disabled:opacity-50"
             style={{ fontFamily: "'DM Sans', sans-serif" }}
           >
             Go Back
@@ -148,69 +148,74 @@ function TeamCard({
   disabled: boolean;
   onSelect: (team: PickableTeam) => void;
 }) {
-  const riskColors: Record<string, string> = {
-    low: 'text-[#4CAF50] bg-[rgba(76,175,80,0.1)]',
-    medium: 'text-[#FFB300] bg-[rgba(255,179,0,0.1)]',
-    high: 'text-[#EF5350] bg-[rgba(239,83,80,0.1)]'
-  };
-  const riskLabels: Record<string, string> = {
-    low: 'Safe',
-    medium: 'Toss-up',
-    high: 'Risky'
-  };
-
   const isUsed = team.already_used;
+  const prob = getSeedWinProbability(team.seed, team.opponent.seed);
+  const pct = Math.round(prob * 100);
+  const gameTime = new Date(team.game_datetime).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', hour12: true, timeZoneName: 'short' });
 
   return (
     <button
       onClick={() => !disabled && !isUsed && onSelect(team)}
       disabled={disabled || isUsed}
       className={`
-        w-full text-left px-4 py-4 transition-all min-h-[64px]
+        w-full text-left flex items-center gap-3 px-3 py-2.5 pr-4 transition-all border-[1.5px] rounded-[10px]
         ${isSelected
-          ? 'bg-[rgba(255,87,34,0.08)] ring-2 ring-inset ring-[#FF5722] rounded-[12px]'
+          ? 'bg-[rgba(255,87,34,0.08)] border-[#FF5722]'
           : isUsed
-          ? 'bg-[rgba(13,27,42,0.5)] opacity-40 cursor-not-allowed strikethrough'
-          : 'hover:bg-[#1A1A24] active:bg-[#1A1A24]'
+          ? 'bg-[rgba(13,27,42,0.5)] opacity-40 cursor-not-allowed strikethrough border-transparent'
+          : 'border-[rgba(255,255,255,0.05)] hover:bg-[#1B2A3D] active:bg-[#1B2A3D]'
         }
       `}
     >
-      <div className="flex items-center justify-between">
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center space-x-3">
-            <span className={`inline-flex items-center justify-center w-8 h-8 text-xs font-bold rounded-full flex-shrink-0 ${
-              isSelected ? 'bg-[#FF5722] text-[#E8E6E1]' : 'bg-[rgba(255,255,255,0.08)] text-[#E8E6E1]'
-            }`} style={{ fontFamily: "'Oswald', sans-serif" }}>
-              {team.seed}
-            </span>
-            <div className="min-w-0">
-              <span className="font-bold text-[#E8E6E1] text-base block truncate" style={{ fontFamily: "'Oswald', sans-serif", textTransform: 'uppercase' }}>
-                {team.name}
-              </span>
-              <span className="text-xs text-[#8A8694]" style={{ fontFamily: "'DM Sans', sans-serif" }}>{team.mascot}</span>
-            </div>
-          </div>
-        </div>
+      {/* Seed number */}
+      <span
+        className={`text-center flex-shrink-0 min-w-[2rem] ${isSelected ? 'text-[#FF5722]' : 'text-[#5F6B7A]'}`}
+        style={{ fontFamily: "'Oswald', sans-serif", fontWeight: 700, fontSize: '1.1rem' }}
+      >
+        {team.seed}
+      </span>
 
-        <div className="flex-shrink-0 ml-3 flex items-center gap-2">
-          {isUsed ? (
-            <span className="inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-bold bg-[rgba(255,255,255,0.08)] text-[#8A8694] uppercase" style={{ fontFamily: "'Space Mono', monospace", letterSpacing: '0.1em' }}>
-              Used
-            </span>
-          ) : (
-            <span
-              className={`inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-bold uppercase ${riskColors[team.risk_level]}`}
-              style={{ fontFamily: "'Space Mono', monospace", letterSpacing: '0.1em' }}
-            >
-              {riskLabels[team.risk_level]}
-            </span>
-          )}
+      {/* Team name + meta */}
+      <div className="flex-1 min-w-0">
+        <span className="font-bold text-[#E8E6E1] text-sm block truncate leading-tight" style={{ fontFamily: "'Oswald', sans-serif", textTransform: 'uppercase' }}>
+          {team.name}
+        </span>
+        <span className="text-[11px] text-[#9BA3AE] leading-tight" style={{ fontFamily: "'DM Sans', sans-serif" }}>
+          vs ({team.opponent.seed}) {team.opponent.abbreviation} · {gameTime}
+        </span>
+      </div>
+
+      {/* Win probability or Used badge */}
+      <div className="flex-shrink-0 flex items-center gap-3">
+        {isUsed ? (
+          <span className="inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-bold bg-[rgba(255,255,255,0.08)] text-[#9BA3AE] uppercase" style={{ fontFamily: "'Space Mono', monospace", letterSpacing: '0.1em' }}>
+            Used
+          </span>
+        ) : (
+          <span
+            className={`text-xs font-bold min-w-[3rem] text-right ${
+              prob >= 0.8 ? 'text-[#4CAF50]' :
+              prob >= 0.6 ? 'text-[#FFB300]' :
+              'text-[#EF5350]'
+            }`}
+            style={{ fontFamily: "'Space Mono', monospace" }}
+          >
+            {pct}%
+          </span>
+        )}
+
+        {/* Radio circle */}
+        <span className={`w-[18px] h-[18px] rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-colors ${
+          isSelected
+            ? 'border-[#FF5722] bg-[#FF5722]'
+            : 'border-[rgba(255,255,255,0.12)] bg-transparent'
+        }`}>
           {isSelected && (
-            <span className="w-5 h-5 bg-[#FF5722] rounded-full flex items-center justify-center flex-shrink-0">
-              <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7" /></svg>
-            </span>
+            <svg className="w-2.5 h-2.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+            </svg>
           )}
-        </div>
+        </span>
       </div>
     </button>
   );
@@ -322,7 +327,7 @@ export default function PickPage() {
     return (
       <div className="min-h-screen bg-[#0D1B2A] flex flex-col items-center justify-center px-5">
         <div className="animate-spin rounded-full h-10 w-10 border-2 border-[rgba(255,255,255,0.08)] border-t-[#FF5722] mb-4" />
-        <p className="text-[#8A8694]" style={{ fontFamily: "'DM Sans', sans-serif" }}>Loading today&apos;s games...</p>
+        <p className="text-[#9BA3AE]" style={{ fontFamily: "'DM Sans', sans-serif" }}>Loading today&apos;s games...</p>
       </div>
     );
   }
@@ -335,7 +340,7 @@ export default function PickPage() {
             <svg className="w-8 h-8 text-[#FFB300]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" /></svg>
           </div>
           <h1 className="text-xl font-bold text-[#E8E6E1] mb-2" style={{ fontFamily: "'Oswald', sans-serif", textTransform: 'uppercase' }}>Can&apos;t Make Pick</h1>
-          <p className="text-[#8A8694] text-sm" style={{ fontFamily: "'DM Sans', sans-serif" }}>{error}</p>
+          <p className="text-[#9BA3AE] text-sm" style={{ fontFamily: "'DM Sans', sans-serif" }}>{error}</p>
         </div>
       </div>
     );
@@ -349,7 +354,7 @@ export default function PickPage() {
             <svg className="w-8 h-8 text-[#EF5350]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
           </div>
           <h1 className="text-xl font-bold text-[#E8E6E1] mb-2" style={{ fontFamily: "'Oswald', sans-serif", textTransform: 'uppercase' }}>Deadline Passed</h1>
-          <p className="text-[#8A8694] text-sm" style={{ fontFamily: "'DM Sans', sans-serif" }}>
+          <p className="text-[#9BA3AE] text-sm" style={{ fontFamily: "'DM Sans', sans-serif" }}>
             The pick deadline for {round?.name || 'this round'} has passed.
           </p>
         </div>
@@ -385,16 +390,25 @@ export default function PickPage() {
 
   return (
     <div className="min-h-screen bg-[#0D1B2A] pb-48">
-      {/* Sticky sub-header: round name + countdown */}
-      <div className="sticky top-12 z-30 bg-[#111118] border-b border-[rgba(255,255,255,0.05)]">
-        <div className="max-w-lg mx-auto px-5 py-3">
-          <p className="text-sm font-semibold text-[#E8E6E1] text-center mb-2" style={{ fontFamily: "'Oswald', sans-serif", textTransform: 'uppercase' }}>
-            {round?.name || 'Make Your Pick'}
-          </p>
-          {deadline && <DeadlineCountdown deadline={deadline} />}
+      {/* Sticky sub-header: round name + countdown + current pick */}
+      <div className="sticky top-12 z-30 bg-[#111827] border-b border-[rgba(255,255,255,0.05)]">
+        <div className="max-w-lg mx-auto px-5 py-2">
+          <div className="flex items-center justify-between">
+            <p className="text-sm font-semibold text-[#E8E6E1]" style={{ fontFamily: "'Oswald', sans-serif", textTransform: 'uppercase' }}>
+              {round?.name || 'Make Your Pick'}
+            </p>
+            {deadline && <DeadlineCountdown deadline={deadline} />}
+          </div>
+          {existingPick && existingPick.team && (
+            <div className="mt-1.5 bg-[rgba(255,179,0,0.08)] border border-[rgba(255,179,0,0.2)] rounded-full py-1 px-3 flex items-center justify-center">
+              <p className="text-xs text-[#FFB300] truncate" style={{ fontFamily: "'DM Sans', sans-serif" }}>
+                Current: <strong className="text-[#E8E6E1]">({existingPick.team.seed}) {existingPick.team.name}</strong>
+              </p>
+            </div>
+          )}
         </div>
         {entries.length > 1 && (
-          <div className="flex gap-2 px-5 py-2 overflow-x-auto scrollbar-hide">
+          <div className="flex gap-2 px-5 py-1.5 overflow-x-auto scrollbar-hide border-t border-[rgba(255,255,255,0.03)]">
             {entries.map(entry => (
               <button
                 key={entry.id}
@@ -407,12 +421,12 @@ export default function PickPage() {
                   setShowSuccess(false);
                   router.replace(`/pools/${poolId}/pick?entry=${entry.id}`);
                 }}
-                className={`flex-shrink-0 px-3 py-1.5 rounded-full text-xs font-semibold border transition-colors ${
+                className={`flex-shrink-0 px-2.5 py-1 rounded-full text-[11px] font-semibold border transition-colors ${
                   (activeEntryId || poolPlayerId) === entry.id
                     ? 'bg-[rgba(255,87,34,0.08)] border-[#FF5722] text-[#FF5722]'
                     : entry.is_eliminated
-                    ? 'border-[rgba(255,255,255,0.05)] text-[#8A8694] opacity-50'
-                    : 'border-[rgba(255,255,255,0.05)] text-[#8A8694] hover:text-[#E8E6E1]'
+                    ? 'border-[rgba(255,255,255,0.05)] text-[#9BA3AE] opacity-50'
+                    : 'border-[rgba(255,255,255,0.05)] text-[#9BA3AE] hover:text-[#E8E6E1]'
                 }`}
                 disabled={entry.is_eliminated}
                 style={{ fontFamily: "'DM Sans', sans-serif" }}
@@ -426,20 +440,13 @@ export default function PickPage() {
       </div>
 
       {/* Content */}
-      <div className="max-w-lg mx-auto px-5 py-4">
-        {existingPick && existingPick.team && (
-          <div className="bg-[rgba(255,179,0,0.1)] border border-[rgba(255,179,0,0.25)] rounded-[8px] p-3 mb-4">
-            <p className="text-sm text-[#FFB300] text-center" style={{ fontFamily: "'DM Sans', sans-serif" }}>
-              Current: <strong className="text-[#E8E6E1]">({existingPick.team.seed}) {existingPick.team.name}</strong> — tap another to change
-            </p>
-          </div>
-        )}
+      <div className="max-w-lg mx-auto px-5 py-3">
 
         <div className="flex items-center justify-between mb-4">
-          <p className="text-sm text-[#8A8694]" style={{ fontFamily: "'DM Sans', sans-serif" }}>
+          <p className="text-sm text-[#9BA3AE]" style={{ fontFamily: "'DM Sans', sans-serif" }}>
             <span className="font-bold text-[#E8E6E1]" style={{ fontFamily: "'Space Mono', monospace" }}>{availableCount}</span> teams available
             {usedCount > 0 && (
-              <span className="text-[#8A8694]"> / <span style={{ fontFamily: "'Space Mono', monospace" }}>{usedCount}</span> used</span>
+              <span className="text-[#9BA3AE]"> / <span style={{ fontFamily: "'Space Mono', monospace" }}>{usedCount}</span> used</span>
             )}
           </p>
           {usedCount > 0 && (
@@ -448,7 +455,7 @@ export default function PickPage() {
               className={`text-xs px-3 py-1.5 rounded-full border transition-colors ${
                 filterUsed
                   ? 'bg-[rgba(255,87,34,0.08)] border-[rgba(255,87,34,0.3)] text-[#FF5722]'
-                  : 'bg-[#111118] border-[rgba(255,255,255,0.05)] text-[#8A8694]'
+                  : 'bg-[#111827] border-[rgba(255,255,255,0.05)] text-[#9BA3AE]'
               }`}
               style={{ fontFamily: "'DM Sans', sans-serif" }}
             >
@@ -459,7 +466,7 @@ export default function PickPage() {
 
         {displayTeams.length === 0 ? (
           <div className="text-center py-12">
-            <p className="text-[#8A8694]" style={{ fontFamily: "'DM Sans', sans-serif" }}>No games available for today.</p>
+            <p className="text-[#9BA3AE]" style={{ fontFamily: "'DM Sans', sans-serif" }}>No games available for today.</p>
           </div>
         ) : (
           <div className="space-y-6">
@@ -468,13 +475,12 @@ export default function PickPage() {
                 <p className="label mb-3 px-1">{time}</p>
                 <div className="space-y-3">
                   {matchups.map(({ gameId, teams: matchupTeams }) => (
-                    <div key={gameId} className="bg-[#111118] border border-[rgba(255,255,255,0.05)] rounded-[12px] overflow-hidden">
+                    <div key={gameId} className="space-y-2">
                       {matchupTeams.map((team, idx) => (
                         <div key={team.id}>
                           {idx > 0 && (
-                            <div className="relative px-4">
-                              <div className="border-t border-[rgba(255,255,255,0.05)]" />
-                              <span className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 bg-[rgba(255,255,255,0.08)] text-[#8A8694] text-[9px] font-extrabold px-2 py-0.5 rounded-full uppercase" style={{ fontFamily: "'Space Mono', monospace" }}>
+                            <div className="flex items-center justify-center py-0.5">
+                              <span className="text-[#5F6B7A] text-[9px] font-extrabold uppercase" style={{ fontFamily: "'Space Mono', monospace", letterSpacing: '0.1em' }}>
                                 vs
                               </span>
                             </div>
@@ -500,14 +506,14 @@ export default function PickPage() {
       {selectedTeam && (() => {
         const isSameAsExisting = selectedTeam.id === existingPick?.team_id;
         return (
-          <div className="fixed bottom-16 inset-x-0 z-20 bg-[#111118] border-t border-[rgba(255,255,255,0.05)] tab-bar-shadow">
-            <div className="max-w-lg mx-auto px-5 py-4">
+          <div className="fixed bottom-16 inset-x-0 z-20 bg-[#111827] border-t border-[rgba(255,255,255,0.05)] tab-bar-shadow">
+            <div className="max-w-lg mx-auto px-5 py-3">
               <button
                 onClick={() => !isSameAsExisting && setShowConfirm(true)}
                 disabled={isSameAsExisting}
-                className={`w-full py-4 rounded-[12px] text-lg font-extrabold transition-all ${
+                className={`w-full py-2.5 rounded-[10px] text-sm font-bold transition-all ${
                   isSameAsExisting
-                    ? 'bg-[#1A1A24] text-[#8A8694] cursor-default'
+                    ? 'bg-[#1B2A3D] text-[#9BA3AE] cursor-default'
                     : 'btn-orange active:scale-[0.98]'
                 }`}
                 style={{ fontFamily: "'DM Sans', sans-serif", boxShadow: isSameAsExisting ? 'none' : '0 4px 20px rgba(255, 87, 34, 0.3)' }}

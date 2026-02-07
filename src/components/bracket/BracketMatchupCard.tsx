@@ -21,10 +21,10 @@ function TeamRow({
 }) {
   if (!team) {
     return (
-      <div className="flex items-center justify-between px-2.5 py-2 bg-[#1A1A24]">
+      <div className="flex items-center justify-between px-2.5 py-2 bg-[#1B2A3D]">
         <div className="flex items-center gap-1.5">
-          <span className="text-xs text-[#8A8694] w-5 text-center" style={{ fontFamily: "'Space Mono', monospace" }}>-</span>
-          <span className="text-xs text-[#8A8694] italic" style={{ fontFamily: "'DM Sans', sans-serif" }}>TBD</span>
+          <span className="text-xs text-[#9BA3AE] w-5 text-center" style={{ fontFamily: "'Space Mono', monospace" }}>-</span>
+          <span className="text-xs text-[#9BA3AE] italic" style={{ fontFamily: "'DM Sans', sans-serif" }}>TBD</span>
         </div>
       </div>
     );
@@ -36,13 +36,13 @@ function TeamRow({
         isWinner
           ? 'bg-[rgba(76,175,80,0.1)]'
           : isLoser
-            ? 'bg-[#1A1A24]'
-            : 'bg-[#111118]'
+            ? 'bg-[#1B2A3D]'
+            : 'bg-[#111827]'
       }`}
     >
       <div className="flex items-center gap-1.5 min-w-0">
         <span className={`text-[10px] font-bold w-5 text-center flex-shrink-0 rounded py-0.5 ${
-          isWinner ? 'bg-[rgba(76,175,80,0.2)] text-[#4CAF50]' : 'text-[#8A8694]'
+          isWinner ? 'bg-[rgba(76,175,80,0.2)] text-[#4CAF50]' : 'text-[#9BA3AE]'
         }`} style={{ fontFamily: "'Space Mono', monospace" }}>
           {team.seed}
         </span>
@@ -51,7 +51,7 @@ function TeamRow({
             isWinner
               ? 'font-bold text-[#E8E6E1]'
               : isLoser
-                ? 'text-[#8A8694]'
+                ? 'text-[#9BA3AE]'
                 : 'font-medium text-[#E8E6E1]'
           }`}
           style={{ fontFamily: "'Oswald', sans-serif", textTransform: 'uppercase' }}
@@ -62,7 +62,7 @@ function TeamRow({
       {score !== null && (
         <span
           className={`text-xs ml-2 flex-shrink-0 ${
-            isWinner ? 'font-bold text-[#E8E6E1]' : 'text-[#8A8694]'
+            isWinner ? 'font-bold text-[#E8E6E1]' : 'text-[#9BA3AE]'
           }`}
           style={{ fontFamily: "'Space Mono', monospace" }}
         >
@@ -91,7 +91,7 @@ export default function BracketMatchupCard({ game, compact }: BracketMatchupCard
   }
 
   return (
-    <div className={`w-52 border border-[rgba(255,255,255,0.05)] rounded-[12px] overflow-hidden bg-[#111118] shadow-sm hover:border-[rgba(255,87,34,0.3)] transition-colors ${compact ? 'text-xs' : ''}`}>
+    <div className={`w-52 border border-[rgba(255,255,255,0.05)] rounded-[12px] overflow-hidden bg-[#111827] shadow-sm hover:border-[rgba(255,87,34,0.3)] transition-colors ${compact ? 'text-xs' : ''}`}>
       <TeamRow
         team={team1}
         score={game.team1_score}

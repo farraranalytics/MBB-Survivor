@@ -64,7 +64,7 @@ export default function PoolBracketPage() {
       <div className="min-h-screen bg-[#0D1B2A] flex items-center justify-center pb-24">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-2 border-[rgba(255,255,255,0.05)] border-t-[#FF5722] mx-auto" />
-          <p className="mt-4 text-[#8A8694]" style={{ fontFamily: "'DM Sans', sans-serif" }}>Loading tournament data...</p>
+          <p className="mt-4 text-[#9BA3AE]" style={{ fontFamily: "'DM Sans', sans-serif" }}>Loading tournament data...</p>
         </div>
       </div>
     );
@@ -94,13 +94,13 @@ export default function PoolBracketPage() {
       {/* View toggle + refresh */}
       <div className="max-w-7xl mx-auto px-5 py-4">
         <div className="flex items-center justify-between">
-          <div className="flex bg-[#111118] rounded-[12px] p-1">
+          <div className="flex bg-[#111827] rounded-[12px] p-1">
             <button
               onClick={() => setViewMode('schedule')}
               className={`px-4 py-2 text-sm font-semibold rounded-[8px] transition-colors ${
                 viewMode === 'schedule'
                   ? 'bg-[#0D1B2A] text-[#E8E6E1] shadow-sm'
-                  : 'text-[#8A8694] hover:text-[#E8E6E1]'
+                  : 'text-[#9BA3AE] hover:text-[#E8E6E1]'
               }`}
               style={{ fontFamily: "'DM Sans', sans-serif" }}
             >
@@ -111,7 +111,7 @@ export default function PoolBracketPage() {
               className={`px-4 py-2 text-sm font-semibold rounded-[8px] transition-colors ${
                 viewMode === 'bracket'
                   ? 'bg-[#0D1B2A] text-[#E8E6E1] shadow-sm'
-                  : 'text-[#8A8694] hover:text-[#E8E6E1]'
+                  : 'text-[#9BA3AE] hover:text-[#E8E6E1]'
               }`}
               style={{ fontFamily: "'DM Sans', sans-serif" }}
             >
@@ -121,7 +121,7 @@ export default function PoolBracketPage() {
 
           <button
             onClick={loadData}
-            className="bg-[#111118] border border-[rgba(255,255,255,0.05)] text-[#8A8694] hover:text-[#E8E6E1] hover:border-[rgba(255,87,34,0.3)] px-4 py-2 rounded-[12px] text-sm font-semibold transition-colors"
+            className="bg-[#111827] border border-[rgba(255,255,255,0.05)] text-[#9BA3AE] hover:text-[#E8E6E1] hover:border-[rgba(255,87,34,0.3)] px-4 py-2 rounded-[12px] text-sm font-semibold transition-colors"
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
@@ -175,7 +175,7 @@ function ScheduleView({ rounds, games, selectedRound, onRoundChange }: ScheduleV
             className={`flex-shrink-0 px-4 py-2.5 rounded-[12px] text-sm font-semibold transition-colors ${
               selectedRound === round.id
                 ? 'btn-orange'
-                : 'bg-[#111118] border border-[rgba(255,255,255,0.05)] text-[#8A8694] hover:text-[#E8E6E1] hover:border-[rgba(255,87,34,0.3)]'
+                : 'bg-[#111827] border border-[rgba(255,255,255,0.05)] text-[#9BA3AE] hover:text-[#E8E6E1] hover:border-[rgba(255,87,34,0.3)]'
             }`}
             style={{ fontFamily: "'DM Sans', sans-serif" }}
           >
@@ -186,8 +186,8 @@ function ScheduleView({ rounds, games, selectedRound, onRoundChange }: ScheduleV
 
       {/* Games list */}
       {games.length === 0 ? (
-        <div className="text-center py-12 bg-[#111118] border border-[rgba(255,255,255,0.05)] rounded-[12px]">
-          <p className="text-[#8A8694]" style={{ fontFamily: "'DM Sans', sans-serif" }}>
+        <div className="text-center py-12 bg-[#111827] border border-[rgba(255,255,255,0.05)] rounded-[12px]">
+          <p className="text-[#9BA3AE]" style={{ fontFamily: "'DM Sans', sans-serif" }}>
             No games scheduled{currentRound ? ` for ${currentRound.name}` : ''}
           </p>
         </div>
@@ -223,8 +223,8 @@ function ScheduleGameCard({ game }: { game: BracketGame }) {
   } else {
     const dt = new Date(game.game_datetime);
     statusText = dt.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
-    statusColor = 'text-[#8A8694]';
-    statusBg = 'bg-[#1A1A24]';
+    statusColor = 'text-[#9BA3AE]';
+    statusBg = 'bg-[#1B2A3D]';
   }
 
   const formatDate = (dt: string) =>
@@ -235,26 +235,26 @@ function ScheduleGameCard({ game }: { game: BracketGame }) {
     });
 
   return (
-    <div className="bg-[#111118] border border-[rgba(255,255,255,0.05)] rounded-[12px] p-4 hover:border-[rgba(255,87,34,0.3)] transition-colors">
+    <div className="bg-[#111827] border border-[rgba(255,255,255,0.05)] rounded-[12px] p-4 hover:border-[rgba(255,87,34,0.3)] transition-colors">
       <div className="flex items-center justify-between">
         <div className="flex-1 space-y-2.5">
           {/* Team 1 */}
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <span className={`text-xs font-bold w-6 text-center rounded-md py-0.5 ${
-                team1Wins ? 'bg-[rgba(76,175,80,0.15)] text-[#4CAF50]' : 'bg-[#1A1A24] text-[#8A8694]'
+                team1Wins ? 'bg-[rgba(76,175,80,0.12)] text-[#4CAF50]' : 'bg-[#1B2A3D] text-[#9BA3AE]'
               }`} style={{ fontFamily: "'Space Mono', monospace" }}>
                 {team1?.seed ?? '-'}
               </span>
               <span className={`font-medium text-sm ${
-                team1Wins ? 'text-[#E8E6E1] font-bold' : team2Wins ? 'text-[#8A8694]' : 'text-[#E8E6E1]'
+                team1Wins ? 'text-[#E8E6E1] font-bold' : team2Wins ? 'text-[#9BA3AE]' : 'text-[#E8E6E1]'
               }`} style={{ fontFamily: "'Oswald', sans-serif", textTransform: 'uppercase' }}>
                 {team1?.name ?? 'TBD'}
               </span>
             </div>
             {game.team1_score !== null && (
               <span className={`text-lg font-bold ${
-                team1Wins ? 'text-[#E8E6E1]' : 'text-[#8A8694]'
+                team1Wins ? 'text-[#E8E6E1]' : 'text-[#9BA3AE]'
               }`} style={{ fontFamily: "'Space Mono', monospace" }}>
                 {game.team1_score}
               </span>
@@ -264,19 +264,19 @@ function ScheduleGameCard({ game }: { game: BracketGame }) {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <span className={`text-xs font-bold w-6 text-center rounded-md py-0.5 ${
-                team2Wins ? 'bg-[rgba(76,175,80,0.15)] text-[#4CAF50]' : 'bg-[#1A1A24] text-[#8A8694]'
+                team2Wins ? 'bg-[rgba(76,175,80,0.12)] text-[#4CAF50]' : 'bg-[#1B2A3D] text-[#9BA3AE]'
               }`} style={{ fontFamily: "'Space Mono', monospace" }}>
                 {team2?.seed ?? '-'}
               </span>
               <span className={`font-medium text-sm ${
-                team2Wins ? 'text-[#E8E6E1] font-bold' : team1Wins ? 'text-[#8A8694]' : 'text-[#E8E6E1]'
+                team2Wins ? 'text-[#E8E6E1] font-bold' : team1Wins ? 'text-[#9BA3AE]' : 'text-[#E8E6E1]'
               }`} style={{ fontFamily: "'Oswald', sans-serif", textTransform: 'uppercase' }}>
                 {team2?.name ?? 'TBD'}
               </span>
             </div>
             {game.team2_score !== null && (
               <span className={`text-lg font-bold ${
-                team2Wins ? 'text-[#E8E6E1]' : 'text-[#8A8694]'
+                team2Wins ? 'text-[#E8E6E1]' : 'text-[#9BA3AE]'
               }`} style={{ fontFamily: "'Space Mono', monospace" }}>
                 {game.team2_score}
               </span>
@@ -288,7 +288,7 @@ function ScheduleGameCard({ game }: { game: BracketGame }) {
           <div className={`inline-flex items-center px-2.5 py-1 rounded-[8px] text-xs font-semibold ${statusBg} ${statusColor}`} style={{ fontFamily: "'Space Mono', monospace" }}>
             {statusText}
           </div>
-          <div className="text-[11px] text-[#8A8694] mt-1.5" style={{ fontFamily: "'DM Sans', sans-serif" }}>{formatDate(game.game_datetime)}</div>
+          <div className="text-[11px] text-[#9BA3AE] mt-1.5" style={{ fontFamily: "'DM Sans', sans-serif" }}>{formatDate(game.game_datetime)}</div>
         </div>
       </div>
     </div>
@@ -316,7 +316,7 @@ function BracketView({ selectedRegion, onRegionChange, regionBracket, finalFourR
             className={`flex-shrink-0 px-4 py-2.5 rounded-[12px] text-sm font-semibold transition-colors ${
               selectedRegion === tab
                 ? 'btn-orange shadow-lg'
-                : 'bg-[#111118] border border-[rgba(255,255,255,0.05)] text-[#8A8694] hover:text-[#E8E6E1] hover:border-[rgba(255,87,34,0.3)]'
+                : 'bg-[#111827] border border-[rgba(255,255,255,0.05)] text-[#9BA3AE] hover:text-[#E8E6E1] hover:border-[rgba(255,87,34,0.3)]'
             }`}
             style={{ fontFamily: "'DM Sans', sans-serif" }}
           >
@@ -331,8 +331,8 @@ function BracketView({ selectedRegion, onRegionChange, regionBracket, finalFourR
       ) : regionBracket ? (
         <RegionBracketComponent bracket={regionBracket} />
       ) : (
-        <div className="text-center py-12 bg-[#111118] border border-[rgba(255,255,255,0.05)] rounded-[12px]">
-          <p className="text-[#8A8694]" style={{ fontFamily: "'DM Sans', sans-serif" }}>No bracket data available.</p>
+        <div className="text-center py-12 bg-[#111827] border border-[rgba(255,255,255,0.05)] rounded-[12px]">
+          <p className="text-[#9BA3AE]" style={{ fontFamily: "'DM Sans', sans-serif" }}>No bracket data available.</p>
         </div>
       )}
     </div>
@@ -344,14 +344,14 @@ function FinalFourBracket({ rounds }: { rounds: BracketRound[] }) {
 
   if (!hasGames) {
     return (
-      <div className="text-center py-12 bg-[#111118] border border-[rgba(255,255,255,0.05)] rounded-[12px]">
+      <div className="text-center py-12 bg-[#111827] border border-[rgba(255,255,255,0.05)] rounded-[12px]">
         <div className="w-12 h-12 bg-[rgba(255,87,34,0.1)] rounded-[12px] flex items-center justify-center mx-auto mb-3">
           <svg className="w-6 h-6 text-[#FF5722]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
           </svg>
         </div>
         <p className="text-lg font-bold text-[#E8E6E1]" style={{ fontFamily: "'Oswald', sans-serif", textTransform: 'uppercase' }}>Final Four</p>
-        <p className="text-[#8A8694] mt-1 text-sm" style={{ fontFamily: "'DM Sans', sans-serif" }}>Games TBD</p>
+        <p className="text-[#9BA3AE] mt-1 text-sm" style={{ fontFamily: "'DM Sans', sans-serif" }}>Games TBD</p>
       </div>
     );
   }

@@ -7,6 +7,7 @@ export interface RoundResult {
   team_name: string;
   team_seed: number;
   team_abbreviation: string;
+  team_logo_url: string | null;
   opponent_name: string | null;
   opponent_seed: number | null;
   is_correct: boolean | null; // null = pending
@@ -48,6 +49,7 @@ export interface PoolLeaderboard {
     id: string;
     name: string;
     date: string;
+    deadline_datetime: string;
   }[];
   players: StandingsPlayer[];
 }

@@ -47,7 +47,7 @@ export default function BottomNav() {
       ),
     },
     {
-      label: 'Standings',
+      label: 'The Field',
       href: poolBase ? `${poolBase}/standings` : '/dashboard',
       match: /^\/pools\/[^/]+\/standings$/.test(pathname),
       icon: (
@@ -79,20 +79,23 @@ export default function BottomNav() {
   ];
 
   return (
-    <nav className="fixed bottom-0 inset-x-0 z-30 bg-[#111118] border-t border-[rgba(255,255,255,0.05)] tab-bar-shadow safe-area-bottom">
+    <nav className="fixed bottom-0 inset-x-0 z-30 bg-[#080810] border-t border-[rgba(255,255,255,0.05)] tab-bar-shadow safe-area-bottom">
       <div className="max-w-lg mx-auto flex justify-around items-center h-16">
         {tabs.map((tab) => (
           <Link
             key={tab.label}
             href={tab.href}
-            className={`flex flex-col items-center justify-center gap-0.5 px-3 py-1.5 rounded-[8px] transition-colors min-w-[60px] ${
-              tab.match ? 'text-[#FF5722]' : 'text-[#8A8694] hover:text-[#E8E6E1]'
+            className={`relative flex flex-col items-center justify-center gap-[3px] px-3 py-1.5 rounded-[8px] transition-colors min-w-[60px] ${
+              tab.match ? 'text-[#FF5722]' : 'text-[#5F6B7A] hover:text-[#E8E6E1]'
             }`}
           >
+            {tab.match && (
+              <span className="absolute top-0 left-[20%] w-[60%] h-[2px] bg-[#FF5722]" />
+            )}
             {tab.icon}
             <span
-              className={`text-[10px] font-semibold ${tab.match ? 'text-[#FF5722]' : ''}`}
-              style={{ fontFamily: "'DM Sans', sans-serif", letterSpacing: '0.05em' }}
+              className={`text-[8px] font-semibold ${tab.match ? 'text-[#FF5722]' : ''}`}
+              style={{ fontFamily: "'Space Mono', monospace", letterSpacing: '0.12em', textTransform: 'uppercase' as const }}
             >
               {tab.label}
             </span>
