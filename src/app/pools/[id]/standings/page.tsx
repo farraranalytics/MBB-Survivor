@@ -10,6 +10,7 @@ import {
   StandingsFilter,
   RoundResult,
 } from '@/types/standings';
+import { formatDateET } from '@/lib/timezone';
 
 // ─── Helper: has deadline passed? ────────────────────────────────
 
@@ -246,10 +247,7 @@ export default function StandingsPage() {
 
   // Format round date for tooltip: "Round of 64 · Mar 20"
   function roundTooltip(round: PoolLeaderboard['rounds_played'][number]) {
-    const d = new Date(round.date + 'T00:00:00');
-    const month = d.toLocaleString('en-US', { month: 'short' });
-    const day = d.getDate();
-    return `${round.name} · ${month} ${day}`;
+    return `${round.name} · ${formatDateET(round.date)}`;
   }
 
   return (

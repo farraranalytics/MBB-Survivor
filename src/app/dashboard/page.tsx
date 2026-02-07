@@ -6,6 +6,7 @@ import { useActivePool } from '@/hooks/useActivePool';
 import { MyPool, MyPoolEntry } from '@/types/standings';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { formatET } from '@/lib/timezone';
 
 // ─── Deadline Formatter ──────────────────────────────────────────
 
@@ -16,9 +17,11 @@ function formatDeadline(deadlineDatetime: string): { text: string; color: string
   const hours = Math.floor(diff / 3600000);
   const minutes = Math.floor((diff % 3600000) / 60000);
 
-  let text: string;
-  if (hours > 0) text = `${hours}h ${minutes}m`;
-  else text = `${minutes}m`;
+  let countdown: string;
+  if (hours > 0) countdown = `${hours}h ${minutes}m`;
+  else countdown = `${minutes}m`;
+
+  const lockTime = formatET(deadlineDatetime);
 
   let color: string;
   if (diff < 1800000) color = 'text-[#EF5350]';
@@ -26,7 +29,7 @@ function formatDeadline(deadlineDatetime: string): { text: string; color: string
   else if (diff < 7200000) color = 'text-[#FFB300]';
   else color = 'text-[#4CAF50]';
 
-  return { text: `Deadline in ${text}`, color };
+  return { text: `Locks in ${countdown} · ${lockTime}`, color };
 }
 
 // ─── Loading Skeleton ────────────────────────────────────────────

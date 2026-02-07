@@ -15,6 +15,7 @@ import {
 import { supabase } from '@/lib/supabase/client';
 import { getSeedWinProbability } from '@/lib/analyze';
 import { PickableTeam, PickDeadline, Round, Pick } from '@/types/picks';
+import { formatET, formatETShort, formatDeadlineTime } from '@/lib/timezone';
 
 // ─── Countdown Timer ──────────────────────────────────────────────
 
@@ -44,18 +45,25 @@ function DeadlineCountdown({ deadline }: { deadline: PickDeadline }) {
     : 'bg-[#4CAF50]';
 
   return (
-    <span className={`${urgencyBg} text-[#E8E6E1] rounded-[6px] px-2.5 py-1 inline-flex items-center gap-1.5`}>
-      {expired ? (
-        <span className="font-bold text-xs" style={{ fontFamily: "'Oswald', sans-serif", textTransform: 'uppercase' }}>Locked</span>
-      ) : (
-        <>
-          <span className="text-[9px] uppercase opacity-70" style={{ fontFamily: "'Space Mono', monospace" }}>in</span>
-          <span className="text-sm font-extrabold tracking-wide" style={{ fontFamily: "'Space Mono', monospace" }}>
-            {hours > 0 && `${hours}:`}{String(minutes).padStart(2, '0')}:{String(seconds).padStart(2, '0')}
-          </span>
-        </>
+    <div className="flex items-center gap-2">
+      <span className={`${urgencyBg} text-[#E8E6E1] rounded-[6px] px-2.5 py-1 inline-flex items-center gap-1.5`}>
+        {expired ? (
+          <span className="font-bold text-xs" style={{ fontFamily: "'Oswald', sans-serif", textTransform: 'uppercase' }}>Locked</span>
+        ) : (
+          <>
+            <span className="text-[9px] uppercase opacity-70" style={{ fontFamily: "'Space Mono', monospace" }}>in</span>
+            <span className="text-sm font-extrabold tracking-wide" style={{ fontFamily: "'Space Mono', monospace" }}>
+              {hours > 0 && `${hours}:`}{String(minutes).padStart(2, '0')}:{String(seconds).padStart(2, '0')}
+            </span>
+          </>
+        )}
+      </span>
+      {!expired && (
+        <span className="text-[10px] text-[#9BA3AE]" style={{ fontFamily: "'Space Mono', monospace" }}>
+          {formatDeadlineTime(deadline.deadline_datetime)}
+        </span>
       )}
-    </span>
+    </div>
   );
 }
 
@@ -94,10 +102,7 @@ function ConfirmModal({
               vs ({team.opponent.seed}) {team.opponent.name}
             </p>
             <p className="text-xs text-[#9BA3AE] mt-1" style={{ fontFamily: "'Space Mono', monospace" }}>
-              {new Date(team.game_datetime).toLocaleTimeString([], {
-                hour: 'numeric',
-                minute: '2-digit'
-              })}
+              {formatET(team.game_datetime)}
             </p>
           </div>
         </div>
@@ -151,7 +156,7 @@ function TeamCard({
   const isUsed = team.already_used;
   const prob = getSeedWinProbability(team.seed, team.opponent.seed);
   const pct = Math.round(prob * 100);
-  const gameTime = new Date(team.game_datetime).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', hour12: true, timeZoneName: 'short' });
+  const gameTime = formatET(team.game_datetime);
 
   return (
     <button
@@ -370,7 +375,7 @@ export default function PickPage() {
     if (!gameMatchups.has(team.game_id)) {
       gameMatchups.set(team.game_id, {
         teams: [],
-        time: new Date(team.game_datetime).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })
+        time: formatETShort(team.game_datetime)
       });
     }
     gameMatchups.get(team.game_id)!.teams.push(team);

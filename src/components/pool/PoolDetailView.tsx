@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { PoolStandings, PickDeadline } from '@/types/picks';
 import type { User } from '@supabase/supabase-js';
+import { formatET } from '@/lib/timezone';
 
 // ─── Join Code Card ──────────────────────────────────────────────
 
@@ -260,7 +261,7 @@ export default function PoolDetailView({ standings, deadline, user, poolId, show
                         {formatTimeRemaining(deadline.minutes_remaining)}
                       </p>
                       <p className="text-[10px] text-[#9BA3AE]" style={{ fontFamily: "'Space Mono', monospace" }}>
-                        {new Date(deadline.deadline_datetime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                        {formatET(deadline.deadline_datetime)}
                       </p>
                     </>
                   )}

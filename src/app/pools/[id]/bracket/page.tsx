@@ -7,6 +7,7 @@ import BracketMatchupCard from '@/components/bracket/BracketMatchupCard';
 import { getAllRounds, getAllGamesWithTeams, buildRegionBracket, buildFinalFour } from '@/lib/bracket';
 import type { Round } from '@/types/picks';
 import type { BracketGame, RegionBracket, BracketRound } from '@/types/bracket';
+import { formatETShort, formatDateET } from '@/lib/timezone';
 
 const REGIONS = ['East', 'West', 'South', 'Midwest'];
 const REGION_TABS = [...REGIONS, 'Final Four'];
@@ -221,18 +222,12 @@ function ScheduleGameCard({ game }: { game: BracketGame }) {
     statusColor = 'text-[#EF5350] font-bold';
     statusBg = 'bg-[rgba(239,83,80,0.1)] animate-pulse';
   } else {
-    const dt = new Date(game.game_datetime);
-    statusText = dt.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+    statusText = formatETShort(game.game_datetime);
     statusColor = 'text-[#9BA3AE]';
     statusBg = 'bg-[#1B2A3D]';
   }
 
-  const formatDate = (dt: string) =>
-    new Date(dt).toLocaleDateString('en-US', {
-      weekday: 'short',
-      month: 'short',
-      day: 'numeric',
-    });
+  const formatDate = (dt: string) => formatDateET(dt);
 
   return (
     <div className="bg-[#111827] border border-[rgba(255,255,255,0.05)] rounded-[12px] p-4 hover:border-[rgba(255,87,34,0.3)] transition-colors">

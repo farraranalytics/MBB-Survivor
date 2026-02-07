@@ -14,6 +14,7 @@ import {
 import { getTeamInventory, getOpponentInventories, getSeedWinProbability } from '@/lib/analyze';
 import type { PickableTeam, PickDeadline, Round, Pick, PoolStandings } from '@/types/picks';
 import type { InventoryTeam, OpponentInventory } from '@/lib/analyze';
+import { formatET } from '@/lib/timezone';
 
 // ─── Loading Skeleton ────────────────────────────────────────────
 
@@ -170,11 +171,7 @@ function TodaysGamesModule({
         const isFav1 = prob1 >= prob2;
         const userPickedTeam1 = existingPick?.team_id === team1.id;
         const userPickedTeam2 = existingPick?.team_id === team2.id;
-        const gameTime = new Date(team1.game_datetime).toLocaleTimeString('en-US', {
-          hour: 'numeric',
-          minute: '2-digit',
-          timeZoneName: 'short',
-        });
+        const gameTime = formatET(team1.game_datetime);
 
         return (
           <div key={team1.game_id} className="bg-[#1B2A3D] rounded-[8px] p-3 space-y-2">
