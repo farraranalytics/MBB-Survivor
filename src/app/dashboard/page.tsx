@@ -280,7 +280,7 @@ function PoolCard({
         )}
         {isCreator && (
           <button
-            onClick={(e) => { e.stopPropagation(); router.push(`/pools/${pool.pool_id}/admin`); }}
+            onClick={(e) => { e.stopPropagation(); router.push(`/pools/${pool.pool_id}/settings`); }}
             className="py-2.5 px-3 rounded-[12px] border border-[rgba(255,255,255,0.05)] text-[#9BA3AE] text-sm hover:text-[#E8E6E1] hover:border-[rgba(255,87,34,0.3)] transition-colors"
             style={{ fontFamily: "'DM Sans', sans-serif" }}
             title="Manage Pool"

@@ -16,7 +16,7 @@ function shouldHideHeader(pathname: string): boolean {
 export default function Header() {
   const pathname = usePathname();
   const { user } = useAuth();
-  const { activePoolName } = useActivePool();
+  const { activePoolId, activePoolName } = useActivePool();
 
   if (!user || shouldHideHeader(pathname)) return null;
 
@@ -79,7 +79,7 @@ export default function Header() {
             </Link>
           )}
           <Link
-            href="/settings"
+            href={activePoolId ? `/pools/${activePoolId}/settings` : '/settings'}
             className="text-[#9BA3AE] hover:text-[#E8E6E1] transition-colors p-1"
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
