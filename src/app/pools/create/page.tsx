@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/components/auth/AuthProvider';
@@ -22,7 +22,7 @@ function PoolCreatedSuccess({ pool, onCopy, copied }: { pool: CreatedPoolResult;
     const shareData = {
       title: `Join ${pool.name} on Survive the Dance`,
       text: `Join my March Madness Survivor pool! Use code: ${pool.join_code}`,
-      url: `${window.location.origin}/join`,
+      url: `${typeof window !== 'undefined' ? window.location.origin : ''}/join`,
     };
 
     if (navigator.share) {
@@ -204,8 +204,11 @@ export default function CreatePool() {
     return <PoolCreatedSuccess pool={createdPool} onCopy={handleCopy} copied={copied} />;
   }
 
+  useEffect(() => {
+    if (!user) router.push('/auth/login');
+  }, [user, router]);
+
   if (!user) {
-    router.push('/auth/login');
     return (
       <div className="min-h-screen bg-[#0D1B2A] flex items-center justify-center">
         <p className="text-[#9BA3AE]" style={{ fontFamily: "'DM Sans', sans-serif" }}>Redirecting to login...</p>

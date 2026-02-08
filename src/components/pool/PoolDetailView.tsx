@@ -30,7 +30,7 @@ function JoinCodeCard({ joinCode, poolName }: { joinCode: string; poolName: stri
     const shareData = {
       title: `Join ${poolName} on Survive the Dance`,
       text: `Join my March Madness Survivor pool! Use code: ${joinCode}`,
-      url: `${window.location.origin}/join`,
+      url: `${typeof window !== 'undefined' ? window.location.origin : ''}/join`,
     };
     if (navigator.share) {
       try { await navigator.share(shareData); return; } catch { /* cancelled */ }

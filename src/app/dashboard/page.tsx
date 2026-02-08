@@ -159,7 +159,7 @@ function PoolCard({
     const shareData = {
       title: `Join ${pool.pool_name} on Survive the Dance`,
       text: `Join my March Madness Survivor pool! Use code: ${pool.join_code}`,
-      url: `${window.location.origin}/pools/join?code=${pool.join_code}`,
+      url: `${typeof window !== 'undefined' ? window.location.origin : ''}/pools/join?code=${pool.join_code}`,
     };
     if (navigator.share) {
       try { await navigator.share(shareData); return; } catch { /* cancelled */ }

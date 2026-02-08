@@ -475,9 +475,9 @@ export default function PoolSettingsPage() {
     setSimStats({
       alive: aliveCount || 0,
       eliminated: eliminatedCount || 0,
-      scheduled: (games || []).filter(g => g.status === 'scheduled').length,
-      inProgress: (games || []).filter(g => g.status === 'in_progress').length,
-      final: (games || []).filter(g => g.status === 'final').length,
+      scheduled: (games || []).filter((g: any) => g.status === 'scheduled').length,
+      inProgress: (games || []).filter((g: any) => g.status === 'in_progress').length,
+      final: (games || []).filter((g: any) => g.status === 'final').length,
     });
   }
 
@@ -504,7 +504,7 @@ export default function PoolSettingsPage() {
     const shareData = {
       title: `Join ${pool.name} on Survive the Dance`,
       text: `Join my March Madness Survivor pool! Use code: ${pool.join_code}`,
-      url: `${window.location.origin}/pools/join?code=${pool.join_code}`,
+      url: `${typeof window !== 'undefined' ? window.location.origin : ''}/pools/join?code=${pool.join_code}`,
     };
     if (navigator.share) {
       try { await navigator.share(shareData); return; } catch { /* cancelled */ }
