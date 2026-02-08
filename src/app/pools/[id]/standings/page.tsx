@@ -73,9 +73,11 @@ function GridCell({
 function PlayerPickHistory({
   player,
   roundsPlayed,
+  isOwnEntry = false,
 }: {
   player: StandingsPlayer;
   roundsPlayed: PoolLeaderboard['rounds_played'];
+  isOwnEntry?: boolean;
 }) {
   if (player.round_results.length === 0) {
     return (
@@ -85,8 +87,9 @@ function PlayerPickHistory({
     );
   }
 
-  // Only show picks for rounds where deadline has passed
+  // Show own picks always; for others, only after deadline
   const visibleResults = player.round_results.filter((result) => {
+    if (isOwnEntry) return true;
     const round = roundsPlayed.find((r) => r.id === result.round_id);
     return round ? isDeadlinePassed(round.deadline_datetime) : false;
   });
@@ -372,7 +375,7 @@ export default function StandingsPage() {
                         </td>
                         {leaderboard.rounds_played.map((round) => {
                           const result = player.round_results.find((r) => r.round_id === round.id);
-                          const deadlinePassed = isDeadlinePassed(round.deadline_datetime);
+                          const deadlinePassed = isDeadlinePassed(round.deadline_datetime) || isYou;
                           return (
                             <td key={round.id} className="px-1.5 py-2 text-center">
                               <GridCell result={result} deadlinePassed={deadlinePassed} />
@@ -417,7 +420,7 @@ export default function StandingsPage() {
                         </td>
                         {leaderboard.rounds_played.map((round) => {
                           const result = player.round_results.find((r) => r.round_id === round.id);
-                          const deadlinePassed = isDeadlinePassed(round.deadline_datetime);
+                          const deadlinePassed = isDeadlinePassed(round.deadline_datetime) || isYou;
                           return (
                             <td key={round.id} className="px-1.5 py-2 text-center">
                               <GridCell result={result} deadlinePassed={deadlinePassed} />
@@ -450,10 +453,10 @@ export default function StandingsPage() {
                       const isYou = user?.id === player.user_id;
                       const isExpanded = expandedPlayer === player.pool_player_id;
 
-                      // Only show current round pick if deadline passed
-                      const currentRoundDeadlinePassed = leaderboard.current_round
+                      // Show current round pick if deadline passed or it's the user's own entry
+                      const currentRoundDeadlinePassed = isYou || (leaderboard.current_round
                         ? isDeadlinePassed(leaderboard.current_round.deadline_datetime)
-                        : false;
+                        : false);
 
                       return (
                         <div key={player.pool_player_id}>
@@ -518,7 +521,7 @@ export default function StandingsPage() {
                             </div>
                           </button>
 
-                          {isExpanded && <PlayerPickHistory player={player} roundsPlayed={leaderboard.rounds_played} />}
+                          {isExpanded && <PlayerPickHistory player={player} roundsPlayed={leaderboard.rounds_played} isOwnEntry={isYou} />}
                         </div>
                       );
                     })}
@@ -591,7 +594,7 @@ export default function StandingsPage() {
                             </div>
                           </button>
 
-                          {isExpanded && <PlayerPickHistory player={player} roundsPlayed={leaderboard.rounds_played} />}
+                          {isExpanded && <PlayerPickHistory player={player} roundsPlayed={leaderboard.rounds_played} isOwnEntry={isYou} />}
                         </div>
                       );
                     })}
