@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useAuth } from '@/components/auth/AuthProvider';
 import { getPoolLeaderboard } from '@/lib/standings';
@@ -163,25 +163,29 @@ export default function StandingsPage() {
   const [filter, setFilter] = useState<StandingsFilter>('all');
   const [expandedPlayer, setExpandedPlayer] = useState<string | null>(null);
   const [showRoundGrid, setShowRoundGrid] = useState(false);
+  const loadedRef = useRef(false);
 
   useEffect(() => {
     if (!user || !poolId) return;
 
-    const fetchLeaderboard = async () => {
+    const fetchLeaderboard = async (showSpinner: boolean) => {
       try {
-        setLoading(true);
+        if (showSpinner) setLoading(true);
         const data = await getPoolLeaderboard(poolId);
         setLeaderboard(data);
       } catch (err) {
         console.error('Failed to fetch standings:', err);
-        setError(err instanceof Error ? err.message : 'Failed to load standings');
+        if (showSpinner) setError(err instanceof Error ? err.message : 'Failed to load standings');
       } finally {
-        setLoading(false);
+        if (showSpinner) setLoading(false);
       }
     };
 
-    fetchLeaderboard();
-    const interval = setInterval(fetchLeaderboard, 30000);
+    if (!loadedRef.current) {
+      loadedRef.current = true;
+      fetchLeaderboard(true);
+    }
+    const interval = setInterval(() => fetchLeaderboard(false), 30000);
     return () => clearInterval(interval);
   }, [user, poolId]);
 

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams } from 'next/navigation';
 import RegionBracketComponent from '@/components/bracket/RegionBracket';
 import BracketMatchupCard from '@/components/bracket/BracketMatchupCard';
@@ -21,6 +21,7 @@ export default function PoolBracketPage() {
   const [viewMode, setViewMode] = useState<'schedule' | 'bracket'>('bracket');
   const [selectedRound, setSelectedRound] = useState<string>('');
   const [selectedRegion, setSelectedRegion] = useState('East');
+  const loadedRef = useRef(false);
 
   // Suppress unused var warning — poolId is available for future pool-overlay features
   void poolId;
@@ -47,7 +48,10 @@ export default function PoolBracketPage() {
   }, [selectedRound]);
 
   useEffect(() => {
-    loadData();
+    if (!loadedRef.current) {
+      loadedRef.current = true;
+      loadData();
+    }
   }, [loadData]);
 
   const regionBracket: RegionBracket | null =

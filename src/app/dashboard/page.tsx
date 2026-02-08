@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useAuth } from '@/components/auth/AuthProvider';
 import { useActivePool } from '@/hooks/useActivePool';
 import { supabase } from '@/lib/supabase/client';
@@ -439,11 +439,6 @@ function PoolCard({
 export default function Dashboard() {
   const { user } = useAuth();
   const { activePoolId, setActivePool, pools, loadingPools, refreshPools } = useActivePool();
-
-  // Re-fetch pool data on every dashboard visit (catches mutations from pick/settings pages)
-  useEffect(() => {
-    refreshPools();
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   if (loadingPools) return <LoadingSkeleton />;
   if (pools.length === 0) return <EmptyState />;

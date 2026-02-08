@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams } from 'next/navigation';
 import { useAuth } from '@/components/auth/AuthProvider';
 import {
@@ -599,6 +599,7 @@ export default function PoolAnalyzePage() {
   const [eliminationRoundName, setEliminationRoundName] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const loadedRef = useRef(false);
 
   const [expandedModules, setExpandedModules] = useState<Record<string, boolean>>({
     todaysGames: true,
@@ -677,7 +678,10 @@ export default function PoolAnalyzePage() {
   }, [user, poolId]);
 
   useEffect(() => {
-    loadData();
+    if (!loadedRef.current) {
+      loadedRef.current = true;
+      loadData();
+    }
   }, [loadData]);
 
   if (loading) return <LoadingSkeleton />;
