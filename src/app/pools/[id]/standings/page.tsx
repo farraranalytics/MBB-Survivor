@@ -68,7 +68,7 @@ function GridCell({
   );
 }
 
-// ─── Expanded Player Row ─────────────────────────────────────────
+// ─── Expanded Player Row — Horizontal Chips ─────────────────────
 
 function PlayerPickHistory({
   player,
@@ -81,7 +81,7 @@ function PlayerPickHistory({
 }) {
   if (player.round_results.length === 0) {
     return (
-      <div className="px-4 py-3 bg-[#0D1B2A] text-sm text-[#9BA3AE]" style={{ fontFamily: "'DM Sans', sans-serif" }}>
+      <div className="px-4 py-2.5 bg-[#0D1B2A] text-xs text-[#9BA3AE]" style={{ fontFamily: "'DM Sans', sans-serif" }}>
         No picks yet
       </div>
     );
@@ -96,56 +96,42 @@ function PlayerPickHistory({
 
   if (visibleResults.length === 0) {
     return (
-      <div className="px-4 py-3 bg-[#0D1B2A] text-sm text-[#9BA3AE]" style={{ fontFamily: "'DM Sans', sans-serif" }}>
+      <div className="px-4 py-2.5 bg-[#0D1B2A] text-xs text-[#9BA3AE]" style={{ fontFamily: "'DM Sans', sans-serif" }}>
         Picks hidden until deadline passes
       </div>
     );
   }
 
   return (
-    <div className="bg-[#0D1B2A] border-t border-[rgba(255,255,255,0.05)]">
-      <div className="px-4 py-3 space-y-2">
-        <p className="label">Pick History</p>
-        {visibleResults.map((result) => (
-          <div
-            key={result.round_id}
-            className="flex items-center justify-between py-2 border-b border-[rgba(255,255,255,0.05)] last:border-0"
-          >
-            <div className="flex items-center space-x-3 min-w-0">
-              <GridCell result={result} deadlinePassed={true} />
-              <div className="min-w-0">
-                <p className="text-sm font-medium text-[#E8E6E1] truncate" style={{ fontFamily: "'Oswald', sans-serif", textTransform: 'uppercase' }}>
-                  ({result.team_seed}) {result.team_name}
-                </p>
-                <p className="text-xs text-[#9BA3AE]" style={{ fontFamily: "'DM Sans', sans-serif" }}>
-                  {result.round_name}
-                  {result.opponent_name && (
-                    <> vs ({result.opponent_seed}) {result.opponent_name}</>
-                  )}
-                </p>
-              </div>
-            </div>
-            <div className="flex-shrink-0 ml-2 text-right">
-              {result.game_score && (
-                <p className="text-xs text-[#9BA3AE]" style={{ fontFamily: "'Space Mono', monospace" }}>{result.game_score}</p>
-              )}
-              {result.is_correct === null && result.game_status === 'scheduled' && (
-                <p className="text-xs text-[#1B3A5C]" style={{ fontFamily: "'Space Mono', monospace" }}>Pending</p>
-              )}
-              {result.game_status === 'in_progress' && (
-                <p className="text-xs text-[#FFB300] font-bold" style={{ fontFamily: "'Space Mono', monospace" }}>LIVE</p>
-              )}
-            </div>
-          </div>
-        ))}
+    <div className="bg-[#0D1B2A] border-t border-[rgba(255,255,255,0.05)] px-4 py-2.5">
+      <div className="flex flex-wrap gap-1.5">
+        {visibleResults.map((result) => {
+          const roundIndex = roundsPlayed.findIndex((r) => r.id === result.round_id);
+          const roundLabel = `R${roundIndex + 1}`;
 
-        {player.teams_used.length > 0 && (
-          <div className="pt-2">
-            <p className="text-[10px] text-[#9BA3AE]" style={{ fontFamily: "'DM Sans', sans-serif" }}>
-              Teams used: {player.teams_used.join(', ')}
-            </p>
-          </div>
-        )}
+          let chipClass = 'bg-[rgba(27,58,92,0.3)] text-[#9BA3AE]';
+          let icon = '';
+          if (result.is_correct === true) {
+            chipClass = 'bg-[rgba(76,175,80,0.15)] text-[#4CAF50]';
+            icon = ' \u2713';
+          } else if (result.is_correct === false) {
+            chipClass = 'bg-[rgba(239,83,80,0.15)] text-[#EF5350]';
+            icon = ' \u2717';
+          } else if (result.game_status === 'in_progress') {
+            chipClass = 'bg-[rgba(255,179,0,0.12)] text-[#FFB300] animate-pulse';
+          }
+
+          return (
+            <span
+              key={result.round_id}
+              className={`inline-flex items-center px-2 py-1 rounded-[6px] font-bold ${chipClass}`}
+              title={`(${result.team_seed}) ${result.team_name}${result.opponent_name ? ` vs (${result.opponent_seed}) ${result.opponent_name}` : ''}${result.game_score ? ` — ${result.game_score}` : ''}`}
+              style={{ fontFamily: "'Space Mono', monospace", fontSize: '10px', letterSpacing: '-0.02em' }}
+            >
+              {roundLabel} {result.team_abbreviation}{icon}
+            </span>
+          );
+        })}
       </div>
     </div>
   );
@@ -453,72 +439,43 @@ export default function StandingsPage() {
                       const isYou = user?.id === player.user_id;
                       const isExpanded = expandedPlayer === player.pool_player_id;
 
-                      // Show current round pick if deadline passed or it's the user's own entry
-                      const currentRoundDeadlinePassed = isYou || (leaderboard.current_round
-                        ? isDeadlinePassed(leaderboard.current_round.deadline_datetime)
-                        : false);
-
                       return (
                         <div key={player.pool_player_id}>
                           <button
                             onClick={() => setExpandedPlayer(isExpanded ? null : player.pool_player_id)}
-                            className={`w-full text-left px-4 py-3.5 flex items-center gap-4 transition-colors hover:bg-[#1B2A3D] ${
+                            className={`w-full text-left px-4 py-2.5 flex items-center gap-3 transition-colors hover:bg-[#1B2A3D] ${
                               isYou ? 'bg-[rgba(255,87,34,0.05)] border-l-[3px] border-l-[#FF5722]' : ''
                             } ${index > 0 || filter === 'all' ? 'border-t border-[rgba(255,255,255,0.05)]' : ''}`}
                           >
-                            {/* Avatar circle */}
+                            {/* Avatar with green border = alive */}
                             <span
-                              className="flex-shrink-0 w-9 h-9 rounded-full bg-[#243447] flex items-center justify-center text-[#E8E6E1]"
-                              style={{ fontFamily: "'Oswald', sans-serif", fontWeight: 700, fontSize: '0.85rem' }}
+                              className="flex-shrink-0 w-8 h-8 rounded-full bg-[#243447] flex items-center justify-center text-[#E8E6E1] border-2 border-[#4CAF50]"
+                              style={{ fontFamily: "'Oswald', sans-serif", fontWeight: 700, fontSize: '0.75rem' }}
                             >
                               {player.display_name.charAt(0).toUpperCase()}
                             </span>
 
-                            {/* Player info */}
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-center gap-2">
-                                <p className="text-sm font-semibold truncate text-[#E8E6E1]" style={{ fontFamily: "'Oswald', sans-serif", textTransform: 'uppercase' }}>
-                                  {player.display_name} <span className="text-[#9BA3AE] font-normal text-xs" style={{ fontFamily: "'DM Sans', sans-serif", textTransform: 'none' }}>&mdash; {player.entry_label}</span>
-                                </p>
-                                {isYou && (
-                                  <span className="flex-shrink-0 text-[#FF5722] font-bold" style={{ fontFamily: "'Space Mono', monospace", fontSize: '0.65rem', letterSpacing: '0.2em', textTransform: 'uppercase' }}>
-                                    YOU
-                                  </span>
-                                )}
-                              </div>
-                              <div className="flex items-center gap-2 mt-0.5">
-                                <span
-                                  className="inline-flex items-center px-2 py-0.5 rounded-full font-bold bg-[rgba(76,175,80,0.12)] text-[#4CAF50]"
-                                  style={{ fontFamily: "'Space Mono', monospace", fontSize: '0.65rem', letterSpacing: '0.2em', textTransform: 'uppercase' }}
-                                >
-                                  ALIVE
+                            {/* Single line: Name — Entry [YOU] */}
+                            <div className="flex-1 min-w-0 flex items-center gap-2">
+                              <p className="text-sm font-semibold truncate text-[#E8E6E1]" style={{ fontFamily: "'Oswald', sans-serif", textTransform: 'uppercase' }}>
+                                {player.display_name} <span className="text-[#9BA3AE] font-normal text-xs" style={{ fontFamily: "'DM Sans', sans-serif", textTransform: 'none' }}>&mdash; {player.entry_label}</span>
+                              </p>
+                              {isYou && (
+                                <span className="flex-shrink-0 text-[#FF5722] font-bold" style={{ fontFamily: "'Space Mono', monospace", fontSize: '0.6rem', letterSpacing: '0.15em' }}>
+                                  YOU
                                 </span>
-                                <span className="text-[11px] text-[#9BA3AE]" style={{ fontFamily: "'DM Sans', sans-serif" }}>
-                                  Survived {player.correct_picks} round{player.correct_picks !== 1 ? 's' : ''}
-                                </span>
-                              </div>
-                            </div>
-
-                            {/* Right side — today's pick (only if deadline passed) + chevron */}
-                            <div className="flex items-center gap-3 flex-shrink-0">
-                              {currentRoundDeadlinePassed && player.current_round_pick && (
-                                <div className="text-right hidden sm:block">
-                                  <p className="text-xs font-semibold text-[#E8E6E1]" style={{ fontFamily: "'Oswald', sans-serif", textTransform: 'uppercase' }}>
-                                    {player.current_round_pick.team_name}
-                                  </p>
-                                  <p className="text-[#5F6B7A]" style={{ fontFamily: "'Space Mono', monospace", fontSize: '0.55rem', letterSpacing: '0.2em', textTransform: 'uppercase' }}>TODAY</p>
-                                </div>
                               )}
-
-                              <svg
-                                className={`w-4 h-4 text-[#5F6B7A] transition-transform ${isExpanded ? 'rotate-180' : ''}`}
-                                fill="none"
-                                viewBox="0 0 24 24"
-                                stroke="currentColor"
-                              >
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                              </svg>
                             </div>
+
+                            {/* Chevron */}
+                            <svg
+                              className={`w-4 h-4 text-[#5F6B7A] flex-shrink-0 transition-transform ${isExpanded ? 'rotate-180' : ''}`}
+                              fill="none"
+                              viewBox="0 0 24 24"
+                              stroke="currentColor"
+                            >
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                            </svg>
                           </button>
 
                           {isExpanded && <PlayerPickHistory player={player} roundsPlayed={leaderboard.rounds_played} isOwnEntry={isYou} />}
@@ -536,62 +493,68 @@ export default function StandingsPage() {
                       const isYou = user?.id === player.user_id;
                       const isExpanded = expandedPlayer === player.pool_player_id;
 
-                      const eliminationText = player.elimination_round_name
-                        ? `Eliminated in ${player.elimination_round_name}`
-                        : 'Eliminated';
+                      // Build elimination detail: "R2 · Norfolk State" or "R2 · No pick"
+                      let elimDetail = '';
+                      if (player.elimination_round_name) {
+                        const elimRound = leaderboard.rounds_played.find(r => r.name === player.elimination_round_name);
+                        const elimRoundLabel = elimRound
+                          ? `R${leaderboard.rounds_played.indexOf(elimRound) + 1}`
+                          : '';
+
+                        if (player.elimination_reason === 'missed_pick') {
+                          elimDetail = `${elimRoundLabel} \u00b7 No pick`;
+                        } else {
+                          const wrongResult = player.round_results.find(r => r.is_correct === false);
+                          elimDetail = wrongResult
+                            ? `${elimRoundLabel} \u00b7 ${wrongResult.team_name}`
+                            : elimRoundLabel;
+                        }
+                      }
 
                       return (
-                        <div key={player.pool_player_id} className="opacity-[0.45]">
+                        <div key={player.pool_player_id} className="opacity-[0.5]">
                           <button
                             onClick={() => setExpandedPlayer(isExpanded ? null : player.pool_player_id)}
-                            className={`w-full text-left px-4 py-3.5 flex items-center gap-4 transition-colors hover:bg-[#1B2A3D] ${
+                            className={`w-full text-left px-4 py-2.5 flex items-center gap-3 transition-colors hover:bg-[#1B2A3D] ${
                               isYou ? 'bg-[rgba(255,87,34,0.05)] border-l-[3px] border-l-[#FF5722]' : ''
                             } ${index > 0 || filter === 'all' ? 'border-t border-[rgba(255,255,255,0.05)]' : ''}`}
                           >
-                            {/* Avatar circle */}
+                            {/* Avatar with red border = eliminated */}
                             <span
-                              className="flex-shrink-0 w-9 h-9 rounded-full bg-[#243447] flex items-center justify-center text-[#9BA3AE]"
-                              style={{ fontFamily: "'Oswald', sans-serif", fontWeight: 700, fontSize: '0.85rem' }}
+                              className="flex-shrink-0 w-8 h-8 rounded-full bg-[#243447] flex items-center justify-center text-[#9BA3AE] border-2 border-[#EF5350]"
+                              style={{ fontFamily: "'Oswald', sans-serif", fontWeight: 700, fontSize: '0.75rem' }}
                             >
                               {player.display_name.charAt(0).toUpperCase()}
                             </span>
 
-                            {/* Player info */}
+                            {/* Name + elimination detail */}
                             <div className="flex-1 min-w-0">
                               <div className="flex items-center gap-2">
-                                <p className="text-sm font-semibold truncate strikethrough text-[#9BA3AE]" style={{ fontFamily: "'Oswald', sans-serif", textTransform: 'uppercase' }}>
+                                <p className="text-sm font-semibold truncate text-[#9BA3AE]" style={{ fontFamily: "'Oswald', sans-serif", textTransform: 'uppercase' }}>
                                   {player.display_name} <span className="font-normal text-xs" style={{ fontFamily: "'DM Sans', sans-serif", textTransform: 'none' }}>&mdash; {player.entry_label}</span>
                                 </p>
                                 {isYou && (
-                                  <span className="flex-shrink-0 text-[#FF5722] font-bold" style={{ fontFamily: "'Space Mono', monospace", fontSize: '0.65rem', letterSpacing: '0.2em', textTransform: 'uppercase' }}>
+                                  <span className="flex-shrink-0 text-[#FF5722] font-bold" style={{ fontFamily: "'Space Mono', monospace", fontSize: '0.6rem', letterSpacing: '0.15em' }}>
                                     YOU
                                   </span>
                                 )}
                               </div>
-                              <div className="flex items-center gap-2 mt-0.5">
-                                <span
-                                  className="inline-flex items-center px-2 py-0.5 rounded-full font-bold bg-[rgba(239,83,80,0.12)] text-[#EF5350]"
-                                  style={{ fontFamily: "'Space Mono', monospace", fontSize: '0.65rem', letterSpacing: '0.2em', textTransform: 'uppercase' }}
-                                >
-                                  OUT
-                                </span>
-                                <span className="text-[11px] text-[#9BA3AE]" style={{ fontFamily: "'DM Sans', sans-serif" }}>
-                                  {eliminationText}
-                                </span>
-                              </div>
+                              {elimDetail && (
+                                <p className="text-[10px] text-[#5F6B7A] mt-0.5" style={{ fontFamily: "'DM Sans', sans-serif" }}>
+                                  {elimDetail}
+                                </p>
+                              )}
                             </div>
 
-                            {/* Right side — chevron only */}
-                            <div className="flex items-center flex-shrink-0">
-                              <svg
-                                className={`w-4 h-4 text-[#5F6B7A] transition-transform ${isExpanded ? 'rotate-180' : ''}`}
-                                fill="none"
-                                viewBox="0 0 24 24"
-                                stroke="currentColor"
-                              >
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                              </svg>
-                            </div>
+                            {/* Chevron */}
+                            <svg
+                              className={`w-4 h-4 text-[#5F6B7A] flex-shrink-0 transition-transform ${isExpanded ? 'rotate-180' : ''}`}
+                              fill="none"
+                              viewBox="0 0 24 24"
+                              stroke="currentColor"
+                            >
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                            </svg>
                           </button>
 
                           {isExpanded && <PlayerPickHistory player={player} roundsPlayed={leaderboard.rounds_played} isOwnEntry={isYou} />}
