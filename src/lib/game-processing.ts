@@ -196,5 +196,12 @@ export async function checkRoundCompletion(
         .eq('id', pool.id);
       results.poolsCompleted++;
     }
+  } else {
+    // Auto-advance: activate the next round so users can start picking
+    const nextRound = futureRounds[0];
+    await supabaseAdmin
+      .from('rounds')
+      .update({ is_active: true })
+      .eq('id', nextRound.id);
   }
 }
