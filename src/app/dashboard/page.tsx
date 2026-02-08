@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useAuth } from '@/components/auth/AuthProvider';
 import { useActivePool } from '@/hooks/useActivePool';
+import { supabase } from '@/lib/supabase/client';
 import { MyPool, MyPoolEntry } from '@/types/standings';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -128,15 +129,21 @@ function PoolCard({
   isCreator,
   onActivate,
   userId,
+  onEntryAdded,
 }: {
   pool: MyPool;
   isActive: boolean;
   isCreator: boolean;
   onActivate: () => void;
   userId: string | undefined;
+  onEntryAdded: () => Promise<void>;
 }) {
   const router = useRouter();
   const [copiedCode, setCopiedCode] = useState(false);
+  const [showAddEntry, setShowAddEntry] = useState(false);
+  const [addEntryName, setAddEntryName] = useState('');
+  const [addEntryLoading, setAddEntryLoading] = useState(false);
+  const [addEntryError, setAddEntryError] = useState('');
 
   const handleCopy = async (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -243,14 +250,72 @@ function PoolCard({
         ))}
 
         {/* Row 4: + Add Entry */}
-        {canAddEntry && (
+        {canAddEntry && !showAddEntry && (
           <button
-            onClick={(e) => { e.stopPropagation(); router.push(`/pools/join?code=${pool.join_code}`); }}
+            onClick={(e) => { e.stopPropagation(); setShowAddEntry(true); setAddEntryError(''); }}
             className="text-xs text-[#FF5722] font-semibold mt-1 hover:text-[#E64A19] transition-colors"
             style={{ fontFamily: "'DM Sans', sans-serif" }}
           >
             + Add Entry
           </button>
+        )}
+        {showAddEntry && (
+          <div onClick={(e) => e.stopPropagation()} className="mt-2 bg-[#1B2A3D] border border-[rgba(255,255,255,0.05)] rounded-[10px] p-3 space-y-2">
+            {addEntryError && (
+              <p className="text-xs text-[#EF5350]" style={{ fontFamily: "'DM Sans', sans-serif" }}>{addEntryError}</p>
+            )}
+            <input
+              type="text"
+              value={addEntryName}
+              onChange={(e) => setAddEntryName(e.target.value)}
+              maxLength={60}
+              className="w-full px-3 py-2 bg-[#111827] border border-[rgba(255,255,255,0.05)] rounded-[8px] text-sm text-[#E8E6E1] placeholder-[#9BA3AE] focus:outline-none focus:ring-1 focus:ring-[#FF5722]"
+              placeholder={`Entry ${pool.your_entries.length + 1} name (optional)`}
+              style={{ fontFamily: "'DM Sans', sans-serif" }}
+            />
+            <div className="flex gap-2">
+              <button
+                onClick={async () => {
+                  if (!userId) return;
+                  setAddEntryLoading(true);
+                  setAddEntryError('');
+                  try {
+                    const { data: { user: authUser } } = await supabase.auth.getUser();
+                    const baseName = authUser?.user_metadata?.display_name || authUser?.email?.split('@')[0] || 'Player';
+                    const entryNumber = pool.your_entries.length + 1;
+                    const entryLabel = addEntryName.trim() || `${baseName}'s Entry ${entryNumber}`;
+                    const { error } = await supabase.from('pool_players').insert({
+                      pool_id: pool.pool_id,
+                      user_id: userId,
+                      display_name: baseName,
+                      entry_number: entryNumber,
+                      entry_label: entryLabel,
+                    });
+                    if (error) throw error;
+                    setShowAddEntry(false);
+                    setAddEntryName('');
+                    await onEntryAdded();
+                  } catch (err: any) {
+                    setAddEntryError(err.message || 'Failed to add entry');
+                  } finally {
+                    setAddEntryLoading(false);
+                  }
+                }}
+                disabled={addEntryLoading}
+                className="flex-1 py-2 rounded-[8px] text-xs font-semibold btn-orange disabled:opacity-50"
+                style={{ fontFamily: "'DM Sans', sans-serif" }}
+              >
+                {addEntryLoading ? 'Adding...' : 'Add Entry'}
+              </button>
+              <button
+                onClick={() => { setShowAddEntry(false); setAddEntryName(''); setAddEntryError(''); }}
+                className="px-3 py-2 rounded-[8px] text-xs font-semibold text-[#9BA3AE] bg-[#111827] border border-[rgba(255,255,255,0.05)] hover:text-[#E8E6E1] transition-colors"
+                style={{ fontFamily: "'DM Sans', sans-serif" }}
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
         )}
       </div>
 
@@ -334,7 +399,7 @@ function PoolCard({
 
 export default function Dashboard() {
   const { user } = useAuth();
-  const { activePoolId, setActivePool, pools, loadingPools } = useActivePool();
+  const { activePoolId, setActivePool, pools, loadingPools, refreshPools } = useActivePool();
 
   if (loadingPools) return <LoadingSkeleton />;
   if (pools.length === 0) return <EmptyState />;
@@ -360,6 +425,7 @@ export default function Dashboard() {
             isCreator={pool.creator_id === user?.id}
             onActivate={() => setActivePool(pool.pool_id, pool.pool_name)}
             userId={user?.id}
+            onEntryAdded={refreshPools}
           />
         ))}
       </div>
