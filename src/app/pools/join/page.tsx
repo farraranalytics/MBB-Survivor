@@ -14,7 +14,6 @@ function JoinPoolContent() {
   const { user } = useAuth();
   const { refreshPools, setActivePool } = useActivePool();
   const [joinCode, setJoinCode] = useState('');
-  const [displayName, setDisplayName] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [entryName, setEntryName] = useState('');
@@ -22,13 +21,6 @@ function JoinPoolContent() {
   const [existingEntryCount, setExistingEntryCount] = useState(0);
   const router = useRouter();
   const autoLookedUp = useRef(false);
-
-  // Initialize display name from user metadata
-  useEffect(() => {
-    if (user) {
-      setDisplayName(user.user_metadata?.display_name || user.email?.split('@')[0] || '');
-    }
-  }, [user]);
 
   // Auto-populate join code from URL param
   useEffect(() => {
@@ -97,7 +89,7 @@ function JoinPoolContent() {
 
     try {
       const entryNumber = existingEntryCount + 1;
-      const baseName = displayName.trim() || user.email?.split('@')[0] || 'Player';
+      const baseName = user.user_metadata?.display_name || user.email?.split('@')[0] || 'Player';
       const entryLabel = entryName.trim() || `${baseName}'s Entry${entryNumber > 1 ? ` ${entryNumber}` : ''}`;
       const { error: joinError } = await supabase
         .from('pool_players')
@@ -201,14 +193,6 @@ function JoinPoolContent() {
 
             {poolInfo && (
               <div>
-                <label htmlFor="displayName" className="block text-sm font-medium text-[#9BA3AE] mb-2" style={{ fontFamily: "'DM Sans', sans-serif" }}>Your Display Name *</label>
-                <input id="displayName" type="text" value={displayName} onChange={(e) => setDisplayName(e.target.value)} required maxLength={50} className={inputClass} placeholder="How you'll appear in the pool" style={{ fontFamily: "'DM Sans', sans-serif" }} />
-                <p className="text-xs text-[#9BA3AE] mt-1.5" style={{ fontFamily: "'DM Sans', sans-serif" }}>This is how other players will see you</p>
-              </div>
-            )}
-
-            {poolInfo && (
-              <div>
                 <label htmlFor="entryName" className="block text-sm font-medium text-[#9BA3AE] mb-2" style={{ fontFamily: "'DM Sans', sans-serif" }}>
                   Entry Name {existingEntryCount > 0 ? '*' : ''}
                 </label>
@@ -233,7 +217,7 @@ function JoinPoolContent() {
             {poolInfo && (
               <button
                 onClick={handleJoinPool}
-                disabled={loading || !displayName.trim()}
+                disabled={loading}
                 className="w-full btn-orange font-bold py-4 px-4 rounded-[12px] disabled:opacity-50 disabled:cursor-not-allowed text-base"
                 style={{ fontFamily: "'DM Sans', sans-serif" }}
               >
@@ -246,7 +230,7 @@ function JoinPoolContent() {
               <ol className="text-xs text-[#9BA3AE] space-y-1.5 list-decimal list-inside" style={{ fontFamily: "'DM Sans', sans-serif" }}>
                 <li>Get the join code from the pool creator</li>
                 <li>Enter the code above and tap &ldquo;Find&rdquo;</li>
-                <li>Confirm your display name</li>
+                <li>Name your entry (optional)</li>
                 <li>Tap &ldquo;Join Pool&rdquo; to start playing</li>
               </ol>
             </div>
