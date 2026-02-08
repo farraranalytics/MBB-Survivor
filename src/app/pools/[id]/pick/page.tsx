@@ -12,6 +12,7 @@ import {
   submitPick,
   PickError
 } from '@/lib/picks';
+import { useActivePool } from '@/hooks/useActivePool';
 import { supabase } from '@/lib/supabase/client';
 import { getSeedWinProbability } from '@/lib/analyze';
 import { PickableTeam, PickDeadline, Round, Pick } from '@/types/picks';
@@ -146,29 +147,32 @@ function TeamCard({
   team,
   isSelected,
   disabled,
-  onSelect
+  onSelect,
+  position,
 }: {
   team: PickableTeam;
   isSelected: boolean;
   disabled: boolean;
   onSelect: (team: PickableTeam) => void;
+  position: 'top' | 'bottom';
 }) {
   const isUsed = team.already_used;
   const prob = getSeedWinProbability(team.seed, team.opponent.seed);
   const pct = Math.round(prob * 100);
-  const gameTime = formatET(team.game_datetime);
+
+  const roundedClass = position === 'top' ? 'rounded-t-[12px]' : 'rounded-b-[12px]';
 
   return (
     <button
       onClick={() => !disabled && !isUsed && onSelect(team)}
       disabled={disabled || isUsed}
       className={`
-        w-full text-left flex items-center gap-3 px-3 py-2.5 pr-4 transition-all border-[1.5px] rounded-[10px]
+        w-full text-left flex items-center gap-3 px-3 py-3 pr-4 transition-all ${roundedClass}
         ${isSelected
-          ? 'bg-[rgba(255,87,34,0.08)] border-[#FF5722]'
+          ? 'bg-[rgba(255,87,34,0.1)]'
           : isUsed
-          ? 'bg-[rgba(13,27,42,0.5)] opacity-40 cursor-not-allowed strikethrough border-transparent'
-          : 'border-[rgba(255,255,255,0.05)] hover:bg-[#1B2A3D] active:bg-[#1B2A3D]'
+          ? 'bg-[rgba(13,27,42,0.5)] opacity-40 cursor-not-allowed strikethrough'
+          : 'hover:bg-[#1B2A3D] active:bg-[#1B2A3D]'
         }
       `}
     >
@@ -180,13 +184,10 @@ function TeamCard({
         {team.seed}
       </span>
 
-      {/* Team name + meta */}
+      {/* Team name */}
       <div className="flex-1 min-w-0">
         <span className="font-bold text-[#E8E6E1] text-sm block truncate leading-tight" style={{ fontFamily: "'Oswald', sans-serif", textTransform: 'uppercase' }}>
           {team.name}
-        </span>
-        <span className="text-[11px] text-[#9BA3AE] leading-tight" style={{ fontFamily: "'DM Sans', sans-serif" }}>
-          vs ({team.opponent.seed}) {team.opponent.abbreviation} · {gameTime}
         </span>
       </div>
 
@@ -233,6 +234,7 @@ export default function PickPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { user } = useAuth();
+  const { refreshPools } = useActivePool();
   const poolId = params.id as string;
   const entryId = searchParams.get('entry') || undefined;
 
@@ -319,6 +321,7 @@ export default function PickPage() {
       setShowConfirm(false);
       setShowSuccess(true);
       setTimeout(() => setShowSuccess(false), 4000);
+      refreshPools();
     } catch (err) {
       const message = err instanceof PickError ? err.message : 'Failed to submit pick. Please try again.';
       setError(message);
@@ -479,27 +482,40 @@ export default function PickPage() {
               <div key={time}>
                 <p className="label mb-3 px-1">{time}</p>
                 <div className="space-y-3">
-                  {matchups.map(({ gameId, teams: matchupTeams }) => (
-                    <div key={gameId} className="space-y-2">
-                      {matchupTeams.map((team, idx) => (
-                        <div key={team.id}>
-                          {idx > 0 && (
-                            <div className="flex items-center justify-center py-0.5">
-                              <span className="text-[#5F6B7A] text-[9px] font-extrabold uppercase" style={{ fontFamily: "'Space Mono', monospace", letterSpacing: '0.1em' }}>
-                                vs
-                              </span>
-                            </div>
-                          )}
-                          <TeamCard
-                            team={team}
-                            isSelected={selectedTeam?.id === team.id}
-                            disabled={deadline?.is_expired ?? false}
-                            onSelect={setSelectedTeam}
-                          />
-                        </div>
-                      ))}
-                    </div>
-                  ))}
+                  {matchups.map(({ gameId, teams: matchupTeams }) => {
+                    const hasSelection = matchupTeams.some(t => selectedTeam?.id === t.id);
+                    return (
+                      <div
+                        key={gameId}
+                        className={`border rounded-[12px] overflow-hidden transition-colors ${
+                          hasSelection
+                            ? 'border-[#FF5722] bg-[#111827]'
+                            : 'border-[rgba(255,255,255,0.05)] bg-[#111827]'
+                        }`}
+                      >
+                        {matchupTeams.map((team, idx) => (
+                          <div key={team.id}>
+                            {idx > 0 && (
+                              <div className="flex items-center gap-3 px-4">
+                                <div className="flex-1 h-px bg-[rgba(255,255,255,0.05)]" />
+                                <span className="text-[#5F6B7A] text-[9px] font-extrabold uppercase" style={{ fontFamily: "'Space Mono', monospace", letterSpacing: '0.1em' }}>
+                                  vs
+                                </span>
+                                <div className="flex-1 h-px bg-[rgba(255,255,255,0.05)]" />
+                              </div>
+                            )}
+                            <TeamCard
+                              team={team}
+                              isSelected={selectedTeam?.id === team.id}
+                              disabled={deadline?.is_expired ?? false}
+                              onSelect={setSelectedTeam}
+                              position={idx === 0 ? 'top' : 'bottom'}
+                            />
+                          </div>
+                        ))}
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
             ))}

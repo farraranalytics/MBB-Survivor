@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useAuth } from '@/components/auth/AuthProvider';
+import { useActivePool } from '@/hooks/useActivePool';
 import { supabase } from '@/lib/supabase/client';
 import {
   getPoolInfo,
@@ -246,6 +247,7 @@ export default function PoolSettingsPage() {
   const params = useParams();
   const router = useRouter();
   const { user, signOut } = useAuth();
+  const { refreshPools } = useActivePool();
   const poolId = params.id as string;
 
   const [pool, setPool] = useState<PoolAdminData | null>(null);
@@ -349,6 +351,7 @@ export default function PoolSettingsPage() {
       await updatePoolSettings(poolId, updates);
       setSaveSuccess(true);
       setTimeout(() => setSaveSuccess(false), 3000);
+      refreshPools();
     } catch (err: any) {
       setError(err.message || 'Failed to save settings');
     } finally {
@@ -387,6 +390,7 @@ export default function PoolSettingsPage() {
       // Force session refresh so AuthProvider picks up the change
       await supabase.auth.refreshSession();
       setEditingName(false);
+      refreshPools();
     } catch (err: any) {
       setError(err.message || 'Failed to update display name');
     } finally {
