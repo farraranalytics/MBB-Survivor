@@ -202,11 +202,15 @@ export async function getPoolLeaderboard(poolId: string): Promise<PoolLeaderboar
     return a.display_name.localeCompare(b.display_name);
   });
 
-  // Rounds that have been played (have picks)
+  // Rounds that have been played (have picks), with completion status
   const roundsWithPicks = new Set(picks.map(p => p.round_id));
   const roundsPlayed = allRounds
     .filter(r => roundsWithPicks.has(r.id))
-    .map(r => ({ id: r.id, name: r.name, date: r.date, deadline_datetime: r.deadline_datetime }));
+    .map(r => {
+      const roundGames = games.filter(g => g.round_id === r.id);
+      const is_complete = roundGames.length > 0 && roundGames.every(g => g.status === 'final');
+      return { id: r.id, name: r.name, date: r.date, deadline_datetime: r.deadline_datetime, is_complete };
+    });
 
   return {
     pool_id: poolId,

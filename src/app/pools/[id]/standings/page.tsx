@@ -12,10 +12,13 @@ import {
 } from '@/types/standings';
 import { formatDateET } from '@/lib/timezone';
 
-// ─── Helper: has deadline passed? ────────────────────────────────
+// ─── Helper: should picks be visible for a round? ────────────────
 
-function isDeadlinePassed(deadlineDatetime: string): boolean {
-  return new Date(deadlineDatetime) < new Date();
+function isPickVisible(
+  round: { deadline_datetime: string; is_complete: boolean },
+  isOwnEntry: boolean,
+): boolean {
+  return isOwnEntry || new Date(round.deadline_datetime) < new Date() || round.is_complete;
 }
 
 // ─── Grid Cell — Team Abbreviation with Result Background ────────
@@ -87,11 +90,10 @@ function PlayerPickHistory({
     );
   }
 
-  // Show own picks always; for others, only after deadline
+  // Show own picks always; for others, after deadline or when round is complete
   const visibleResults = player.round_results.filter((result) => {
-    if (isOwnEntry) return true;
     const round = roundsPlayed.find((r) => r.id === result.round_id);
-    return round ? isDeadlinePassed(round.deadline_datetime) : false;
+    return round ? isPickVisible(round, isOwnEntry) : false;
   });
 
   if (visibleResults.length === 0) {
@@ -365,7 +367,7 @@ export default function StandingsPage() {
                         </td>
                         {leaderboard.rounds_played.map((round) => {
                           const result = player.round_results.find((r) => r.round_id === round.id);
-                          const deadlinePassed = isDeadlinePassed(round.deadline_datetime) || isYou;
+                          const deadlinePassed = isPickVisible(round, isYou);
                           return (
                             <td key={round.id} className="px-1.5 py-2 text-center">
                               <GridCell result={result} deadlinePassed={deadlinePassed} />
@@ -410,7 +412,7 @@ export default function StandingsPage() {
                         </td>
                         {leaderboard.rounds_played.map((round) => {
                           const result = player.round_results.find((r) => r.round_id === round.id);
-                          const deadlinePassed = isDeadlinePassed(round.deadline_datetime) || isYou;
+                          const deadlinePassed = isPickVisible(round, isYou);
                           return (
                             <td key={round.id} className="px-1.5 py-2 text-center">
                               <GridCell result={result} deadlinePassed={deadlinePassed} />

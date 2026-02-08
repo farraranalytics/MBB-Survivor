@@ -50,6 +50,7 @@ export interface PoolLeaderboard {
     name: string;
     date: string;
     deadline_datetime: string;
+    is_complete: boolean;
   }[];
   players: StandingsPlayer[];
 }
