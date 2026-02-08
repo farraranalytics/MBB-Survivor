@@ -208,10 +208,10 @@ function PoolCard({
   const showChangePick = pool.pool_status === 'active' && aliveEntries.length > 0 && !deadlineExpired && unpickedAliveEntries.length === 0;
   const showStandings = (pool.pool_status === 'active' || pool.pool_status === 'complete') && !allEliminated;
 
-  // Add Entry logic
+  // Add Entry logic — only allowed pre-tournament (pool status 'open')
   const canAddEntry = pool.max_entries_per_user > 1
     && pool.your_entries.length < pool.max_entries_per_user
-    && pool.pool_status !== 'complete';
+    && pool.pool_status === 'open';
 
   return (
     <div
@@ -443,18 +443,23 @@ export default function Dashboard() {
   if (loadingPools) return <LoadingSkeleton />;
   if (pools.length === 0) return <EmptyState />;
 
+  // Hide create/join links once any pool is active or complete (tournament started)
+  const tournamentStarted = pools.some(p => p.pool_status === 'active' || p.pool_status === 'complete');
+
   return (
     <div className="min-h-screen bg-[#0D1B2A] pb-24">
       <div className="max-w-lg mx-auto px-5 py-4 space-y-4">
-        {/* Create / Join links at top */}
-        <div className="flex justify-center gap-4">
-          <Link href="/pools/create" className="text-sm text-[#9BA3AE] hover:text-[#FF5722] transition-colors" style={{ fontFamily: "'DM Sans', sans-serif" }}>
-            + Create Pool
-          </Link>
-          <Link href="/pools/join" className="text-sm text-[#9BA3AE] hover:text-[#FF5722] transition-colors" style={{ fontFamily: "'DM Sans', sans-serif" }}>
-            + Join Pool
-          </Link>
-        </div>
+        {/* Create / Join links at top — hidden once tournament starts */}
+        {!tournamentStarted && (
+          <div className="flex justify-center gap-4">
+            <Link href="/pools/create" className="text-sm text-[#9BA3AE] hover:text-[#FF5722] transition-colors" style={{ fontFamily: "'DM Sans', sans-serif" }}>
+              + Create Pool
+            </Link>
+            <Link href="/pools/join" className="text-sm text-[#9BA3AE] hover:text-[#FF5722] transition-colors" style={{ fontFamily: "'DM Sans', sans-serif" }}>
+              + Join Pool
+            </Link>
+          </div>
+        )}
 
         {pools.map(pool => (
           <PoolCard

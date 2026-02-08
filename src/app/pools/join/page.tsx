@@ -47,7 +47,7 @@ function JoinPoolContent() {
         if (poolError.code === 'PGRST116') throw new Error('Pool not found. Check your join code.');
         throw poolError;
       }
-      if (pool.status === 'complete') throw new Error('This pool has already finished.');
+      if (pool.status !== 'open') throw new Error('This pool has already started. You can no longer join.');
 
       const { data: existingEntries } = await supabase
         .from('pool_players')
