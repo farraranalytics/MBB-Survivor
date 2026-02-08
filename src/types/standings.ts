@@ -64,6 +64,9 @@ export interface MyPoolEntry {
   is_eliminated: boolean;
   picks_count: number;
   has_picked_today: boolean;
+  elimination_round_name: string | null;
+  elimination_team_name: string | null;
+  elimination_reason: 'wrong_pick' | 'missed_pick' | 'manual' | null;
 }
 
 export interface MyPool {

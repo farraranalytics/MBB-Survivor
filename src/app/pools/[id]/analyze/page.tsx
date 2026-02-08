@@ -12,6 +12,7 @@ import {
   getPoolStandings,
 } from '@/lib/picks';
 import { getTeamInventory, getOpponentInventories, getSeedWinProbability } from '@/lib/analyze';
+import { supabase } from '@/lib/supabase/client';
 import type { PickableTeam, PickDeadline, Round, Pick, PoolStandings } from '@/types/picks';
 import type { InventoryTeam, OpponentInventory } from '@/lib/analyze';
 import { formatET } from '@/lib/timezone';
@@ -453,8 +454,16 @@ function PickOptimizerModule({
   deadline: PickDeadline | null;
   isEliminated: boolean;
 }) {
-  // Hide if eliminated or deadline passed
-  if (isEliminated) return null;
+  // Show message if eliminated or deadline passed
+  if (isEliminated) {
+    return (
+      <div className="pt-3">
+        <p className="text-sm text-[#9BA3AE] text-center py-4" style={{ fontFamily: "'DM Sans', sans-serif" }}>
+          You&apos;ve been eliminated — no pick needed.
+        </p>
+      </div>
+    );
+  }
   if (deadline?.is_expired) {
     return (
       <div className="pt-3">
@@ -587,6 +596,7 @@ export default function PoolAnalyzePage() {
   const [opponents, setOpponents] = useState<OpponentInventory[]>([]);
   const [standings, setStandings] = useState<PoolStandings | null>(null);
   const [isEliminated, setIsEliminated] = useState(false);
+  const [eliminationRoundName, setEliminationRoundName] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -618,6 +628,15 @@ export default function PoolAnalyzePage() {
       setPoolPlayerId(player.id);
       setIsEliminated(player.is_eliminated);
 
+      if (player.is_eliminated && player.elimination_round_id) {
+        const { data: elimRound } = await supabase
+          .from('rounds')
+          .select('name')
+          .eq('id', player.elimination_round_id)
+          .single();
+        if (elimRound) setEliminationRoundName(elimRound.name);
+      }
+
       // 2. Active round
       const activeRound = await getActiveRound();
       setRound(activeRound);
@@ -636,12 +655,14 @@ export default function PoolAnalyzePage() {
         );
       }
 
-      // 6. Team inventory
-      promises.push(getTeamInventory(player.id).then(inv => setInventory(inv)));
-
-      // 7. Opponent inventories — exclude current round picks if deadline hasn't passed
+      // 6-7. Exclude current round picks from inventory & opponent data before deadline
       const hideCurrentRound = activeRound && deadlineInfo && !deadlineInfo.is_expired
         ? activeRound.id : undefined;
+
+      // 6. Team inventory
+      promises.push(getTeamInventory(player.id, hideCurrentRound).then(inv => setInventory(inv)));
+
+      // 7. Opponent inventories
       promises.push(getOpponentInventories(poolId, player.id, hideCurrentRound).then(opp => setOpponents(opp)));
 
       // 8. Pool standings
@@ -698,12 +719,22 @@ export default function PoolAnalyzePage() {
   }
 
   // Show/hide Module 5 based on state
-  const showOptimizer = round && !isEliminated && !deadline?.is_expired;
+  const showOptimizer = !!round;
   const gamesSubtitle = round ? `${games.length / 2} matchups · ${round.name}` : 'No games scheduled';
 
   return (
     <div className="min-h-screen bg-[#0D1B2A] pb-24">
       <div className="max-w-lg mx-auto px-5 py-4 space-y-3">
+        {/* Spectating banner for eliminated users */}
+        {isEliminated && (
+          <div className="flex items-center justify-center gap-2 bg-[rgba(239,83,80,0.06)] border border-[rgba(239,83,80,0.12)] rounded-[10px] px-4 py-2.5">
+            <span className="text-xs">☠️</span>
+            <p className="text-xs text-[#9BA3AE]" style={{ fontFamily: "'DM Sans', sans-serif" }}>
+              You&apos;re spectating{eliminationRoundName ? ` · Eliminated in ${eliminationRoundName}` : ''}
+            </p>
+          </div>
+        )}
+
         {/* Module 1: Today's Games */}
         <ModuleSection
           title="Today's Games"

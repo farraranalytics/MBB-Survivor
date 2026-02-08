@@ -242,6 +242,8 @@ export async function getMyPools(userId: string): Promise<MyPool[]> {
       pool_id,
       user_id,
       is_eliminated,
+      elimination_round_id,
+      elimination_reason,
       entry_number,
       entry_label,
       pools:pool_id(
@@ -280,6 +282,12 @@ export async function getMyPools(userId: string): Promise<MyPool[]> {
     .limit(1);
 
   const currentRound = activeRounds?.[0] || null;
+
+  // 2b. Build round name lookup for elimination display
+  const { data: allRounds } = await supabase
+    .from('rounds')
+    .select('id, name');
+  const roundNameMap = new Map((allRounds || []).map(r => [r.id, r.name]));
 
   // 3. Build pool data (deduplicated by pool)
   const myPools: MyPool[] = [];
@@ -321,7 +329,7 @@ export async function getMyPools(userId: string): Promise<MyPool[]> {
 
       const { data: userPicks } = await supabase
         .from('picks')
-        .select('id, is_correct, round_id')
+        .select('id, is_correct, round_id, team_id')
         .eq('pool_player_id', entry.id);
 
       const entryPickCount = userPicks?.length || 0;
@@ -340,6 +348,29 @@ export async function getMyPools(userId: string): Promise<MyPool[]> {
       }
       if (streak > bestStreak) bestStreak = streak;
 
+      // Build elimination context for eliminated entries
+      let eliminationRoundName: string | null = null;
+      let eliminationTeamName: string | null = null;
+      const eliminationReason = ((entry as any).elimination_reason as 'wrong_pick' | 'missed_pick' | 'manual' | null) || null;
+
+      if (entry.is_eliminated) {
+        const elimRoundId = (entry as any).elimination_round_id;
+        if (elimRoundId) {
+          eliminationRoundName = roundNameMap.get(elimRoundId) || null;
+        }
+        if (eliminationReason === 'wrong_pick' && userPicks) {
+          const elimPick = userPicks.find(p => p.round_id === elimRoundId);
+          if (elimPick) {
+            const { data: teamData } = await supabase
+              .from('teams')
+              .select('name')
+              .eq('id', elimPick.team_id)
+              .single();
+            eliminationTeamName = teamData?.name || null;
+          }
+        }
+      }
+
       yourEntries.push({
         pool_player_id: entry.id,
         entry_number: (entry as any).entry_number ?? 1,
@@ -347,6 +378,9 @@ export async function getMyPools(userId: string): Promise<MyPool[]> {
         is_eliminated: entry.is_eliminated,
         picks_count: entryPickCount,
         has_picked_today: entryPickedToday,
+        elimination_round_name: eliminationRoundName,
+        elimination_team_name: eliminationTeamName,
+        elimination_reason: eliminationReason,
       });
     }
 

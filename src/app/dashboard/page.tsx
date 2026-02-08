@@ -96,7 +96,15 @@ function EntryStatusLine({ entry, poolStatus, hasActiveRound }: { entry: MyPoolE
 
   if (entry.is_eliminated) {
     dotColor = 'bg-[#EF5350]';
-    statusText = 'Eliminated';
+    const roundPart = entry.elimination_round_name
+      ? `Eliminated ${entry.elimination_round_name}`
+      : 'Eliminated';
+    const teamPart = entry.elimination_reason === 'missed_pick'
+      ? 'No pick'
+      : entry.elimination_team_name
+      ? `Picked ${entry.elimination_team_name}`
+      : '';
+    statusText = teamPart ? `${roundPart} \u00b7 ${teamPart}` : roundPart;
   } else if (entry.has_picked_today) {
     dotColor = 'bg-[#4CAF50]';
     statusText = 'Alive · Picked ✓';
@@ -195,9 +203,10 @@ function PoolCard({
   // CTA logic
   const aliveEntries = pool.your_entries.filter(e => !e.is_eliminated);
   const unpickedAliveEntries = aliveEntries.filter(e => !e.has_picked_today);
+  const allEliminated = pool.pool_status === 'active' && aliveEntries.length === 0;
   const showMakePick = pool.pool_status === 'active' && aliveEntries.length > 0 && !deadlineExpired && unpickedAliveEntries.length > 0;
   const showChangePick = pool.pool_status === 'active' && aliveEntries.length > 0 && !deadlineExpired && unpickedAliveEntries.length === 0;
-  const showStandings = pool.pool_status === 'active' || pool.pool_status === 'complete';
+  const showStandings = (pool.pool_status === 'active' || pool.pool_status === 'complete') && !allEliminated;
 
   // Add Entry logic
   const canAddEntry = pool.max_entries_per_user > 1
@@ -359,6 +368,24 @@ function PoolCard({
           >
             Standings
           </button>
+        )}
+        {allEliminated && (
+          <>
+            <button
+              onClick={(e) => { e.stopPropagation(); router.push(`/pools/${pool.pool_id}/standings`); }}
+              className="flex-1 py-2.5 rounded-[12px] border border-[rgba(255,255,255,0.05)] text-[#9BA3AE] text-sm font-semibold hover:text-[#E8E6E1] hover:border-[rgba(255,87,34,0.3)] transition-colors"
+              style={{ fontFamily: "'DM Sans', sans-serif" }}
+            >
+              View The Field
+            </button>
+            <button
+              onClick={(e) => { e.stopPropagation(); router.push(`/pools/${pool.pool_id}/bracket`); }}
+              className="flex-1 py-2.5 rounded-[12px] border border-[rgba(255,255,255,0.05)] text-[#9BA3AE] text-sm font-semibold hover:text-[#E8E6E1] hover:border-[rgba(255,87,34,0.3)] transition-colors"
+              style={{ fontFamily: "'DM Sans', sans-serif" }}
+            >
+              View Bracket
+            </button>
+          </>
         )}
       </div>
 

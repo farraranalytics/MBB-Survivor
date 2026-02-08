@@ -23,7 +23,7 @@ export interface OpponentInventory {
 
 // ─── Team Inventory ──────────────────────────────────────────────
 
-export async function getTeamInventory(poolPlayerId: string): Promise<InventoryTeam[]> {
+export async function getTeamInventory(poolPlayerId: string, excludeRoundId?: string): Promise<InventoryTeam[]> {
   const { data: teams, error: teamsError } = await supabase
     .from('teams')
     .select('id, name, abbreviation, seed, region, is_eliminated')
@@ -31,10 +31,16 @@ export async function getTeamInventory(poolPlayerId: string): Promise<InventoryT
 
   if (teamsError) throw new Error(`Failed to fetch teams: ${teamsError.message}`);
 
-  const { data: picks, error: picksError } = await supabase
+  let query = supabase
     .from('picks')
     .select('team_id')
     .eq('pool_player_id', poolPlayerId);
+
+  if (excludeRoundId) {
+    query = query.neq('round_id', excludeRoundId);
+  }
+
+  const { data: picks, error: picksError } = await query;
 
   if (picksError) throw new Error(`Failed to fetch picks: ${picksError.message}`);
 
@@ -79,8 +85,8 @@ export async function getOpponentInventories(
       .select('team_id')
       .eq('pool_player_id', player.id);
 
-    // For opponents (not the current user), exclude current round picks before deadline
-    if (excludeRoundId && player.id !== currentPoolPlayerId) {
+    // Exclude current round picks for ALL players before deadline
+    if (excludeRoundId) {
       query = query.neq('round_id', excludeRoundId);
     }
 

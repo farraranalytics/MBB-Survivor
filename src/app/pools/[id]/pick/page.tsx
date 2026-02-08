@@ -9,13 +9,15 @@ import {
   getPickDeadline,
   getPickableTeams,
   getPlayerPick,
+  getPlayerPicks,
+  getTodaysGames,
   submitPick,
   PickError
 } from '@/lib/picks';
 import { useActivePool } from '@/hooks/useActivePool';
 import { supabase } from '@/lib/supabase/client';
 import { getSeedWinProbability } from '@/lib/analyze';
-import { PickableTeam, PickDeadline, Round, Pick } from '@/types/picks';
+import { PickableTeam, PickDeadline, Round, Pick, Game } from '@/types/picks';
 import { formatET, formatETShort, formatDeadlineTime } from '@/lib/timezone';
 
 // ─── Countdown Timer ──────────────────────────────────────────────
@@ -227,6 +229,158 @@ function TeamCard({
   );
 }
 
+// ─── Spectator Header (eliminated users) ─────────────────────────
+
+function SpectatorHeader({
+  eliminationInfo,
+  pickHistory,
+}: {
+  eliminationInfo: { roundName: string; teamName: string | null; reason: 'wrong_pick' | 'missed_pick' | 'manual' | null };
+  pickHistory: Pick[];
+}) {
+  const survivedRounds = pickHistory.filter(p => p.is_correct === true).length;
+
+  let reasonText = '';
+  if (eliminationInfo.reason === 'wrong_pick' && eliminationInfo.teamName) {
+    reasonText = `Picked ${eliminationInfo.teamName}`;
+  } else if (eliminationInfo.reason === 'missed_pick') {
+    reasonText = 'No pick submitted';
+  } else if (eliminationInfo.reason === 'manual') {
+    reasonText = 'Manually removed';
+  }
+
+  return (
+    <div className="bg-[rgba(239,83,80,0.06)] border border-[rgba(239,83,80,0.15)] rounded-[12px] p-5 mb-4">
+      <div className="text-center mb-4">
+        <span className="text-2xl mb-1 block">☠️</span>
+        <h2 className="text-lg font-bold text-[#EF5350]" style={{ fontFamily: "'Oswald', sans-serif", textTransform: 'uppercase' }}>
+          You&apos;re Out
+        </h2>
+        <p className="text-sm text-[#9BA3AE] mt-0.5" style={{ fontFamily: "'DM Sans', sans-serif" }}>
+          Eliminated in {eliminationInfo.roundName}
+        </p>
+        {reasonText && (
+          <p className="text-xs text-[#5F6B7A] mt-0.5" style={{ fontFamily: "'DM Sans', sans-serif" }}>
+            {reasonText}
+          </p>
+        )}
+      </div>
+
+      {pickHistory.length > 0 && (
+        <div>
+          <p className="label mb-2 text-center">Your Run</p>
+          <div className="flex flex-wrap gap-1.5 justify-center">
+            {pickHistory.map((pick, i) => {
+              let chipClass = 'bg-[rgba(27,58,92,0.3)] text-[#9BA3AE]';
+              let icon = '';
+              if (pick.is_correct === true) {
+                chipClass = 'bg-[rgba(76,175,80,0.15)] text-[#4CAF50]';
+                icon = ' ✓';
+              } else if (pick.is_correct === false) {
+                chipClass = 'bg-[rgba(239,83,80,0.15)] text-[#EF5350]';
+                icon = ' ✗';
+              }
+              return (
+                <span
+                  key={pick.id}
+                  className={`inline-flex items-center px-2 py-1 rounded-[6px] font-bold ${chipClass}`}
+                  style={{ fontFamily: "'Space Mono', monospace", fontSize: '10px', letterSpacing: '-0.02em' }}
+                >
+                  R{i + 1} {pick.team?.abbreviation || '???'}{icon}
+                </span>
+              );
+            })}
+          </div>
+          <p className="text-xs text-[#9BA3AE] text-center mt-2" style={{ fontFamily: "'DM Sans', sans-serif" }}>
+            Survived {survivedRounds} round{survivedRounds !== 1 ? 's' : ''}
+          </p>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── Spectator Game Card (read-only) ─────────────────────────────
+
+function SpectatorGameCard({ game }: { game: Game }) {
+  const team1 = game.team1;
+  const team2 = game.team2;
+  if (!team1 || !team2) return null;
+
+  const isLive = game.status === 'in_progress';
+  const isFinal = game.status === 'final';
+
+  const team1Won = isFinal && game.winner_id === team1.id;
+  const team2Won = isFinal && game.winner_id === team2.id;
+
+  return (
+    <div className={`border rounded-[12px] overflow-hidden ${
+      isLive ? 'border-[rgba(255,179,0,0.3)]' : 'border-[rgba(255,255,255,0.05)]'
+    } bg-[#111827]`}>
+      {/* Team 1 */}
+      <div className={`flex items-center justify-between px-3 py-3 ${team1Won ? 'bg-[rgba(76,175,80,0.05)]' : ''}`}>
+        <div className="flex items-center gap-3">
+          <span className="text-[#5F6B7A] min-w-[2rem] text-center"
+            style={{ fontFamily: "'Oswald', sans-serif", fontWeight: 700, fontSize: '1.1rem' }}>
+            {team1.seed}
+          </span>
+          <span className={`font-bold text-sm ${team1Won ? 'text-[#E8E6E1]' : isFinal && team2Won ? 'text-[#5F6B7A]' : 'text-[#E8E6E1]'}`}
+            style={{ fontFamily: "'Oswald', sans-serif", textTransform: 'uppercase' }}>
+            {team1.name}
+          </span>
+        </div>
+        {(isLive || isFinal) && game.team1_score != null && (
+          <span className={`font-bold text-sm ${team1Won ? 'text-[#E8E6E1]' : 'text-[#9BA3AE]'}`}
+            style={{ fontFamily: "'Space Mono', monospace" }}>
+            {game.team1_score}
+          </span>
+        )}
+      </div>
+
+      {/* VS divider */}
+      <div className="flex items-center gap-3 px-4">
+        <div className="flex-1 h-px bg-[rgba(255,255,255,0.05)]" />
+        <span className="text-[#5F6B7A] text-[9px] font-extrabold uppercase"
+          style={{ fontFamily: "'Space Mono', monospace", letterSpacing: '0.1em' }}>
+          vs
+        </span>
+        <div className="flex-1 h-px bg-[rgba(255,255,255,0.05)]" />
+      </div>
+
+      {/* Team 2 */}
+      <div className={`flex items-center justify-between px-3 py-3 ${team2Won ? 'bg-[rgba(76,175,80,0.05)]' : ''}`}>
+        <div className="flex items-center gap-3">
+          <span className="text-[#5F6B7A] min-w-[2rem] text-center"
+            style={{ fontFamily: "'Oswald', sans-serif", fontWeight: 700, fontSize: '1.1rem' }}>
+            {team2.seed}
+          </span>
+          <span className={`font-bold text-sm ${team2Won ? 'text-[#E8E6E1]' : isFinal && team1Won ? 'text-[#5F6B7A]' : 'text-[#E8E6E1]'}`}
+            style={{ fontFamily: "'Oswald', sans-serif", textTransform: 'uppercase' }}>
+            {team2.name}
+          </span>
+        </div>
+        {(isLive || isFinal) && game.team2_score != null && (
+          <span className={`font-bold text-sm ${team2Won ? 'text-[#E8E6E1]' : 'text-[#9BA3AE]'}`}
+            style={{ fontFamily: "'Space Mono', monospace" }}>
+            {game.team2_score}
+          </span>
+        )}
+      </div>
+
+      {/* Game status bar */}
+      <div className={`px-3 py-1.5 text-center border-t border-[rgba(255,255,255,0.05)] ${
+        isLive ? 'bg-[rgba(255,179,0,0.08)]' : ''
+      }`}>
+        <span className={`text-[10px] font-bold uppercase ${
+          isLive ? 'text-[#FFB300]' : isFinal ? 'text-[#9BA3AE]' : 'text-[#5F6B7A]'
+        }`} style={{ fontFamily: "'Space Mono', monospace", letterSpacing: '0.1em' }}>
+          {isLive ? 'LIVE' : isFinal ? 'FINAL' : formatETShort(game.game_datetime)}
+        </span>
+      </div>
+    </div>
+  );
+}
+
 // ─── Main Pick Page ───────────────────────────────────────────────
 
 export default function PickPage() {
@@ -254,6 +408,14 @@ export default function PickPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [filterUsed, setFilterUsed] = useState(false);
+  const [isEliminated, setIsEliminated] = useState(false);
+  const [pickHistory, setPickHistory] = useState<Pick[]>([]);
+  const [eliminationInfo, setEliminationInfo] = useState<{
+    roundName: string;
+    teamName: string | null;
+    reason: 'wrong_pick' | 'missed_pick' | 'manual' | null;
+  } | null>(null);
+  const [spectatorGames, setSpectatorGames] = useState<Game[]>([]);
 
   const loadedRef = useRef(false);
 
@@ -274,27 +436,67 @@ export default function PickPage() {
       const poolPlayer = await getPoolPlayer(poolId, user.id, activeEntryId);
       if (!poolPlayer) { setError('You are not a member of this pool.'); setLoading(false); return; }
       setPoolPlayerId(poolPlayer.id);
-      if (poolPlayer.is_eliminated) { setError('You have been eliminated from this pool.'); setLoading(false); return; }
+
+      if (poolPlayer.is_eliminated) {
+        setIsEliminated(true);
+
+        // Load pick history for "Your Run" section
+        const history = await getPlayerPicks(poolPlayer.id);
+        setPickHistory(history);
+
+        // Build elimination info
+        let roundName = 'Unknown Round';
+        if (poolPlayer.elimination_round_id) {
+          const { data: elimRound } = await supabase
+            .from('rounds')
+            .select('name')
+            .eq('id', poolPlayer.elimination_round_id)
+            .single();
+          if (elimRound) roundName = elimRound.name;
+        }
+
+        let teamName: string | null = null;
+        if (poolPlayer.elimination_reason === 'wrong_pick') {
+          const fatalPick = history.find(p => p.is_correct === false);
+          teamName = fatalPick?.team?.name || null;
+        }
+
+        setEliminationInfo({
+          roundName,
+          teamName,
+          reason: poolPlayer.elimination_reason,
+        });
+      }
 
       const activeRound = await getActiveRound();
-      if (!activeRound) { setError('No active round. Check back when the tournament is underway.'); setLoading(false); return; }
+      if (!activeRound) {
+        if (poolPlayer.is_eliminated) { setLoading(false); return; }
+        setError('No active round. Check back when the tournament is underway.'); setLoading(false); return;
+      }
       setRound(activeRound);
 
       const dl = await getPickDeadline(activeRound.id);
       setDeadline(dl);
 
-      const existing = await getPlayerPick(poolPlayer.id, activeRound.id);
-      if (existing) {
-        setExistingPick(existing);
-      }
+      if (poolPlayer.is_eliminated) {
+        // Spectator: load read-only game data
+        const gamesData = await getTodaysGames(activeRound.id);
+        setSpectatorGames(gamesData);
+      } else {
+        // Normal pick flow
+        const existing = await getPlayerPick(poolPlayer.id, activeRound.id);
+        if (existing) {
+          setExistingPick(existing);
+        }
 
-      const pickable = await getPickableTeams(poolPlayer.id, activeRound.id);
-      setTeams(pickable);
-      setUsedCount(pickable.filter(t => t.already_used).length);
+        const pickable = await getPickableTeams(poolPlayer.id, activeRound.id);
+        setTeams(pickable);
+        setUsedCount(pickable.filter(t => t.already_used).length);
 
-      if (existing) {
-        const currentTeam = pickable.find(t => t.id === existing.team_id);
-        if (currentTeam) setSelectedTeam(currentTeam);
+        if (existing) {
+          const currentTeam = pickable.find(t => t.id === existing.team_id);
+          if (currentTeam) setSelectedTeam(currentTeam);
+        }
       }
     } catch (err) {
       console.error('Failed to load pick data:', err);
@@ -354,7 +556,7 @@ export default function PickPage() {
     );
   }
 
-  if (deadline?.is_expired) {
+  if (deadline?.is_expired && !isEliminated) {
     return (
       <div className="min-h-screen bg-[#0D1B2A] flex items-center justify-center px-5">
         <div className="text-center max-w-sm">
@@ -405,9 +607,16 @@ export default function PickPage() {
             <p className="text-sm font-semibold text-[#E8E6E1]" style={{ fontFamily: "'Oswald', sans-serif", textTransform: 'uppercase' }}>
               {round?.name || 'Make Your Pick'}
             </p>
-            {deadline && <DeadlineCountdown deadline={deadline} />}
+            {isEliminated ? (
+              <span className="text-xs font-bold px-2.5 py-1 rounded-[6px] bg-[rgba(239,83,80,0.1)] text-[#EF5350]"
+                style={{ fontFamily: "'Space Mono', monospace", letterSpacing: '0.1em' }}>
+                SPECTATING
+              </span>
+            ) : (
+              deadline && <DeadlineCountdown deadline={deadline} />
+            )}
           </div>
-          {existingPick && existingPick.team && (
+          {!isEliminated && existingPick && existingPick.team && (
             <div className="mt-1.5 bg-[rgba(255,179,0,0.08)] border border-[rgba(255,179,0,0.2)] rounded-full py-1 px-3 flex items-center justify-center">
               <p className="text-xs text-[#FFB300] truncate" style={{ fontFamily: "'DM Sans', sans-serif" }}>
                 Current: <strong className="text-[#E8E6E1]">({existingPick.team.seed}) {existingPick.team.name}</strong>
@@ -427,16 +636,21 @@ export default function PickPage() {
                   setExistingPick(null);
                   setSelectedTeam(null);
                   setShowSuccess(false);
+                  setIsEliminated(false);
+                  setPickHistory([]);
+                  setEliminationInfo(null);
+                  setSpectatorGames([]);
                   router.replace(`/pools/${poolId}/pick?entry=${entry.id}`);
                 }}
                 className={`flex-shrink-0 px-2.5 py-1 rounded-full text-[11px] font-semibold border transition-colors ${
                   (activeEntryId || poolPlayerId) === entry.id
-                    ? 'bg-[rgba(255,87,34,0.08)] border-[#FF5722] text-[#FF5722]'
+                    ? entry.is_eliminated
+                      ? 'bg-[rgba(239,83,80,0.08)] border-[#EF5350] text-[#EF5350]'
+                      : 'bg-[rgba(255,87,34,0.08)] border-[#FF5722] text-[#FF5722]'
                     : entry.is_eliminated
-                    ? 'border-[rgba(255,255,255,0.05)] text-[#9BA3AE] opacity-50'
+                    ? 'border-[rgba(255,255,255,0.05)] text-[#9BA3AE] opacity-70'
                     : 'border-[rgba(255,255,255,0.05)] text-[#9BA3AE] hover:text-[#E8E6E1]'
                 }`}
-                disabled={entry.is_eliminated}
                 style={{ fontFamily: "'DM Sans', sans-serif" }}
               >
                 {entry.entry_label || `Entry ${entry.entry_number}`}
@@ -449,82 +663,106 @@ export default function PickPage() {
 
       {/* Content */}
       <div className="max-w-lg mx-auto px-5 py-3">
+        {isEliminated && eliminationInfo ? (
+          <>
+            <SpectatorHeader eliminationInfo={eliminationInfo} pickHistory={pickHistory} />
 
-        <div className="flex items-center justify-between mb-4">
-          <p className="text-sm text-[#9BA3AE]" style={{ fontFamily: "'DM Sans', sans-serif" }}>
-            <span className="font-bold text-[#E8E6E1]" style={{ fontFamily: "'Space Mono', monospace" }}>{availableCount}</span> teams available
-            {usedCount > 0 && (
-              <span className="text-[#9BA3AE]"> / <span style={{ fontFamily: "'Space Mono', monospace" }}>{usedCount}</span> used</span>
-            )}
-          </p>
-          {usedCount > 0 && (
-            <button
-              onClick={() => setFilterUsed(!filterUsed)}
-              className={`text-xs px-3 py-1.5 rounded-full border transition-colors ${
-                filterUsed
-                  ? 'bg-[rgba(255,87,34,0.08)] border-[rgba(255,87,34,0.3)] text-[#FF5722]'
-                  : 'bg-[#111827] border-[rgba(255,255,255,0.05)] text-[#9BA3AE]'
-              }`}
-              style={{ fontFamily: "'DM Sans', sans-serif" }}
-            >
-              {filterUsed ? 'Show all' : 'Hide used'}
-            </button>
-          )}
-        </div>
-
-        {displayTeams.length === 0 ? (
-          <div className="text-center py-12">
-            <p className="text-[#9BA3AE]" style={{ fontFamily: "'DM Sans', sans-serif" }}>No games available for today.</p>
-          </div>
-        ) : (
-          <div className="space-y-6">
-            {Array.from(timeSlots.entries()).map(([time, matchups]) => (
-              <div key={time}>
-                <p className="label mb-3 px-1">{time}</p>
+            {round && spectatorGames.length > 0 ? (
+              <>
+                <p className="label mb-3">{round.name} Games</p>
                 <div className="space-y-3">
-                  {matchups.map(({ gameId, teams: matchupTeams }) => {
-                    const hasSelection = matchupTeams.some(t => selectedTeam?.id === t.id);
-                    return (
-                      <div
-                        key={gameId}
-                        className={`border rounded-[12px] overflow-hidden transition-colors ${
-                          hasSelection
-                            ? 'border-[#FF5722] bg-[#111827]'
-                            : 'border-[rgba(255,255,255,0.05)] bg-[#111827]'
-                        }`}
-                      >
-                        {matchupTeams.map((team, idx) => (
-                          <div key={team.id}>
-                            {idx > 0 && (
-                              <div className="flex items-center gap-3 px-4">
-                                <div className="flex-1 h-px bg-[rgba(255,255,255,0.05)]" />
-                                <span className="text-[#5F6B7A] text-[9px] font-extrabold uppercase" style={{ fontFamily: "'Space Mono', monospace", letterSpacing: '0.1em' }}>
-                                  vs
-                                </span>
-                                <div className="flex-1 h-px bg-[rgba(255,255,255,0.05)]" />
-                              </div>
-                            )}
-                            <TeamCard
-                              team={team}
-                              isSelected={selectedTeam?.id === team.id}
-                              disabled={deadline?.is_expired ?? false}
-                              onSelect={setSelectedTeam}
-                              position={idx === 0 ? 'top' : 'bottom'}
-                            />
-                          </div>
-                        ))}
-                      </div>
-                    );
-                  })}
+                  {spectatorGames.map(game => (
+                    <SpectatorGameCard key={game.id} game={game} />
+                  ))}
                 </div>
+              </>
+            ) : (
+              <div className="text-center py-8">
+                <p className="text-sm text-[#9BA3AE]" style={{ fontFamily: "'DM Sans', sans-serif" }}>
+                  No games scheduled right now. Check back on game day.
+                </p>
               </div>
-            ))}
-          </div>
+            )}
+          </>
+        ) : (
+          <>
+            <div className="flex items-center justify-between mb-4">
+              <p className="text-sm text-[#9BA3AE]" style={{ fontFamily: "'DM Sans', sans-serif" }}>
+                <span className="font-bold text-[#E8E6E1]" style={{ fontFamily: "'Space Mono', monospace" }}>{availableCount}</span> teams available
+                {usedCount > 0 && (
+                  <span className="text-[#9BA3AE]"> / <span style={{ fontFamily: "'Space Mono', monospace" }}>{usedCount}</span> used</span>
+                )}
+              </p>
+              {usedCount > 0 && (
+                <button
+                  onClick={() => setFilterUsed(!filterUsed)}
+                  className={`text-xs px-3 py-1.5 rounded-full border transition-colors ${
+                    filterUsed
+                      ? 'bg-[rgba(255,87,34,0.08)] border-[rgba(255,87,34,0.3)] text-[#FF5722]'
+                      : 'bg-[#111827] border-[rgba(255,255,255,0.05)] text-[#9BA3AE]'
+                  }`}
+                  style={{ fontFamily: "'DM Sans', sans-serif" }}
+                >
+                  {filterUsed ? 'Show all' : 'Hide used'}
+                </button>
+              )}
+            </div>
+
+            {displayTeams.length === 0 ? (
+              <div className="text-center py-12">
+                <p className="text-[#9BA3AE]" style={{ fontFamily: "'DM Sans', sans-serif" }}>No games available for today.</p>
+              </div>
+            ) : (
+              <div className="space-y-6">
+                {Array.from(timeSlots.entries()).map(([time, matchups]) => (
+                  <div key={time}>
+                    <p className="label mb-3 px-1">{time}</p>
+                    <div className="space-y-3">
+                      {matchups.map(({ gameId, teams: matchupTeams }) => {
+                        const hasSelection = matchupTeams.some(t => selectedTeam?.id === t.id);
+                        return (
+                          <div
+                            key={gameId}
+                            className={`border rounded-[12px] overflow-hidden transition-colors ${
+                              hasSelection
+                                ? 'border-[#FF5722] bg-[#111827]'
+                                : 'border-[rgba(255,255,255,0.05)] bg-[#111827]'
+                            }`}
+                          >
+                            {matchupTeams.map((team, idx) => (
+                              <div key={team.id}>
+                                {idx > 0 && (
+                                  <div className="flex items-center gap-3 px-4">
+                                    <div className="flex-1 h-px bg-[rgba(255,255,255,0.05)]" />
+                                    <span className="text-[#5F6B7A] text-[9px] font-extrabold uppercase" style={{ fontFamily: "'Space Mono', monospace", letterSpacing: '0.1em' }}>
+                                      vs
+                                    </span>
+                                    <div className="flex-1 h-px bg-[rgba(255,255,255,0.05)]" />
+                                  </div>
+                                )}
+                                <TeamCard
+                                  team={team}
+                                  isSelected={selectedTeam?.id === team.id}
+                                  disabled={deadline?.is_expired ?? false}
+                                  onSelect={setSelectedTeam}
+                                  position={idx === 0 ? 'top' : 'bottom'}
+                                />
+                              </div>
+                            ))}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </>
         )}
       </div>
 
       {/* Fixed Bottom Bar — sits above the bottom nav */}
-      {selectedTeam && (() => {
+      {!isEliminated && selectedTeam && (() => {
         const isSameAsExisting = selectedTeam.id === existingPick?.team_id;
         return (
           <div className="fixed bottom-16 inset-x-0 z-20 bg-[#111827] border-t border-[rgba(255,255,255,0.05)] tab-bar-shadow">
@@ -549,7 +787,7 @@ export default function PickPage() {
         );
       })()}
 
-      {showConfirm && selectedTeam && (
+      {!isEliminated && showConfirm && selectedTeam && (
         <ConfirmModal
           team={selectedTeam}
           onConfirm={handleConfirm}
