@@ -216,15 +216,27 @@ function PoolCard({
   return (
     <div
       onClick={onActivate}
-      className={`bg-[#111827] border rounded-[12px] p-5 cursor-pointer transition-colors ${
-        isActive ? 'border-[rgba(255,87,34,0.4)]' : 'border-[rgba(255,255,255,0.05)]'
+      className={`border rounded-[12px] p-5 cursor-pointer transition-colors ${
+        isActive
+          ? 'bg-[rgba(255,87,34,0.04)] border-2 border-[#FF5722] border-l-[4px]'
+          : 'bg-[#111827] border-[rgba(255,255,255,0.05)]'
       }`}
     >
       {/* Row 1: Pool name + status badge + gear */}
       <div className="flex items-center justify-between mb-1">
-        <h2 className="font-bold text-[#E8E6E1] text-base truncate mr-2" style={{ fontFamily: "'Oswald', sans-serif", textTransform: 'uppercase' }}>
-          {pool.pool_name}
-        </h2>
+        <div className="flex items-center gap-2 min-w-0 mr-2">
+          <h2 className={`font-bold text-base truncate ${isActive ? 'text-[#FF5722]' : 'text-[#E8E6E1]'}`} style={{ fontFamily: "'Oswald', sans-serif", textTransform: 'uppercase' }}>
+            {pool.pool_name}
+          </h2>
+          {isActive && (
+            <span
+              className="inline-flex items-center px-1.5 py-px rounded-full font-bold bg-[rgba(255,87,34,0.15)] text-[#FF5722] flex-shrink-0"
+              style={{ fontFamily: "'Space Mono', monospace", fontSize: '0.45rem', letterSpacing: '0.15em', textTransform: 'uppercase' }}
+            >
+              VIEWING
+            </span>
+          )}
+        </div>
         <div className="flex items-center gap-2 flex-shrink-0">
           <span
             className={`inline-flex items-center px-2 py-0.5 rounded-full font-bold ${status.cls}`}
