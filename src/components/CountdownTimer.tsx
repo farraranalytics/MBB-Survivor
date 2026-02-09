@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 
 // ─── Types ──────────────────────────────────────────────────────
 
-type CountdownSize = 'lg' | 'md';
+type CountdownSize = 'lg' | 'md' | 'sm';
 
 interface CountdownTimerProps {
   target: string;              // ISO datetime to count down to
@@ -24,6 +24,7 @@ const sizeConfig = {
     colon: 'text-[30px]',
     unit: 'text-[0.6rem] tracking-[0.15em] mt-1.5',
     gap: 'gap-2',
+    labelMb: 'mb-3',
   },
   md: {
     box: 'w-[50px] h-[50px]',
@@ -31,6 +32,15 @@ const sizeConfig = {
     colon: 'text-[22px]',
     unit: 'text-[0.55rem] tracking-[0.15em] mt-1',
     gap: 'gap-1.5',
+    labelMb: 'mb-3',
+  },
+  sm: {
+    box: 'w-[34px] h-[34px]',
+    number: 'text-[18px]',
+    colon: 'text-[14px]',
+    unit: 'text-[0.4rem] tracking-[0.12em] mt-0.5',
+    gap: 'gap-1',
+    labelMb: 'mb-1.5',
   },
 } as const;
 
@@ -53,9 +63,10 @@ function CountdownBox({
   const numColor = urgent ? 'text-[#EF5350]' : 'text-[#FF5722]';
   const pulseClass = urgent ? 'countdown-urgent' : '';
 
+  const glowSize = size === 'sm' ? '12px' : '20px';
   const glowShadow = urgent
-    ? '0 0 20px rgba(239,83,80,0.2)'
-    : '0 0 20px rgba(255,87,34,0.15)';
+    ? `0 0 ${glowSize} rgba(239,83,80,0.2)`
+    : `0 0 ${glowSize} rgba(255,87,34,0.15)`;
 
   return (
     <div className="flex flex-col items-center">
@@ -92,7 +103,7 @@ function Colon({ size, urgent }: { size: CountdownSize; urgent: boolean }) {
         fontFamily: "'Oswald', sans-serif",
         lineHeight: 1,
         // Vertically center the colon within the box height
-        paddingTop: size === 'lg' ? '22px' : '12px',
+        paddingTop: size === 'lg' ? '22px' : size === 'md' ? '12px' : '7px',
       }}
     >
       :
@@ -132,7 +143,7 @@ export function CountdownTimer({
 
   return (
     <div className="text-center">
-      <p className="text-label-accent mb-3">{displayLabel}</p>
+      <p className={`text-label-accent ${s.labelMb} ${size === 'sm' ? 'text-[0.55rem]' : ''}`}>{displayLabel}</p>
       <div className={`flex items-start justify-center ${s.gap}`}>
         {showDays && (
           <>

@@ -120,7 +120,7 @@ function TeamCard({
       onClick={() => !disabled && !isUsed && onSelect(team)}
       disabled={disabled || isUsed}
       className={`
-        w-full text-left flex items-center gap-3 px-3 py-3 pr-4 transition-all ${roundedClass}
+        w-full text-left flex items-center gap-2.5 px-3 py-2 pr-3 transition-all ${roundedClass}
         ${isSelected
           ? 'bg-[rgba(255,87,34,0.1)]'
           : isUsed
@@ -131,28 +131,28 @@ function TeamCard({
     >
       {/* Seed number */}
       <span
-        className={`text-center flex-shrink-0 min-w-[2rem] ${isSelected ? 'text-[#FF5722]' : 'text-[#5F6B7A]'}`}
-        style={{ fontFamily: "'Oswald', sans-serif", fontWeight: 700, fontSize: '1.1rem' }}
+        className={`text-center flex-shrink-0 min-w-[1.5rem] ${isSelected ? 'text-[#FF5722]' : 'text-[#5F6B7A]'}`}
+        style={{ fontFamily: "'Oswald', sans-serif", fontWeight: 700, fontSize: '0.95rem' }}
       >
         {team.seed}
       </span>
 
       {/* Team name */}
       <div className="flex-1 min-w-0">
-        <span className="font-bold text-[#E8E6E1] text-sm block truncate leading-tight" style={{ fontFamily: "'Oswald', sans-serif", textTransform: 'uppercase' }}>
+        <span className="font-bold text-[#E8E6E1] text-[13px] block truncate leading-tight" style={{ fontFamily: "'Oswald', sans-serif", textTransform: 'uppercase' }}>
           {team.name}
         </span>
       </div>
 
       {/* Win probability or Used badge */}
-      <div className="flex-shrink-0 flex items-center gap-3">
+      <div className="flex-shrink-0 flex items-center gap-2.5">
         {isUsed ? (
-          <span className="inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-bold bg-[rgba(255,255,255,0.08)] text-[#9BA3AE] uppercase" style={{ fontFamily: "'Space Mono', monospace", letterSpacing: '0.1em' }}>
+          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[9px] font-bold bg-[rgba(255,255,255,0.08)] text-[#9BA3AE] uppercase" style={{ fontFamily: "'Space Mono', monospace", letterSpacing: '0.1em' }}>
             Used
           </span>
         ) : (
           <span
-            className={`text-xs font-bold min-w-[3rem] text-right ${
+            className={`text-[11px] font-bold min-w-[2.5rem] text-right ${
               prob >= 0.8 ? 'text-[#4CAF50]' :
               prob >= 0.6 ? 'text-[#FFB300]' :
               'text-[#EF5350]'
@@ -164,13 +164,13 @@ function TeamCard({
         )}
 
         {/* Radio circle */}
-        <span className={`w-[18px] h-[18px] rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-colors ${
+        <span className={`w-4 h-4 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-colors ${
           isSelected
             ? 'border-[#FF5722] bg-[#FF5722]'
             : 'border-[rgba(255,255,255,0.12)] bg-transparent'
         }`}>
           {isSelected && (
-            <svg className="w-2.5 h-2.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-2 h-2 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
             </svg>
           )}
@@ -573,45 +573,45 @@ export default function PickPage() {
     <div className="min-h-screen bg-[#0D1B2A] pb-48">
       {/* Sticky sub-header: round name + countdown + current pick */}
       <div className="sticky top-12 z-30 bg-[#111827] border-b border-[rgba(255,255,255,0.05)]">
-        <div className="max-w-lg mx-auto px-5 py-2">
+        <div className="max-w-lg mx-auto px-5 py-1.5">
           <div className="flex items-center justify-between">
-            <p className="text-sm font-semibold text-[#E8E6E1]" style={{ fontFamily: "'Oswald', sans-serif", textTransform: 'uppercase' }}>
+            <p className="text-xs font-semibold text-[#E8E6E1]" style={{ fontFamily: "'Oswald', sans-serif", textTransform: 'uppercase' }}>
               {round?.name || 'Make Your Pick'}
             </p>
             {isEliminated && (
-              <span className="text-xs font-bold px-2.5 py-1 rounded-[6px] bg-[rgba(239,83,80,0.1)] text-[#EF5350]"
+              <span className="text-[10px] font-bold px-2 py-0.5 rounded-[4px] bg-[rgba(239,83,80,0.1)] text-[#EF5350]"
                 style={{ fontFamily: "'Space Mono', monospace", letterSpacing: '0.1em' }}>
                 SPECTATING
               </span>
             )}
             {!isEliminated && deadline?.is_expired && (
-              <span className="text-xs font-bold px-2.5 py-1 rounded-[6px] bg-[#EF5350] text-[#E8E6E1]"
+              <span className="text-[10px] font-bold px-2 py-0.5 rounded-[4px] bg-[#EF5350] text-[#E8E6E1]"
                 style={{ fontFamily: "'Oswald', sans-serif", textTransform: 'uppercase' }}>
                 LOCKED
               </span>
             )}
           </div>
           {!isEliminated && deadline && !deadline.is_expired && (
-            <div className="mt-2">
+            <div className="mt-1">
               <CountdownTimer
                 target={deadline.deadline_datetime}
                 label="PICKS LOCK IN"
                 urgentLabel="⚠ DEADLINE APPROACHING"
                 urgentThresholdMs={1800000}
-                size="md"
+                size="sm"
               />
             </div>
           )}
           {!isEliminated && existingPick && existingPick.team && (
-            <div className="mt-1.5 bg-[rgba(255,179,0,0.08)] border border-[rgba(255,179,0,0.2)] rounded-full py-1 px-3 flex items-center justify-center">
-              <p className="text-xs text-[#FFB300] truncate" style={{ fontFamily: "'DM Sans', sans-serif" }}>
+            <div className="mt-1 bg-[rgba(255,179,0,0.08)] border border-[rgba(255,179,0,0.2)] rounded-full py-0.5 px-3 flex items-center justify-center">
+              <p className="text-[10px] text-[#FFB300] truncate" style={{ fontFamily: "'DM Sans', sans-serif" }}>
                 Current: <strong className="text-[#E8E6E1]">({existingPick.team.seed}) {existingPick.team.name}</strong>
               </p>
             </div>
           )}
         </div>
         {entries.length > 1 && (
-          <div className="flex md:justify-center gap-2 px-5 py-1.5 overflow-x-auto scrollbar-hide border-t border-[rgba(255,255,255,0.03)]">
+          <div className="flex md:justify-center gap-1.5 px-5 py-1 overflow-x-auto scrollbar-hide border-t border-[rgba(255,255,255,0.03)]">
             {entries.map(entry => (
               <button
                 key={entry.id}
@@ -672,8 +672,8 @@ export default function PickPage() {
           </>
         ) : (
           <>
-            <div className="flex items-center justify-between mb-4">
-              <p className="text-sm text-[#9BA3AE]" style={{ fontFamily: "'DM Sans', sans-serif" }}>
+            <div className="flex items-center justify-between mb-3">
+              <p className="text-xs text-[#9BA3AE]" style={{ fontFamily: "'DM Sans', sans-serif" }}>
                 <span className="font-bold text-[#E8E6E1]" style={{ fontFamily: "'Space Mono', monospace" }}>{availableCount}</span> teams available
                 {usedCount > 0 && (
                   <span className="text-[#9BA3AE]"> / <span style={{ fontFamily: "'Space Mono', monospace" }}>{usedCount}</span> used</span>
@@ -699,17 +699,17 @@ export default function PickPage() {
                 <p className="text-[#9BA3AE]" style={{ fontFamily: "'DM Sans', sans-serif" }}>No games available for today.</p>
               </div>
             ) : (
-              <div className="space-y-6">
+              <div className="space-y-5">
                 {Array.from(timeSlots.entries()).map(([time, matchups]) => (
                   <div key={time}>
-                    <p className="label mb-3 px-1">{time}</p>
-                    <div className="space-y-3">
+                    <p className="label mb-2 px-1">{time}</p>
+                    <div className="space-y-2.5">
                       {matchups.map(({ gameId, teams: matchupTeams }) => {
                         const hasSelection = matchupTeams.some(t => selectedTeam?.id === t.id);
                         return (
                           <div
                             key={gameId}
-                            className={`border rounded-[12px] overflow-hidden transition-colors ${
+                            className={`border rounded-[10px] overflow-hidden transition-colors ${
                               hasSelection
                                 ? 'border-[#FF5722] bg-[#111827]'
                                 : 'border-[rgba(255,255,255,0.05)] bg-[#111827]'
@@ -718,9 +718,9 @@ export default function PickPage() {
                             {matchupTeams.map((team, idx) => (
                               <div key={team.id}>
                                 {idx > 0 && (
-                                  <div className="flex items-center gap-3 px-4">
+                                  <div className="flex items-center gap-3 px-3">
                                     <div className="flex-1 h-px bg-[rgba(255,255,255,0.05)]" />
-                                    <span className="text-[#5F6B7A] text-[9px] font-extrabold uppercase" style={{ fontFamily: "'Space Mono', monospace", letterSpacing: '0.1em' }}>
+                                    <span className="text-[#5F6B7A] text-[8px] font-extrabold uppercase" style={{ fontFamily: "'Space Mono', monospace", letterSpacing: '0.1em' }}>
                                       vs
                                     </span>
                                     <div className="flex-1 h-px bg-[rgba(255,255,255,0.05)]" />
