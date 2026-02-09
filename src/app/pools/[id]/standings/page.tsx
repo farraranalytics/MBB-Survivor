@@ -164,7 +164,7 @@ export default function StandingsPage() {
   const [error, setError] = useState<string | null>(null);
   const [filter, setFilter] = useState<StandingsFilter>('all');
   const [expandedPlayer, setExpandedPlayer] = useState<string | null>(null);
-  const [showRoundGrid, setShowRoundGrid] = useState(false);
+  const [showRoundGrid, setShowRoundGrid] = useState(true);
   const loadedRef = useRef(false);
 
   useEffect(() => {

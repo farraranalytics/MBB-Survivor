@@ -6,8 +6,25 @@ import Header from '@/components/Header'
 import BottomNav from '@/components/BottomNav'
 
 export const metadata: Metadata = {
-  title: 'Survive the Dance',
-  description: 'Every pick could be your last. March Madness Survivor Pool.',
+  title: {
+    default: 'Survive the Dance — March Madness Survivor Pool',
+    template: '%s | Survive the Dance',
+  },
+  description: 'Free March Madness survivor pool. Pick one team per round — if they win, you survive. Use each team only once. One wrong pick and you\'re out. Create a pool, invite your friends, and see who can outlast the dance.',
+  keywords: ['March Madness', 'survivor pool', 'NCAA tournament', 'bracket pool', 'college basketball', 'survivor game', 'free pool'],
+  openGraph: {
+    title: 'Survive the Dance — March Madness Survivor Pool',
+    description: 'Free survivor pool for the NCAA Tournament. Pick one team per round. Survive or go home. Create a pool and challenge your friends.',
+    url: 'https://www.survivethedance.com',
+    siteName: 'Survive the Dance',
+    type: 'website',
+  },
+  twitter: {
+    card: 'summary',
+    title: 'Survive the Dance',
+    description: 'Free March Madness survivor pool. One pick per round. One wrong pick and you\'re out.',
+  },
+  metadataBase: new URL('https://www.survivethedance.com'),
 }
 
 export default function RootLayout({
