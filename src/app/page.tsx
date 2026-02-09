@@ -134,8 +134,16 @@ export default function HomePage() {
       </div>
 
       {/* Footer */}
-      <footer className="py-6 text-center text-[#9BA3AE] text-sm" style={{ fontFamily: "'DM Sans', sans-serif" }}>
-        <p>&copy; 2026 Survive the Dance</p>
+      <footer className="py-6 text-center text-sm" style={{ fontFamily: "'DM Sans', sans-serif" }}>
+        <p className="text-[#9BA3AE]">
+          &copy; 2026 Farrar Analytics LLC
+          {' '}&middot;{' '}
+          <Link href="/about" className="text-[#9BA3AE] hover:text-[#E8E6E1] transition-colors">About</Link>
+          {' '}&middot;{' '}
+          <Link href="/terms" className="text-[#9BA3AE] hover:text-[#E8E6E1] transition-colors">Terms</Link>
+          {' '}&middot;{' '}
+          <Link href="/privacy" className="text-[#9BA3AE] hover:text-[#E8E6E1] transition-colors">Privacy</Link>
+        </p>
       </footer>
     </div>
   );

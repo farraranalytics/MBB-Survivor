@@ -472,6 +472,19 @@ export default function Dashboard() {
             onEntryAdded={refreshPools}
           />
         ))}
+
+        {/* Footer */}
+        <footer className="pt-4 pb-2 text-center text-sm" style={{ fontFamily: "'DM Sans', sans-serif" }}>
+          <p className="text-[#9BA3AE] opacity-50">
+            &copy; 2026 Farrar Analytics LLC
+            {' '}&middot;{' '}
+            <Link href="/about" className="text-[#9BA3AE] hover:text-[#E8E6E1] transition-colors">About</Link>
+            {' '}&middot;{' '}
+            <Link href="/terms" className="text-[#9BA3AE] hover:text-[#E8E6E1] transition-colors">Terms</Link>
+            {' '}&middot;{' '}
+            <Link href="/privacy" className="text-[#9BA3AE] hover:text-[#E8E6E1] transition-colors">Privacy</Link>
+          </p>
+        </footer>
       </div>
     </div>
   );
