@@ -40,7 +40,7 @@ export default function HomePage() {
       <div className="absolute top-1/2 left-0 right-0 court-line opacity-20 pointer-events-none" />
 
       {/* Hero */}
-      <div className="flex items-center justify-center min-h-screen px-5 relative z-10">
+      <div className="flex items-center justify-center min-h-screen px-5 py-12 relative z-10">
         <div className="text-center max-w-md w-full animate-fade-in">
           {/* Wordmark */}
           <div className="mb-10 flex justify-center">

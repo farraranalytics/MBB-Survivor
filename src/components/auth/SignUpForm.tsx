@@ -37,6 +37,12 @@ export default function SignUpForm() {
 
     const { error } = await signUp(email, password, displayName);
 
+    if (error === 'ACCOUNT_EXISTS') {
+      sessionStorage.setItem('std_auth_message', 'An account with this email already exists. Please sign in.');
+      router.push('/auth/login');
+      return;
+    }
+
     if (error) {
       setError(error);
     } else {

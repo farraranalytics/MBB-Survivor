@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from './AuthProvider';
@@ -11,9 +11,19 @@ export default function LoginForm() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [message, setMessage] = useState('');
   const [loading, setLoading] = useState(false);
   const { signIn } = useAuth();
   const router = useRouter();
+
+  // Show message from signup redirect (e.g. "account already exists")
+  useEffect(() => {
+    const msg = sessionStorage.getItem('std_auth_message');
+    if (msg) {
+      setMessage(msg);
+      sessionStorage.removeItem('std_auth_message');
+    }
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -52,6 +62,11 @@ export default function LoginForm() {
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-5">
+            {message && (
+              <div className="bg-[rgba(255,179,0,0.08)] border border-[rgba(255,179,0,0.25)] text-[#FFB300] px-4 py-3 rounded-[8px] text-sm" style={{ fontFamily: "'DM Sans', sans-serif" }}>
+                {message}
+              </div>
+            )}
             {error && (
               <div className="bg-[rgba(239,83,80,0.1)] border border-[rgba(239,83,80,0.3)] text-[#EF5350] px-4 py-3 rounded-[8px] text-sm" style={{ fontFamily: "'DM Sans', sans-serif" }}>
                 {error}
