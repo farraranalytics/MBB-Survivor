@@ -372,6 +372,8 @@ export default function PickPage() {
 
   const loadData = useCallback(async () => {
     if (!user) return;
+    setLoading(true);
+    setError(null);
 
     try {
       // Fetch all user entries for entry switcher
@@ -458,11 +460,13 @@ export default function PickPage() {
   }, [user, poolId, activeEntryId]);
 
   useEffect(() => {
+    // Don't attempt loading until auth resolves
+    if (!user) return;
     if (!loadedRef.current) {
       loadedRef.current = true;
       loadData();
     }
-  }, [loadData]);
+  }, [loadData, user]);
 
 
   const handleConfirm = async () => {
@@ -501,7 +505,23 @@ export default function PickPage() {
             <svg className="w-8 h-8 text-[#FFB300]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" /></svg>
           </div>
           <h1 className="text-xl font-bold text-[#E8E6E1] mb-2" style={{ fontFamily: "'Oswald', sans-serif", textTransform: 'uppercase' }}>Can&apos;t Make Pick</h1>
-          <p className="text-[#9BA3AE] text-sm" style={{ fontFamily: "'DM Sans', sans-serif" }}>{error}</p>
+          <p className="text-[#9BA3AE] text-sm mb-6" style={{ fontFamily: "'DM Sans', sans-serif" }}>{error}</p>
+          <div className="flex gap-3 justify-center">
+            <button
+              onClick={() => { loadedRef.current = false; loadData(); }}
+              className="px-5 py-2.5 rounded-[10px] border border-[rgba(255,255,255,0.05)] text-[#9BA3AE] text-sm font-semibold hover:text-[#E8E6E1] hover:border-[rgba(255,87,34,0.3)] transition-colors"
+              style={{ fontFamily: "'DM Sans', sans-serif" }}
+            >
+              Retry
+            </button>
+            <button
+              onClick={() => router.push('/dashboard')}
+              className="px-5 py-2.5 rounded-[10px] btn-orange text-sm font-semibold"
+              style={{ fontFamily: "'DM Sans', sans-serif" }}
+            >
+              Back to Dashboard
+            </button>
+          </div>
         </div>
       </div>
     );
@@ -591,7 +611,7 @@ export default function PickPage() {
           )}
         </div>
         {entries.length > 1 && (
-          <div className="flex gap-2 px-5 py-1.5 overflow-x-auto scrollbar-hide border-t border-[rgba(255,255,255,0.03)]">
+          <div className="flex md:justify-center gap-2 px-5 py-1.5 overflow-x-auto scrollbar-hide border-t border-[rgba(255,255,255,0.03)]">
             {entries.map(entry => (
               <button
                 key={entry.id}
