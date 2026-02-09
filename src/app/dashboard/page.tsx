@@ -91,7 +91,7 @@ function EmptyState() {
 
 // ─── Entry Status Line ───────────────────────────────────────────
 
-function EntryStatusLine({ entry, poolStatus, hasActiveRound }: { entry: MyPoolEntry; poolStatus: string; hasActiveRound: boolean }) {
+function EntryStatusLine({ entry, picksOpen }: { entry: MyPoolEntry; picksOpen: boolean }) {
   let dotColor: string;
   let statusText: string;
 
@@ -109,9 +109,9 @@ function EntryStatusLine({ entry, poolStatus, hasActiveRound }: { entry: MyPoolE
   } else if (entry.has_picked_today) {
     dotColor = 'bg-[#4CAF50]';
     statusText = 'Alive · Picked ✓';
-  } else if (poolStatus === 'active' && hasActiveRound) {
+  } else if (picksOpen) {
     dotColor = 'bg-[#FFB300]';
-    statusText = 'Alive · Needs Pick';
+    statusText = '⚠️ Needs Pick';
   } else {
     dotColor = 'bg-[#4CAF50]';
     statusText = 'Alive';
@@ -204,9 +204,12 @@ function PoolCard({
   // CTA logic
   const aliveEntries = pool.your_entries.filter(e => !e.is_eliminated);
   const unpickedAliveEntries = aliveEntries.filter(e => !e.has_picked_today);
+  const hasActiveRound = pool.current_round_name !== null;
+  const picksOpen = (pool.pool_status === 'open' || pool.pool_status === 'active')
+    && hasActiveRound && !deadlineExpired;
   const allEliminated = pool.pool_status === 'active' && aliveEntries.length === 0;
-  const showMakePick = pool.pool_status === 'active' && aliveEntries.length > 0 && !deadlineExpired && unpickedAliveEntries.length > 0;
-  const showChangePick = pool.pool_status === 'active' && aliveEntries.length > 0 && !deadlineExpired && unpickedAliveEntries.length === 0;
+  const showMakePick = picksOpen && aliveEntries.length > 0 && unpickedAliveEntries.length > 0;
+  const showChangePick = picksOpen && aliveEntries.length > 0 && unpickedAliveEntries.length === 0;
   const showStandings = (pool.pool_status === 'active' || pool.pool_status === 'complete') && !allEliminated;
 
   // Add Entry logic — only allowed pre-tournament (pool status 'open')
@@ -268,7 +271,7 @@ function PoolCard({
       {/* Row 3: Per-entry status lines */}
       <div className="mb-3">
         {pool.your_entries.map(entry => (
-          <EntryStatusLine key={entry.pool_player_id} entry={entry} poolStatus={pool.pool_status} hasActiveRound={pool.current_round_name !== null} />
+          <EntryStatusLine key={entry.pool_player_id} entry={entry} picksOpen={picksOpen} />
         ))}
 
         {/* Row 4: + Add Entry */}

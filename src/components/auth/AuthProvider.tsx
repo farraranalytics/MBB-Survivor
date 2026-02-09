@@ -1,7 +1,8 @@
 'use client';
 
-import { createContext, useContext, useEffect, useState } from 'react';
+import { createContext, useContext, useEffect, useRef, useState } from 'react';
 import { User, Session } from '@supabase/supabase-js';
+import { useRouter, usePathname } from 'next/navigation';
 import { supabase } from '@/lib/supabase/client';
 
 interface AuthContextType {
@@ -19,6 +20,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
+  const router = useRouter();
+  const pathname = usePathname();
+  const pathnameRef = useRef(pathname);
+
+  // Keep ref in sync so the auth callback sees the current path
+  useEffect(() => { pathnameRef.current = pathname; }, [pathname]);
 
   useEffect(() => {
     // Get initial session
@@ -35,10 +42,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setSession(session);
       setUser(session?.user ?? null);
       setLoading(false);
+
+      // Redirect to landing page when user signs out on a protected route
+      if (event === 'SIGNED_OUT') {
+        const path = pathnameRef.current;
+        if (path.startsWith('/dashboard') || path.startsWith('/pools') || path.startsWith('/settings')) {
+          router.push('/');
+        }
+      }
     });
 
     return () => subscription.unsubscribe();
-  }, []);
+  }, [router]);
 
   const signIn = async (email: string, password: string) => {
     const { error } = await supabase.auth.signInWithPassword({

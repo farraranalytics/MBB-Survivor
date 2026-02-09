@@ -1053,7 +1053,7 @@ export default function PoolSettingsPage() {
         {/* ─── SECTION 7: SIGN OUT + VERSION ───────────────────────── */}
         <section className="pt-2">
           <button
-            onClick={() => signOut()}
+            onClick={async () => { await signOut(); router.push('/'); }}
             className="w-full py-3 rounded-[12px] text-sm font-semibold text-[#EF5350] bg-[rgba(239,83,80,0.1)] border border-[rgba(239,83,80,0.2)] hover:border-[rgba(239,83,80,0.4)] transition-colors"
             style={{ fontFamily: "'DM Sans', sans-serif" }}
           >

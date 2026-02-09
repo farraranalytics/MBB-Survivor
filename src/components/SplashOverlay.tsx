@@ -324,16 +324,16 @@ function Wordmark() {
 
 // ─── Tap to Enter ───────────────────────────────────────────────
 
-function TapToEnter() {
+function TapToEnter({ delay = 1000 }: { delay?: number }) {
   return (
-    <div className="absolute bottom-[10vh] md:bottom-[12vh] left-0 right-0 text-center">
+    <AnimateIn delay={delay}>
       <p
-        className="text-[#5F6B7A] text-xs tracking-[0.15em]"
+        className="text-[#9BA3AE] text-sm md:text-base tracking-[0.15em] mt-8"
         style={{ fontFamily: "'Space Mono', monospace", animation: 'pulse-tap 2.5s ease-in-out infinite' }}
       >
-        &mdash; tap to enter &mdash;
+        tap to enter
       </p>
-    </div>
+    </AnimateIn>
   );
 }
 
@@ -376,6 +376,7 @@ function PreTournamentSplash({ data }: { data: SplashData }) {
           {' '}pools ready
         </p>
       </AnimateIn>
+      <TapToEnter delay={1000} />
     </>
   );
 }
@@ -459,6 +460,7 @@ function PreRoundSplash({ data }: { data: SplashData }) {
           </p>
         </AnimateIn>
       )}
+      <TapToEnter delay={1100} />
     </>
   );
 }
@@ -539,6 +541,7 @@ function GamesLiveSplash({ data }: { data: SplashData }) {
           </div>
         </AnimateIn>
       )}
+      <TapToEnter delay={1000} />
     </>
   );
 }
@@ -619,6 +622,7 @@ function RoundCompleteSplash({ data }: { data: SplashData }) {
           </div>
         </AnimateIn>
       )}
+      <TapToEnter delay={1100} />
     </>
   );
 }
@@ -644,6 +648,7 @@ function TournamentCompleteSplash() {
           See you next March.
         </p>
       </AnimateIn>
+      <TapToEnter delay={900} />
     </>
   );
 }
@@ -705,8 +710,8 @@ export function SplashOverlay({ userId }: { userId: string | undefined }) {
         )}
       </div>
 
-      {/* Tap to enter — anchored at bottom */}
-      {data && <TapToEnter />}
+
+
     </div>
   );
 }
