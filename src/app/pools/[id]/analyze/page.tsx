@@ -228,6 +228,24 @@ function TeamInventoryModule({ inventory, todayPickTeamId }: { inventory: Invent
   const available = inventory.filter(t => t.status === 'available');
   const total = inventory.length;
 
+  // Group by region, sorted by seed within each
+  const regions = ['East', 'West', 'South', 'Midwest'];
+  const byRegion = regions.map(region => ({
+    region,
+    teams: inventory.filter(t => t.region === region).sort((a, b) => a.seed - b.seed),
+  })).filter(g => g.teams.length > 0);
+
+  // If regions don't match expected names, fall back to whatever regions exist
+  if (byRegion.length === 0) {
+    const uniqueRegions = [...new Set(inventory.map(t => t.region))];
+    uniqueRegions.forEach(region => {
+      byRegion.push({
+        region,
+        teams: inventory.filter(t => t.region === region).sort((a, b) => a.seed - b.seed),
+      });
+    });
+  }
+
   return (
     <div className="pt-3">
       {/* Header */}
@@ -237,44 +255,60 @@ function TeamInventoryModule({ inventory, todayPickTeamId }: { inventory: Invent
         of {total} available
       </p>
 
-      {/* Grid */}
-      <div className="grid grid-cols-5 gap-1.5">
-        {inventory.map(team => {
-          const isToday = team.id === todayPickTeamId;
-          const isAvailable = team.status === 'available';
-          const isUsed = team.status === 'used';
-          const isOut = team.status === 'eliminated';
-
-          let cellBg = 'bg-[#1B2A3D]';
-          let textColor = 'text-[#E8E6E1]';
-          let border = 'border border-transparent';
-          let opacity = '';
-
-          if (isToday) {
-            cellBg = 'bg-[rgba(255,87,34,0.12)]';
-            textColor = 'text-[#FF5722]';
-            border = 'border border-[#FF5722]';
-          } else if (isUsed) {
-            cellBg = 'bg-[#111827]';
-            textColor = 'text-[#5F6B7A]';
-          } else if (isOut) {
-            cellBg = 'bg-[#111827]';
-            textColor = 'text-[#5F6B7A]';
-            opacity = 'opacity-40';
-          }
-
+      {/* Region Groups */}
+      <div className="space-y-3">
+        {byRegion.map(({ region, teams }) => {
+          const regionAvailable = teams.filter(t => t.status === 'available').length;
           return (
-            <div
-              key={team.id}
-              className={`${cellBg} ${border} ${opacity} rounded-[6px] px-1 py-2 text-center`}
-              title={`(${team.seed}) ${team.name} · ${team.region}${isToday ? ' · TODAY' : isUsed ? ' · USED' : isOut ? ' · OUT' : ''}`}
-            >
-              <span
-                className={`text-[11px] font-bold ${textColor} block leading-tight`}
-                style={{ fontFamily: "'Space Mono', monospace" }}
-              >
-                {team.abbreviation}
-              </span>
+            <div key={region}>
+              <div className="flex items-center gap-2 mb-1.5">
+                <p className="text-[10px] font-bold text-[#9BA3AE] uppercase" style={{ fontFamily: "'Space Mono', monospace", letterSpacing: '0.1em' }}>
+                  {region}
+                </p>
+                <span className="text-[10px] text-[#5F6B7A]" style={{ fontFamily: "'DM Sans', sans-serif" }}>
+                  {regionAvailable}/{teams.length}
+                </span>
+              </div>
+              <div className="grid grid-cols-4 gap-1.5">
+                {teams.map(team => {
+                  const isToday = team.id === todayPickTeamId;
+                  const isUsed = team.status === 'used';
+                  const isOut = team.status === 'eliminated';
+
+                  let cellBg = 'bg-[#1B2A3D]';
+                  let textColor = 'text-[#E8E6E1]';
+                  let border = 'border border-transparent';
+                  let opacity = '';
+
+                  if (isToday) {
+                    cellBg = 'bg-[rgba(255,87,34,0.12)]';
+                    textColor = 'text-[#FF5722]';
+                    border = 'border border-[#FF5722]';
+                  } else if (isUsed) {
+                    cellBg = 'bg-[#111827]';
+                    textColor = 'text-[#5F6B7A]';
+                  } else if (isOut) {
+                    cellBg = 'bg-[#111827]';
+                    textColor = 'text-[#5F6B7A]';
+                    opacity = 'opacity-40';
+                  }
+
+                  return (
+                    <div
+                      key={team.id}
+                      className={`${cellBg} ${border} ${opacity} rounded-[6px] px-1 py-1.5 text-center`}
+                      title={`(${team.seed}) ${team.name} · ${team.region}${isToday ? ' · TODAY' : isUsed ? ' · USED' : isOut ? ' · OUT' : ''}`}
+                    >
+                      <span
+                        className={`text-[10px] font-bold ${textColor} block leading-tight`}
+                        style={{ fontFamily: "'Space Mono', monospace" }}
+                      >
+                        ({team.seed}) {team.abbreviation}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
             </div>
           );
         })}
@@ -599,6 +633,10 @@ export default function PoolAnalyzePage() {
   const { user } = useAuth();
   const poolId = params.id as string;
 
+  // Entry management
+  const [entries, setEntries] = useState<{ id: string; entry_number: number; entry_label: string | null; is_eliminated: boolean; elimination_round_id: string | null }[]>([]);
+  const [selectedEntryId, setSelectedEntryId] = useState<string | null>(null);
+
   const [poolPlayerId, setPoolPlayerId] = useState<string | null>(null);
   const [round, setRound] = useState<Round | null>(null);
   const [deadline, setDeadline] = useState<PickDeadline | null>(null);
@@ -614,9 +652,9 @@ export default function PoolAnalyzePage() {
   const loadedRef = useRef(false);
 
   const [expandedModules, setExpandedModules] = useState<Record<string, boolean>>({
-    todaysGames: true,
-    pickOptimizer: true,
-    teamInventory: false,
+    teamInventory: true,
+    todaysGames: false,
+    pickOptimizer: false,
     opponentXray: false,
     pathSimulator: false,
   });
@@ -625,19 +663,60 @@ export default function PoolAnalyzePage() {
     setExpandedModules(prev => ({ ...prev, [id]: !prev[id] }));
   };
 
+  // Load entry-specific data for a given pool_player_id
+  const loadEntryData = useCallback(async (playerId: string, activeRound: Round | null, deadlineInfo: PickDeadline | null) => {
+    const promises: Promise<void>[] = [];
+
+    // Games & pick for active round
+    if (activeRound) {
+      promises.push(
+        getPickableTeams(playerId, activeRound.id).then(g => setGames(g)),
+        getPlayerPick(playerId, activeRound.id).then(p => setExistingPick(p)),
+      );
+    } else {
+      setGames([]);
+      setExistingPick(null);
+    }
+
+    // Exclude current round picks before deadline
+    const hideCurrentRound = activeRound && deadlineInfo && !deadlineInfo.is_expired
+      ? activeRound.id : undefined;
+
+    promises.push(getTeamInventory(playerId, hideCurrentRound).then(inv => setInventory(inv)));
+    promises.push(getOpponentInventories(poolId, playerId, hideCurrentRound).then(opp => setOpponents(opp)));
+
+    await Promise.all(promises);
+  }, [poolId]);
+
   const loadData = useCallback(async () => {
     if (!user || !poolId) return;
     setLoading(true);
     setError(null);
 
     try {
-      // 1. Pool player
-      const player = await getPoolPlayer(poolId, user.id);
-      if (!player) {
+      // 1. Fetch all user entries in this pool
+      const { data: allEntries, error: entriesError } = await supabase
+        .from('pool_players')
+        .select('id, entry_number, entry_label, is_eliminated, elimination_round_id')
+        .eq('pool_id', poolId)
+        .eq('user_id', user.id)
+        .order('entry_number', { ascending: true });
+
+      if (entriesError || !allEntries || allEntries.length === 0) {
         setError('Join a pool to see analysis.');
         setLoading(false);
         return;
       }
+
+      setEntries(allEntries);
+
+      // Pick the selected entry (or default to first non-eliminated, or first)
+      const targetId = selectedEntryId && allEntries.find(e => e.id === selectedEntryId)
+        ? selectedEntryId
+        : (allEntries.find(e => !e.is_eliminated)?.id || allEntries[0].id);
+      setSelectedEntryId(targetId);
+
+      const player = allEntries.find(e => e.id === targetId)!;
       setPoolPlayerId(player.id);
       setIsEliminated(player.is_eliminated);
 
@@ -648,46 +727,55 @@ export default function PoolAnalyzePage() {
           .eq('id', player.elimination_round_id)
           .single();
         if (elimRound) setEliminationRoundName(elimRound.name);
+      } else {
+        setEliminationRoundName(null);
       }
 
       // 2. Active round
       const activeRound = await getActiveRound();
       setRound(activeRound);
 
-      // Parallel fetches
-      const promises: Promise<void>[] = [];
-
-      // 3-5. If active round: games, deadline, existing pick
       let deadlineInfo: PickDeadline | null = null;
       if (activeRound) {
         deadlineInfo = await getPickDeadline(activeRound.id);
         setDeadline(deadlineInfo);
-        promises.push(
-          getPickableTeams(player.id, activeRound.id).then(g => setGames(g)),
-          getPlayerPick(player.id, activeRound.id).then(p => setExistingPick(p)),
-        );
       }
 
-      // 6-7. Exclude current round picks from inventory & opponent data before deadline
-      const hideCurrentRound = activeRound && deadlineInfo && !deadlineInfo.is_expired
-        ? activeRound.id : undefined;
-
-      // 6. Team inventory
-      promises.push(getTeamInventory(player.id, hideCurrentRound).then(inv => setInventory(inv)));
-
-      // 7. Opponent inventories
-      promises.push(getOpponentInventories(poolId, player.id, hideCurrentRound).then(opp => setOpponents(opp)));
-
-      // 8. Pool standings
-      promises.push(getPoolStandings(poolId, user.id).then(s => setStandings(s)));
-
-      await Promise.all(promises);
+      // 3. Entry-specific data + standings in parallel
+      await Promise.all([
+        loadEntryData(player.id, activeRound, deadlineInfo),
+        getPoolStandings(poolId, user.id).then(s => setStandings(s)),
+      ]);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load analysis data.');
     } finally {
       setLoading(false);
     }
-  }, [user, poolId]);
+  }, [user, poolId, selectedEntryId, loadEntryData]);
+
+  // Switch entry handler
+  const handleEntryChange = useCallback(async (entryId: string) => {
+    if (entryId === selectedEntryId) return;
+    setSelectedEntryId(entryId);
+    const entry = entries.find(e => e.id === entryId);
+    if (!entry) return;
+
+    setPoolPlayerId(entry.id);
+    setIsEliminated(entry.is_eliminated);
+
+    if (entry.is_eliminated && entry.elimination_round_id) {
+      const { data: elimRound } = await supabase
+        .from('rounds')
+        .select('name')
+        .eq('id', entry.elimination_round_id)
+        .single();
+      setEliminationRoundName(elimRound?.name || null);
+    } else {
+      setEliminationRoundName(null);
+    }
+
+    await loadEntryData(entry.id, round, deadline);
+  }, [selectedEntryId, entries, round, deadline, loadEntryData]);
 
   useEffect(() => {
     if (!loadedRef.current) {
@@ -738,20 +826,59 @@ export default function PoolAnalyzePage() {
   const showOptimizer = !!round;
   const gamesSubtitle = round ? `${games.length / 2} matchups · ${round.name}` : 'No games scheduled';
 
+  const selectedEntry = entries.find(e => e.id === selectedEntryId);
+
   return (
     <div className="min-h-screen bg-[#0D1B2A] pb-24">
       <div className="max-w-lg mx-auto px-5 py-4 space-y-3">
-        {/* Spectating banner for eliminated users */}
+        {/* Entry Selector */}
+        {entries.length > 1 && (
+          <div className="flex items-center gap-2 overflow-x-auto pb-1 -mx-1 px-1">
+            {entries.map(entry => {
+              const isActive = entry.id === selectedEntryId;
+              return (
+                <button
+                  key={entry.id}
+                  onClick={() => handleEntryChange(entry.id)}
+                  className={`flex-shrink-0 px-3 py-1.5 rounded-[8px] text-xs font-semibold transition-colors border ${
+                    isActive
+                      ? entry.is_eliminated
+                        ? 'bg-[rgba(239,83,80,0.12)] border-[rgba(239,83,80,0.3)] text-[#EF5350]'
+                        : 'bg-[rgba(255,87,34,0.12)] border-[rgba(255,87,34,0.3)] text-[#FF5722]'
+                      : entry.is_eliminated
+                        ? 'bg-[rgba(239,83,80,0.04)] border-[rgba(239,83,80,0.15)] text-[#EF5350] opacity-50'
+                        : 'bg-[#111827] border-[rgba(255,255,255,0.05)] text-[#9BA3AE]'
+                  }`}
+                  style={{ fontFamily: "'DM Sans', sans-serif" }}
+                >
+                  {entry.entry_label || `Entry ${entry.entry_number}`}
+                </button>
+              );
+            })}
+          </div>
+        )}
+
+        {/* Spectating banner for eliminated entry */}
         {isEliminated && (
           <div className="flex items-center justify-center gap-2 bg-[rgba(239,83,80,0.06)] border border-[rgba(239,83,80,0.12)] rounded-[10px] px-4 py-2.5">
             <span className="text-xs">☠️</span>
             <p className="text-xs text-[#9BA3AE]" style={{ fontFamily: "'DM Sans', sans-serif" }}>
-              You&apos;re spectating{eliminationRoundName ? ` · Eliminated in ${eliminationRoundName}` : ''}
+              {selectedEntry?.entry_label || 'Entry'} eliminated{eliminationRoundName ? ` · ${eliminationRoundName}` : ''}
             </p>
           </div>
         )}
 
-        {/* Module 1: Today's Games */}
+        {/* 64-Team Inventory (first) */}
+        <ModuleSection
+          title="64-Team Inventory"
+          subtitle={inventorySubtitle}
+          expanded={expandedModules.teamInventory}
+          onToggle={() => toggleModule('teamInventory')}
+        >
+          <TeamInventoryModule inventory={inventory} todayPickTeamId={existingPick?.team_id} />
+        </ModuleSection>
+
+        {/* Today's Games (collapsed by default) */}
         <ModuleSection
           title="Today's Games"
           subtitle={gamesSubtitle}
@@ -761,7 +888,7 @@ export default function PoolAnalyzePage() {
           <TodaysGamesModule games={games} round={round} existingPick={existingPick} />
         </ModuleSection>
 
-        {/* Module 5: Pick Optimizer */}
+        {/* Pick Optimizer */}
         {showOptimizer && (
           <ModuleSection
             title="Pick Optimizer"
@@ -780,17 +907,7 @@ export default function PoolAnalyzePage() {
           </ModuleSection>
         )}
 
-        {/* Module 2: Team Inventory */}
-        <ModuleSection
-          title="64-Team Inventory"
-          subtitle={inventorySubtitle}
-          expanded={expandedModules.teamInventory}
-          onToggle={() => toggleModule('teamInventory')}
-        >
-          <TeamInventoryModule inventory={inventory} todayPickTeamId={existingPick?.team_id} />
-        </ModuleSection>
-
-        {/* Module 3: Opponent X-Ray */}
+        {/* Opponent X-Ray */}
         <ModuleSection
           title="Opponent X-Ray"
           subtitle={xraySubtitle}
@@ -806,7 +923,7 @@ export default function PoolAnalyzePage() {
           )}
         </ModuleSection>
 
-        {/* Module 4: Path Simulator */}
+        {/* Path Simulator */}
         <ModuleSection
           title="Path to Victory"
           subtitle="Coming soon"
