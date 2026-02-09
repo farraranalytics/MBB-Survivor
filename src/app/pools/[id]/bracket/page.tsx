@@ -7,7 +7,7 @@ import BracketMatchupCard from '@/components/bracket/BracketMatchupCard';
 import { getAllRounds, getAllGamesWithTeams, buildRegionBracket, buildFinalFour } from '@/lib/bracket';
 import type { Round } from '@/types/picks';
 import type { BracketGame, RegionBracket, BracketRound } from '@/types/bracket';
-import { formatETShort, formatDateET } from '@/lib/timezone';
+import { formatET, formatETShort, formatDateET } from '@/lib/timezone';
 
 const REGIONS = ['East', 'West', 'South', 'Midwest'];
 const REGION_TABS = [...REGIONS, 'Final Four'];
@@ -226,8 +226,8 @@ function ScheduleGameCard({ game }: { game: BracketGame }) {
     statusColor = 'text-[#EF5350] font-bold';
     statusBg = 'bg-[rgba(239,83,80,0.1)] animate-pulse';
   } else {
-    statusText = formatETShort(game.game_datetime);
-    statusColor = 'text-[#9BA3AE]';
+    statusText = formatET(game.game_datetime);
+    statusColor = 'text-[#E8E6E1]';
     statusBg = 'bg-[#1B2A3D]';
   }
 

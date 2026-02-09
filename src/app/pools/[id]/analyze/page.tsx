@@ -222,70 +222,82 @@ function TodaysGamesModule({
   );
 }
 
-// ─── Module 2: Team Inventory ────────────────────────────────────
+// ─── Module 2: Team Inventory (64-Team Grid) ────────────────────
 
-function TeamInventoryModule({ inventory }: { inventory: InventoryTeam[] }) {
-  const [showEliminated, setShowEliminated] = useState(false);
-
+function TeamInventoryModule({ inventory, todayPickTeamId }: { inventory: InventoryTeam[]; todayPickTeamId?: string }) {
   const available = inventory.filter(t => t.status === 'available');
-  const used = inventory.filter(t => t.status === 'used');
-  const eliminated = inventory.filter(t => t.status === 'eliminated');
-
-  const dotColors = { available: 'bg-[#4CAF50]', used: 'bg-[#9BA3AE]', eliminated: 'bg-[#EF5350]' };
-
-  function TeamRow({ team }: { team: InventoryTeam }) {
-    return (
-      <div className="flex items-center gap-2 py-1">
-        <span className={`w-2 h-2 rounded-full flex-shrink-0 ${dotColors[team.status]}`} />
-        <span className="text-sm text-[#E8E6E1]" style={{ fontFamily: "'DM Sans', sans-serif" }}>
-          ({team.seed}) {team.name}
-        </span>
-        <span className="text-xs text-[#9BA3AE]" style={{ fontFamily: "'DM Sans', sans-serif" }}>
-          {team.region}
-        </span>
-      </div>
-    );
-  }
+  const total = inventory.length;
 
   return (
-    <div className="pt-3 space-y-4">
-      {/* Available */}
-      <div>
-        <p className="text-xs font-bold text-[#4CAF50] mb-1.5" style={{ fontFamily: "'Space Mono', monospace", letterSpacing: '0.1em' }}>
-          AVAILABLE ({available.length})
-        </p>
-        {available.length === 0 ? (
-          <p className="text-xs text-[#9BA3AE] pl-4" style={{ fontFamily: "'DM Sans', sans-serif" }}>No teams available</p>
-        ) : (
-          available.map(t => <TeamRow key={t.id} team={t} />)
-        )}
+    <div className="pt-3">
+      {/* Header */}
+      <p className="label mb-3">
+        Your Team Pool &mdash;{' '}
+        <span className="text-[#E8E6E1]">{available.length}</span>{' '}
+        of {total} available
+      </p>
+
+      {/* Grid */}
+      <div className="grid grid-cols-5 gap-1.5">
+        {inventory.map(team => {
+          const isToday = team.id === todayPickTeamId;
+          const isAvailable = team.status === 'available';
+          const isUsed = team.status === 'used';
+          const isOut = team.status === 'eliminated';
+
+          let cellBg = 'bg-[#1B2A3D]';
+          let textColor = 'text-[#E8E6E1]';
+          let border = 'border border-transparent';
+          let opacity = '';
+
+          if (isToday) {
+            cellBg = 'bg-[rgba(255,87,34,0.12)]';
+            textColor = 'text-[#FF5722]';
+            border = 'border border-[#FF5722]';
+          } else if (isUsed) {
+            cellBg = 'bg-[#111827]';
+            textColor = 'text-[#5F6B7A]';
+          } else if (isOut) {
+            cellBg = 'bg-[#111827]';
+            textColor = 'text-[#5F6B7A]';
+            opacity = 'opacity-40';
+          }
+
+          return (
+            <div
+              key={team.id}
+              className={`${cellBg} ${border} ${opacity} rounded-[6px] px-1 py-2 text-center`}
+              title={`(${team.seed}) ${team.name} · ${team.region}${isToday ? ' · TODAY' : isUsed ? ' · USED' : isOut ? ' · OUT' : ''}`}
+            >
+              <span
+                className={`text-[11px] font-bold ${textColor} block leading-tight`}
+                style={{ fontFamily: "'Space Mono', monospace" }}
+              >
+                {team.abbreviation}
+              </span>
+            </div>
+          );
+        })}
       </div>
 
-      {/* Used */}
-      <div>
-        <p className="text-xs font-bold text-[#9BA3AE] mb-1.5" style={{ fontFamily: "'Space Mono', monospace", letterSpacing: '0.1em' }}>
-          USED ({used.length})
-        </p>
-        {used.length === 0 ? (
-          <p className="text-xs text-[#9BA3AE] pl-4" style={{ fontFamily: "'DM Sans', sans-serif" }}>No teams used yet</p>
-        ) : (
-          used.map(t => <TeamRow key={t.id} team={t} />)
-        )}
-      </div>
-
-      {/* Eliminated */}
-      <div>
-        <button
-          onClick={() => setShowEliminated(!showEliminated)}
-          className="flex items-center gap-1.5 text-xs font-bold text-[#EF5350] mb-1.5"
-          style={{ fontFamily: "'Space Mono', monospace", letterSpacing: '0.1em' }}
-        >
-          ELIMINATED ({eliminated.length})
-          <svg className={`w-3 h-3 transition-transform ${showEliminated ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-          </svg>
-        </button>
-        {showEliminated && eliminated.map(t => <TeamRow key={t.id} team={t} />)}
+      {/* Legend */}
+      <div className="flex flex-wrap gap-x-4 gap-y-1 mt-3 text-[10px] text-[#9BA3AE]" style={{ fontFamily: "'DM Sans', sans-serif" }}>
+        <div className="flex items-center gap-1.5">
+          <span className="w-3 h-3 rounded-[3px] bg-[#1B2A3D]" />
+          <span>Available</span>
+        </div>
+        <div className="flex items-center gap-1.5">
+          <span className="w-3 h-3 rounded-[3px] bg-[rgba(255,87,34,0.12)] border border-[#FF5722]" />
+          <span>Today</span>
+        </div>
+        <div className="flex items-center gap-1.5">
+          <span className="w-3 h-3 rounded-[3px] bg-[#111827]" />
+          <span>Used</span>
+        </div>
+        <div className="flex items-center gap-1.5">
+          <span className="w-3 h-3 rounded-[3px] bg-[#111827] opacity-40" />
+          <span>Out</span>
+        </div>
       </div>
     </div>
   );
@@ -770,12 +782,12 @@ export default function PoolAnalyzePage() {
 
         {/* Module 2: Team Inventory */}
         <ModuleSection
-          title="Team Inventory"
+          title="64-Team Inventory"
           subtitle={inventorySubtitle}
           expanded={expandedModules.teamInventory}
           onToggle={() => toggleModule('teamInventory')}
         >
-          <TeamInventoryModule inventory={inventory} />
+          <TeamInventoryModule inventory={inventory} todayPickTeamId={existingPick?.team_id} />
         </ModuleSection>
 
         {/* Module 3: Opponent X-Ray */}

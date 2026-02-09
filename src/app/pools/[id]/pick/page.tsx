@@ -323,9 +323,9 @@ function SpectatorGameCard({ game }: { game: Game }) {
         isLive ? 'bg-[rgba(255,179,0,0.08)]' : ''
       }`}>
         <span className={`text-[10px] font-bold uppercase ${
-          isLive ? 'text-[#FFB300]' : isFinal ? 'text-[#9BA3AE]' : 'text-[#5F6B7A]'
+          isLive ? 'text-[#FFB300]' : isFinal ? 'text-[#9BA3AE]' : 'text-[#E8E6E1]'
         }`} style={{ fontFamily: "'Space Mono', monospace", letterSpacing: '0.1em' }}>
-          {isLive ? 'LIVE' : isFinal ? 'FINAL' : formatETShort(game.game_datetime)}
+          {isLive ? 'LIVE' : isFinal ? 'FINAL' : formatET(game.game_datetime)}
         </span>
       </div>
     </div>

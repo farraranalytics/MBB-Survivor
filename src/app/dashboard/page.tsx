@@ -257,7 +257,7 @@ function SurvivalBar({ survived, eliminatedAt, total, currentIdx }: {
   );
 }
 
-function SurvivalSummary({ pools, rounds }: { pools: MyPool[]; rounds: RoundInfo[] }) {
+function SurvivalSummary({ pools, rounds, onEntryClick }: { pools: MyPool[]; rounds: RoundInfo[]; onEntryClick: (poolId: string, poolName: string, entryId: string) => void }) {
   const allEntries = pools.flatMap(pool =>
     pool.your_entries.map(entry => ({
       ...entry,
@@ -299,7 +299,8 @@ function SurvivalSummary({ pools, rounds }: { pools: MyPool[]; rounds: RoundInfo
           return (
             <div
               key={entry.pool_player_id}
-              className={`bg-[#111827] border border-[rgba(255,255,255,0.05)] rounded-[10px] px-3 py-2.5 ${entry.is_eliminated ? 'opacity-45' : ''}`}
+              onClick={() => onEntryClick(entry.poolId, entry.poolName, entry.pool_player_id)}
+              className={`bg-[#111827] border border-[rgba(255,255,255,0.05)] rounded-[10px] px-3 py-2.5 cursor-pointer hover:border-[rgba(255,255,255,0.12)] transition-colors ${entry.is_eliminated ? 'opacity-45' : ''}`}
             >
               <div className="flex items-center justify-between mb-1.5">
                 <p className="text-xs text-[#E8E6E1] font-medium truncate" style={{ fontFamily: "'DM Sans', sans-serif" }}>
@@ -430,7 +431,7 @@ function SimplePoolCard({ pool, isActive, isCreator, onActivate }: {
     <div
       onClick={() => {
         onActivate();
-        router.push(`/pools/${pool.pool_id}/pick`);
+        router.push(`/pools/${pool.pool_id}/standings`);
       }}
       className={`border rounded-[14px] p-4 cursor-pointer transition-colors ${
         isActive
@@ -584,6 +585,7 @@ function ActivityFeed({ items, loading }: { items: ActivityItem[]; loading: bool
 export default function Dashboard() {
   const { user } = useAuth();
   const { activePoolId, setActivePool, pools, loadingPools } = useActivePool();
+  const router = useRouter();
   const [tournamentState, setTournamentState] = useState<TournamentState | null>(null);
   const [totalPlayers, setTotalPlayers] = useState(0);
   const [totalPools, setTotalPools] = useState(0);
@@ -670,7 +672,10 @@ export default function Dashboard() {
 
             {/* Section 2: Survival Summary */}
             {tournamentState && (
-              <SurvivalSummary pools={pools} rounds={tournamentState.rounds} />
+              <SurvivalSummary pools={pools} rounds={tournamentState.rounds} onEntryClick={(poolId, poolName, entryId) => {
+                setActivePool(poolId, poolName);
+                router.push(`/pools/${poolId}/pick?entry=${entryId}`);
+              }} />
             )}
 
             {/* Section 3: Pick CTA */}
