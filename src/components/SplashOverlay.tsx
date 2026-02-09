@@ -13,9 +13,17 @@ interface SplashData {
   roundName: string | null;
   countdownTarget: string | null;
   countdownLabel: string | null;
-  userPickStatus: 'picked' | 'needs_pick' | 'eliminated' | 'no_round' | null;
-  userPickTeam: string | null;
-  userPickSeed: number | null;
+  // User entry aggregates (across all pools)
+  userEntriesTotal: number;
+  userEntriesAlive: number;
+  userEntriesEliminated: number;
+  userEntriesPicked: number;          // alive entries that picked this round
+  userEntriesNeedPick: number;        // alive entries missing pick this round
+  // Round complete: per-round survival
+  userSurvivedCount: number;          // entries that survived the last completed round
+  userEliminatedThisRound: number;    // entries eliminated in the last completed round
+  eliminatedTeamName: string | null;  // team that killed an entry (for display)
+  // Game / global stats
   gamesTotal: number;
   gamesFinal: number;
   gamesInProgress: number;
@@ -24,7 +32,6 @@ interface SplashData {
   totalAlive: number;
   totalPools: number;
   topPickedTeams: { name: string; abbreviation: string; seed: number; count: number }[];
-  userSurvived: boolean | null;
   lastCompletedRoundName: string | null;
   nextRoundName: string | null;
   nextRoundDate: string | null;
@@ -67,6 +74,11 @@ async function fetchSplashData(userId: string): Promise<SplashData> {
   const totalAlive = aliveResult.count || 0;
   const totalPools = poolsResult.count || 0;
 
+  // User entry aggregates
+  const userEntriesTotal = entries.length;
+  const userEntriesAlive = entries.filter(e => !e.is_eliminated).length;
+  const userEntriesEliminated = entries.filter(e => e.is_eliminated).length;
+
   // Countdown target
   let countdownTarget: string | null = null;
   let countdownLabel: string | null = null;
@@ -80,40 +92,23 @@ async function fetchSplashData(userId: string): Promise<SplashData> {
     countdownLabel = 'TIPS OFF IN';
   }
 
-  // User pick status for current round
-  let userPickStatus: SplashData['userPickStatus'] = null;
-  let userPickTeam: string | null = null;
-  let userPickSeed: number | null = null;
+  // Pick status for current round — count across ALL alive entries
+  let userEntriesPicked = 0;
+  let userEntriesNeedPick = 0;
 
-  if (currentRound && entries.length > 0) {
-    const allEliminated = entries.every(e => e.is_eliminated);
-    if (allEliminated) {
-      userPickStatus = 'eliminated';
-    } else {
-      const aliveEntryIds = entries.filter(e => !e.is_eliminated).map(e => e.id);
-      const { data: picks } = await supabase
-        .from('picks')
-        .select('id, team:team_id(name, seed)')
-        .eq('round_id', currentRound.id)
-        .in('pool_player_id', aliveEntryIds)
-        .limit(1);
+  if (currentRound && userEntriesAlive > 0) {
+    const aliveEntryIds = entries.filter(e => !e.is_eliminated).map(e => e.id);
+    const { data: picks } = await supabase
+      .from('picks')
+      .select('pool_player_id')
+      .eq('round_id', currentRound.id)
+      .in('pool_player_id', aliveEntryIds);
 
-      if (picks && picks.length > 0) {
-        userPickStatus = 'picked';
-        const team = (picks[0] as any).team;
-        userPickTeam = team?.name || null;
-        userPickSeed = team?.seed || null;
-      } else {
-        userPickStatus = 'needs_pick';
-      }
-    }
-  } else if (entries.length === 0) {
-    userPickStatus = null;
-  } else {
-    userPickStatus = 'no_round';
+    userEntriesPicked = picks?.length || 0;
+    userEntriesNeedPick = userEntriesAlive - userEntriesPicked;
   }
 
-  // Eliminations in current round
+  // Eliminations in current round (global count)
   let eliminationsToday = 0;
   if (currentRound) {
     const { count } = await supabase
@@ -145,14 +140,30 @@ async function fetchSplashData(userId: string): Promise<SplashData> {
     }
   }
 
-  // User survived last completed round?
-  let userSurvived: boolean | null = null;
+  // Round complete: count user entries survived vs eliminated this round
+  let userSurvivedCount = 0;
+  let userEliminatedThisRound = 0;
+  let eliminatedTeamName: string | null = null;
+
   const completedRounds = state.rounds.filter(r => r.status === 'round_complete');
   if (completedRounds.length > 0 && entries.length > 0) {
     const lastCompleted = completedRounds[completedRounds.length - 1];
-    const eliminatedInLast = entries.some(e => e.elimination_round_id === lastCompleted.id);
-    const hasAlive = entries.some(e => !e.is_eliminated);
-    userSurvived = hasAlive && !eliminatedInLast;
+    const elimEntries = entries.filter(e => e.elimination_round_id === lastCompleted.id);
+    userEliminatedThisRound = elimEntries.length;
+    userSurvivedCount = userEntriesAlive; // alive entries = survived all rounds including this one
+
+    // Get the team name for one of the eliminated entries
+    if (elimEntries.length > 0) {
+      const { data: elimPick } = await supabase
+        .from('picks')
+        .select('team:team_id(name)')
+        .eq('round_id', lastCompleted.id)
+        .eq('pool_player_id', elimEntries[0].id)
+        .maybeSingle();
+      if (elimPick) {
+        eliminatedTeamName = (elimPick as any).team?.name || null;
+      }
+    }
   }
 
   // Round context
@@ -169,9 +180,14 @@ async function fetchSplashData(userId: string): Promise<SplashData> {
     roundName: currentRound?.name || null,
     countdownTarget,
     countdownLabel,
-    userPickStatus,
-    userPickTeam,
-    userPickSeed,
+    userEntriesTotal,
+    userEntriesAlive,
+    userEntriesEliminated,
+    userEntriesPicked,
+    userEntriesNeedPick,
+    userSurvivedCount,
+    userEliminatedThisRound,
+    eliminatedTeamName,
     gamesTotal: currentRound?.gamesTotal || 0,
     gamesFinal: currentRound?.gamesFinal || 0,
     gamesInProgress: currentRound?.gamesInProgress || 0,
@@ -180,7 +196,6 @@ async function fetchSplashData(userId: string): Promise<SplashData> {
     totalAlive,
     totalPools,
     topPickedTeams,
-    userSurvived,
     lastCompletedRoundName,
     nextRoundName,
     nextRoundDate,
@@ -305,6 +320,28 @@ function PreTournamentSplash({ data }: { data: SplashData }) {
 // ─── Splash State: Pre-Round (Game Day) ─────────────────────────
 
 function PreRoundSplash({ data }: { data: SplashData }) {
+  const allEliminated = data.userEntriesAlive === 0 && data.userEntriesTotal > 0;
+  const allPicked = data.userEntriesAlive > 0 && data.userEntriesNeedPick === 0;
+  const nonePicked = data.userEntriesAlive > 0 && data.userEntriesPicked === 0;
+
+  // Pick status card color: green if all picked, orange if some, red if none
+  let pickCardBorder: string;
+  let pickCardBg: string;
+  let pickCardText: string;
+  if (allPicked) {
+    pickCardBorder = 'border-[rgba(76,175,80,0.2)]';
+    pickCardBg = 'bg-[rgba(76,175,80,0.08)]';
+    pickCardText = 'text-[#4CAF50]';
+  } else if (nonePicked) {
+    pickCardBorder = 'border-[rgba(239,83,80,0.2)]';
+    pickCardBg = 'bg-[rgba(239,83,80,0.08)]';
+    pickCardText = 'text-[#EF5350]';
+  } else {
+    pickCardBorder = 'border-[rgba(255,87,34,0.2)]';
+    pickCardBg = 'bg-[rgba(255,87,34,0.08)]';
+    pickCardText = 'text-[#FF5722]';
+  }
+
   return (
     <>
       <h1
@@ -322,26 +359,35 @@ function PreRoundSplash({ data }: { data: SplashData }) {
         <span className="text-[#E8E6E1] font-bold" style={{ fontFamily: "'Space Mono', monospace" }}>{data.gamesTotal}</span>
         {' '}games today
       </p>
+
       {/* Pick status card */}
-      {data.userPickStatus === 'eliminated' ? (
+      {allEliminated ? (
         <div className="bg-[rgba(155,163,174,0.08)] border border-[rgba(155,163,174,0.2)] rounded-[10px] px-4 py-3">
           <p className="text-sm font-semibold text-[#9BA3AE]" style={{ fontFamily: "'DM Sans', sans-serif" }}>
             SPECTATING
           </p>
         </div>
-      ) : data.userPickStatus === 'picked' ? (
-        <div className="bg-[rgba(76,175,80,0.08)] border border-[rgba(76,175,80,0.2)] rounded-[10px] px-4 py-3">
-          <p className="text-sm font-semibold text-[#4CAF50]" style={{ fontFamily: "'DM Sans', sans-serif" }}>
-            YOUR PICK: {data.userPickSeed ? `(${data.userPickSeed}) ` : ''}{data.userPickTeam} ✓
+      ) : data.userEntriesAlive > 0 ? (
+        <div className={`${pickCardBg} border ${pickCardBorder} rounded-[10px] px-4 py-3 space-y-1`}>
+          <p className={`text-sm font-semibold ${pickCardText}`} style={{ fontFamily: "'DM Sans', sans-serif" }}>
+            {data.userEntriesPicked} of {data.userEntriesAlive} {data.userEntriesAlive === 1 ? 'entry' : 'entries'} picked {allPicked ? '✓' : ''}
           </p>
-        </div>
-      ) : data.userPickStatus === 'needs_pick' ? (
-        <div className="bg-[rgba(255,87,34,0.08)] border border-[rgba(255,87,34,0.2)] rounded-[10px] px-4 py-3">
-          <p className="text-sm font-semibold text-[#FF5722]" style={{ fontFamily: "'DM Sans', sans-serif" }}>
-            ⚠ YOU HAVEN&apos;T PICKED YET
-          </p>
+          {data.userEntriesNeedPick > 0 && (
+            <p className="text-sm font-semibold text-[#FF5722]" style={{ fontFamily: "'DM Sans', sans-serif" }}>
+              ⚠ {data.userEntriesNeedPick} {data.userEntriesNeedPick === 1 ? 'entry needs' : 'entries need'} a pick
+            </p>
+          )}
         </div>
       ) : null}
+
+      {/* Entry alive/eliminated summary */}
+      {data.userEntriesTotal > 0 && data.userEntriesEliminated > 0 && (
+        <p className="text-xs text-[#9BA3AE] mt-3" style={{ fontFamily: "'DM Sans', sans-serif" }}>
+          <span className="text-[#4CAF50]">{data.userEntriesAlive} alive</span>
+          {' '}&middot;{' '}
+          <span className="text-[#EF5350]">{data.userEntriesEliminated} eliminated</span>
+        </p>
+      )}
       <TapToEnter />
     </>
   );
@@ -391,7 +437,7 @@ function GamesLiveSplash({ data }: { data: SplashData }) {
       {data.eliminationsToday > 0 && (
         <p className="text-sm text-[#9BA3AE] mb-6" style={{ fontFamily: "'DM Sans', sans-serif" }}>
           <span className="text-[#EF5350] font-bold" style={{ fontFamily: "'Space Mono', monospace" }}>{data.eliminationsToday}</span>
-          {' '}players eliminated today
+          {' '}{data.eliminationsToday === 1 ? 'entry' : 'entries'} eliminated today
         </p>
       )}
 
@@ -421,6 +467,9 @@ function GamesLiveSplash({ data }: { data: SplashData }) {
 // ─── Splash State: Round Complete ───────────────────────────────
 
 function RoundCompleteSplash({ data }: { data: SplashData }) {
+  const hasSurvived = data.userSurvivedCount > 0;
+  const hasEliminated = data.userEliminatedThisRound > 0;
+
   return (
     <>
       <h1
@@ -433,29 +482,35 @@ function RoundCompleteSplash({ data }: { data: SplashData }) {
         {data.lastCompletedRoundName || data.roundName}
       </p>
 
-      {/* Survival result */}
-      {data.userSurvived === true ? (
-        <div className="bg-[rgba(76,175,80,0.08)] border border-[rgba(76,175,80,0.2)] rounded-[10px] px-5 py-4 mb-6">
+      {/* Survival results — show both if mixed */}
+      {hasSurvived && (
+        <div className="bg-[rgba(76,175,80,0.08)] border border-[rgba(76,175,80,0.2)] rounded-[10px] px-5 py-3 mb-3">
           <p
-            className="text-lg font-bold text-[#4CAF50]"
+            className="text-base font-bold text-[#4CAF50]"
             style={{ fontFamily: "'Oswald', sans-serif", textTransform: 'uppercase' }}
           >
-            ✓ YOU SURVIVED
+            ✓ {data.userSurvivedCount} {data.userSurvivedCount === 1 ? 'entry' : 'entries'} survived
           </p>
         </div>
-      ) : data.userSurvived === false ? (
-        <div className="bg-[rgba(239,83,80,0.08)] border border-[rgba(239,83,80,0.2)] rounded-[10px] px-5 py-4 mb-6">
+      )}
+      {hasEliminated && (
+        <div className="bg-[rgba(239,83,80,0.08)] border border-[rgba(239,83,80,0.2)] rounded-[10px] px-5 py-3 mb-3">
           <p
-            className="text-lg font-bold text-[#EF5350]"
+            className="text-base font-bold text-[#EF5350]"
             style={{ fontFamily: "'Oswald', sans-serif", textTransform: 'uppercase' }}
           >
-            YOU WERE ELIMINATED
+            ☠ {data.userEliminatedThisRound} {data.userEliminatedThisRound === 1 ? 'entry' : 'entries'} eliminated
           </p>
+          {data.eliminatedTeamName && (
+            <p className="text-xs text-[#EF5350] opacity-70 mt-0.5" style={{ fontFamily: "'DM Sans', sans-serif" }}>
+              Picked {data.eliminatedTeamName}
+            </p>
+          )}
         </div>
-      ) : null}
+      )}
 
       {data.eliminationsToday > 0 && (
-        <p className="text-sm text-[#9BA3AE] mb-4" style={{ fontFamily: "'DM Sans', sans-serif" }}>
+        <p className="text-sm text-[#9BA3AE] mt-3 mb-4" style={{ fontFamily: "'DM Sans', sans-serif" }}>
           <span className="text-[#EF5350] font-bold" style={{ fontFamily: "'Space Mono', monospace" }}>{data.eliminationsToday}</span>
           {' '}eliminated &middot;{' '}
           <span className="text-[#4CAF50] font-bold" style={{ fontFamily: "'Space Mono', monospace" }}>{data.totalAlive}</span>
