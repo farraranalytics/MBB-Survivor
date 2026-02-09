@@ -344,7 +344,7 @@ export default function PickPage() {
   const entryId = searchParams.get('entry') || undefined;
 
   const [poolPlayerId, setPoolPlayerId] = useState<string | null>(null);
-  const [entries, setEntries] = useState<{ id: string; entry_number: number; entry_label: string | null; is_eliminated: boolean }[]>([]);
+  const [entries, setEntries] = useState<{ id: string; entry_number: number; entry_label: string | null; is_eliminated: boolean; has_picked: boolean }[]>([]);
   const [activeEntryId, setActiveEntryId] = useState<string | undefined>(entryId);
   const [round, setRound] = useState<Round | null>(null);
   const [deadline, setDeadline] = useState<PickDeadline | null>(null);
@@ -367,6 +367,12 @@ export default function PickPage() {
     reason: 'wrong_pick' | 'missed_pick' | 'manual' | null;
   } | null>(null);
   const [spectatorGames, setSpectatorGames] = useState<Game[]>([]);
+  const [poolMaxEntries, setPoolMaxEntries] = useState(1);
+  const [poolStatus, setPoolStatus] = useState<string>('open');
+  const [showAddEntry, setShowAddEntry] = useState(false);
+  const [addEntryName, setAddEntryName] = useState('');
+  const [addEntryLoading, setAddEntryLoading] = useState(false);
+  const [addEntryError, setAddEntryError] = useState('');
 
   const loadedRef = useRef(false);
 
@@ -384,7 +390,18 @@ export default function PickPage() {
         .eq('user_id', user.id)
         .order('entry_number', { ascending: true });
 
-      if (allEntries) setEntries(allEntries);
+      if (allEntries) setEntries(allEntries.map(e => ({ ...e, has_picked: false })));
+
+      // Fetch pool info for entry limits
+      const { data: poolData } = await supabase
+        .from('pools')
+        .select('max_entries_per_user, status')
+        .eq('id', poolId)
+        .single();
+      if (poolData) {
+        setPoolMaxEntries(poolData.max_entries_per_user ?? 1);
+        setPoolStatus(poolData.status);
+      }
 
       const poolPlayer = await getPoolPlayer(poolId, user.id, activeEntryId);
       if (!poolPlayer) { setError('You are not a member of this pool.'); setLoading(false); return; }
@@ -427,6 +444,18 @@ export default function PickPage() {
         setError('No active round. Check back when the tournament is underway.'); setLoading(false); return;
       }
       setRound(activeRound);
+
+      // Fetch pick status for all entries to color-code tabs
+      if (allEntries && allEntries.length > 0) {
+        const entryIds = allEntries.map(e => e.id);
+        const { data: entryPicks } = await supabase
+          .from('picks')
+          .select('pool_player_id')
+          .in('pool_player_id', entryIds)
+          .eq('round_id', activeRound.id);
+        const pickedIds = new Set(entryPicks?.map(p => p.pool_player_id) || []);
+        setEntries(allEntries.map(e => ({ ...e, has_picked: pickedIds.has(e.id) })));
+      }
 
       const dl = await getPickDeadline(activeRound.id);
       setDeadline(dl);
@@ -488,6 +517,34 @@ export default function PickPage() {
     }
   };
 
+  const handleAddEntry = async () => {
+    if (!user) return;
+    setAddEntryLoading(true);
+    setAddEntryError('');
+    try {
+      const { data: { user: authUser } } = await supabase.auth.getUser();
+      const baseName = authUser?.user_metadata?.display_name || authUser?.email?.split('@')[0] || 'Player';
+      const entryNumber = entries.length + 1;
+      const entryLabel = addEntryName.trim() || `${baseName}'s Entry ${entryNumber}`;
+      const { error: insertError } = await supabase.from('pool_players').insert({
+        pool_id: poolId,
+        user_id: user.id,
+        display_name: baseName,
+        entry_number: entryNumber,
+        entry_label: entryLabel,
+      });
+      if (insertError) throw insertError;
+      setShowAddEntry(false);
+      setAddEntryName('');
+      loadedRef.current = false;
+      loadData();
+    } catch (err: any) {
+      setAddEntryError(err.message || 'Failed to add entry');
+    } finally {
+      setAddEntryLoading(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-[#0D1B2A] flex flex-col items-center justify-center px-5">
@@ -542,6 +599,10 @@ export default function PickPage() {
       </div>
     );
   }
+
+  const canAddEntry = poolMaxEntries > 1
+    && entries.length < poolMaxEntries
+    && poolStatus === 'open';
 
   const displayTeams = filterUsed ? teams.filter(t => !t.already_used) : teams;
   const availableCount = teams.filter(t => !t.already_used).length;
@@ -610,39 +671,86 @@ export default function PickPage() {
             </div>
           )}
         </div>
-        {entries.length > 1 && (
-          <div className="flex md:justify-center gap-1.5 px-5 py-1 overflow-x-auto scrollbar-hide border-t border-[rgba(255,255,255,0.03)]">
-            {entries.map(entry => (
-              <button
-                key={entry.id}
-                onClick={() => {
-                  setActiveEntryId(entry.id);
-                  loadedRef.current = false;
-                  setLoading(true);
-                  setExistingPick(null);
-                  setSelectedTeam(null);
-                  setShowSuccess(false);
-                  setIsEliminated(false);
-                  setPickHistory([]);
-                  setEliminationInfo(null);
-                  setSpectatorGames([]);
-                  router.replace(`/pools/${poolId}/pick?entry=${entry.id}`);
-                }}
-                className={`flex-shrink-0 px-2.5 py-1 rounded-full text-[11px] font-semibold border transition-colors ${
-                  (activeEntryId || poolPlayerId) === entry.id
-                    ? entry.is_eliminated
-                      ? 'bg-[rgba(239,83,80,0.08)] border-[#EF5350] text-[#EF5350]'
-                      : 'bg-[rgba(255,87,34,0.08)] border-[#FF5722] text-[#FF5722]'
-                    : entry.is_eliminated
-                    ? 'border-[rgba(255,255,255,0.05)] text-[#9BA3AE] opacity-70'
-                    : 'border-[rgba(255,255,255,0.05)] text-[#9BA3AE] hover:text-[#E8E6E1]'
-                }`}
-                style={{ fontFamily: "'DM Sans', sans-serif" }}
-              >
-                {entry.entry_label || `Entry ${entry.entry_number}`}
-                {entry.is_eliminated && ' ☠️'}
-              </button>
-            ))}
+        {(entries.length > 1 || canAddEntry) && (
+          <div className="border-t border-[rgba(255,255,255,0.03)]">
+            <div className="flex md:justify-center gap-1.5 px-5 py-1 overflow-x-auto scrollbar-hide">
+              {entries.map(entry => (
+                <button
+                  key={entry.id}
+                  onClick={() => {
+                    setActiveEntryId(entry.id);
+                    loadedRef.current = false;
+                    setLoading(true);
+                    setExistingPick(null);
+                    setSelectedTeam(null);
+                    setShowSuccess(false);
+                    setIsEliminated(false);
+                    setPickHistory([]);
+                    setEliminationInfo(null);
+                    setSpectatorGames([]);
+                    setShowAddEntry(false);
+                    router.replace(`/pools/${poolId}/pick?entry=${entry.id}`);
+                  }}
+                  className={`flex-shrink-0 px-2.5 py-1 rounded-full text-[11px] font-semibold border transition-colors ${
+                    (activeEntryId || poolPlayerId) === entry.id
+                      ? entry.is_eliminated
+                        ? 'bg-[rgba(239,83,80,0.08)] border-[#EF5350] text-[#EF5350]'
+                        : 'bg-[rgba(255,87,34,0.08)] border-[#FF5722] text-[#FF5722]'
+                      : entry.is_eliminated
+                      ? 'bg-[rgba(239,83,80,0.04)] border-[rgba(239,83,80,0.2)] text-[#EF5350] opacity-60'
+                      : entry.has_picked
+                      ? 'bg-[rgba(76,175,80,0.06)] border-[rgba(76,175,80,0.25)] text-[#4CAF50]'
+                      : 'bg-[rgba(255,179,0,0.06)] border-[rgba(255,179,0,0.25)] text-[#FFB300]'
+                  }`}
+                  style={{ fontFamily: "'DM Sans', sans-serif" }}
+                >
+                  {entry.entry_label || `Entry ${entry.entry_number}`}
+                  {entry.is_eliminated && ' ☠️'}
+                </button>
+              ))}
+              {canAddEntry && (
+                <button
+                  onClick={() => { setShowAddEntry(!showAddEntry); setAddEntryError(''); }}
+                  className="flex-shrink-0 px-2.5 py-1 rounded-full text-[11px] font-semibold text-[#FF5722] transition-colors hover:bg-[rgba(255,87,34,0.05)]"
+                  style={{ fontFamily: "'DM Sans', sans-serif", border: '1px dashed rgba(255,87,34,0.3)' }}
+                >
+                  + Entry
+                </button>
+              )}
+            </div>
+            {showAddEntry && (
+              <div className="px-5 py-2 border-t border-[rgba(255,255,255,0.03)]">
+                {addEntryError && (
+                  <p className="text-xs text-[#EF5350] mb-1.5" style={{ fontFamily: "'DM Sans', sans-serif" }}>{addEntryError}</p>
+                )}
+                <div className="flex gap-2 max-w-sm mx-auto">
+                  <input
+                    type="text"
+                    value={addEntryName}
+                    onChange={(e) => setAddEntryName(e.target.value)}
+                    maxLength={60}
+                    className="flex-1 min-w-0 px-3 py-1.5 bg-[#1B2A3D] border border-[rgba(255,255,255,0.05)] rounded-[8px] text-xs text-[#E8E6E1] placeholder-[#9BA3AE] focus:outline-none focus:ring-1 focus:ring-[#FF5722]"
+                    placeholder={`Entry ${entries.length + 1} name (optional)`}
+                    style={{ fontFamily: "'DM Sans', sans-serif" }}
+                  />
+                  <button
+                    onClick={handleAddEntry}
+                    disabled={addEntryLoading}
+                    className="px-3 py-1.5 rounded-[8px] text-xs font-semibold btn-orange disabled:opacity-50"
+                    style={{ fontFamily: "'DM Sans', sans-serif" }}
+                  >
+                    {addEntryLoading ? '...' : 'Add'}
+                  </button>
+                  <button
+                    onClick={() => { setShowAddEntry(false); setAddEntryName(''); setAddEntryError(''); }}
+                    className="px-2.5 py-1.5 rounded-[8px] text-xs font-semibold text-[#9BA3AE] hover:text-[#E8E6E1] transition-colors"
+                    style={{ fontFamily: "'DM Sans', sans-serif" }}
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         )}
       </div>

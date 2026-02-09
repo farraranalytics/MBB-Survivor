@@ -1,14 +1,16 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth } from '@/components/auth/AuthProvider';
 import { useActivePool } from '@/hooks/useActivePool';
 import { supabase } from '@/lib/supabase/client';
-import { MyPool, MyPoolEntry } from '@/types/standings';
+import { MyPool } from '@/types/standings';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { formatET } from '@/lib/timezone';
 import { SplashOverlay } from '@/components/SplashOverlay';
+import { getTournamentState, canJoinOrCreate, TournamentState, RoundInfo } from '@/lib/status';
+import { getActivityFeed, ActivityItem, timeAgo } from '@/lib/activity';
 
 // ─── Deadline Formatter ──────────────────────────────────────────
 
@@ -39,23 +41,33 @@ function formatDeadline(deadlineDatetime: string): { text: string; color: string
 function LoadingSkeleton() {
   return (
     <div className="min-h-screen bg-[#0D1B2A] pb-24">
-      <div className="max-w-lg mx-auto px-5 py-4 space-y-4">
+      <div className="max-w-lg mx-auto px-5 py-4 space-y-5">
+        {/* Hero skeleton */}
+        <div className="bg-[#111827] border border-[rgba(255,255,255,0.05)] rounded-[14px] p-5 animate-pulse">
+          <div className="h-4 w-48 bg-[#1B2A3D] rounded mb-3" />
+          <div className="h-3 w-32 bg-[#1B2A3D] rounded mb-2" />
+          <div className="h-3 w-40 bg-[#1B2A3D] rounded" />
+        </div>
+        {/* Buttons skeleton */}
+        <div className="flex gap-3">
+          <div className="h-10 flex-1 bg-[#1B2A3D] rounded-[10px] animate-pulse" />
+          <div className="h-10 flex-1 bg-[#1B2A3D] rounded-[10px] animate-pulse" />
+        </div>
+        {/* Survival bars skeleton */}
+        <div className="space-y-2">
+          {[1, 2, 3].map(i => (
+            <div key={i} className="bg-[#111827] border border-[rgba(255,255,255,0.05)] rounded-[10px] p-3 animate-pulse">
+              <div className="h-3 w-32 bg-[#1B2A3D] rounded mb-2" />
+              <div className="h-1.5 w-full bg-[#1B2A3D] rounded-full" />
+            </div>
+          ))}
+        </div>
+        {/* Pool card skeleton */}
         {[1, 2].map(i => (
-          <div key={i} className="bg-[#111827] border border-[rgba(255,255,255,0.05)] rounded-[12px] p-5 animate-pulse">
-            <div className="flex items-center justify-between mb-3">
-              <div className="h-5 w-32 bg-[#1B2A3D] rounded" />
-              <div className="h-5 w-16 bg-[#1B2A3D] rounded-full" />
-            </div>
-            <div className="h-4 w-24 bg-[#1B2A3D] rounded mb-4" />
-            <div className="space-y-2 mb-4">
-              <div className="h-4 w-48 bg-[#1B2A3D] rounded" />
-              <div className="h-4 w-40 bg-[#1B2A3D] rounded" />
-            </div>
-            <div className="h-4 w-36 bg-[#1B2A3D] rounded mb-4" />
-            <div className="flex gap-2">
-              <div className="h-10 flex-1 bg-[#1B2A3D] rounded-[12px]" />
-              <div className="h-10 flex-1 bg-[#1B2A3D] rounded-[12px]" />
-            </div>
+          <div key={i} className="bg-[#111827] border border-[rgba(255,255,255,0.05)] rounded-[14px] p-4 animate-pulse">
+            <div className="h-5 w-32 bg-[#1B2A3D] rounded mb-3" />
+            <div className="h-3 w-48 bg-[#1B2A3D] rounded mb-4" />
+            <div className="h-8 w-full bg-[#1B2A3D] rounded-[8px]" />
           </div>
         ))}
       </div>
@@ -69,90 +81,314 @@ function EmptyState() {
   return (
     <div className="min-h-screen bg-[#0D1B2A] pb-24">
       <main className="max-w-lg mx-auto px-5 py-6">
-        <div className="bg-[#111827] border border-[rgba(255,255,255,0.05)] rounded-[12px] p-8 text-center">
-          <div className="w-16 h-16 bg-[rgba(255,87,34,0.08)] rounded-[16px] flex items-center justify-center mx-auto mb-4">
-            <svg className="w-8 h-8 text-[#FF5722]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
+        <div className="bg-[#111827] border border-[rgba(255,255,255,0.05)] rounded-[14px] p-8 text-center">
+          <div className="mb-4 inline-flex flex-col items-center" style={{ gap: 0 }}>
+            <span className="text-[0.7rem] tracking-[0.5em]" style={{ fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 800, color: 'rgba(232, 230, 225, 0.4)', lineHeight: 1 }}>
+              SURVIVE
+            </span>
+            <span className="text-[1.4rem] tracking-[0.15em] text-[#FF5722]" style={{ fontFamily: "'Oswald', sans-serif", fontWeight: 700, lineHeight: 1.1 }}>
+              THE
+            </span>
+            <span className="text-[2.5rem] tracking-[-0.02em] text-[#E8E6E1]" style={{ fontFamily: "'Oswald', sans-serif", fontWeight: 700, lineHeight: 0.85 }}>
+              DANCE
+            </span>
           </div>
-          <p className="text-[#E8E6E1] font-semibold text-lg mb-1" style={{ fontFamily: "'Oswald', sans-serif", textTransform: 'uppercase' }}>No Pools Yet</p>
-          <p className="text-[#9BA3AE] text-sm mb-6" style={{ fontFamily: "'DM Sans', sans-serif" }}>Create or join a pool to start playing.</p>
-          <div className="flex justify-center gap-3">
-            <Link href="/pools/create" className="btn-orange px-5 py-2.5 text-sm font-semibold rounded-[12px]" style={{ fontFamily: "'DM Sans', sans-serif" }}>
+          <p className="text-sm text-[#9BA3AE] mb-1" style={{ fontFamily: "'DM Sans', sans-serif" }}>
+            2026 March Madness Survivor Pool
+          </p>
+          <p className="text-xs text-[#5F6B7A] mb-6" style={{ fontFamily: "'DM Sans', sans-serif" }}>
+            Create a pool and invite your friends, or join an existing pool with a code.
+          </p>
+          <div className="flex justify-center gap-3 mb-4">
+            <Link href="/pools/create" className="btn-orange px-5 py-2.5 text-sm font-semibold rounded-[10px]">
               Create Pool
             </Link>
-            <Link href="/pools/join" className="px-5 py-2.5 bg-[#1B2A3D] border border-[rgba(255,255,255,0.05)] text-[#9BA3AE] text-sm font-semibold rounded-[12px] hover:border-[rgba(255,87,34,0.3)] transition-colors" style={{ fontFamily: "'DM Sans', sans-serif" }}>
+            <Link href="/pools/join" className="px-5 py-2.5 border border-[rgba(255,255,255,0.08)] text-[#9BA3AE] text-sm font-semibold rounded-[10px] hover:border-[rgba(255,87,34,0.3)] hover:text-[#E8E6E1] transition-colors" style={{ fontFamily: "'DM Sans', sans-serif" }}>
               Join Pool
             </Link>
           </div>
+          <p className="text-xs text-[#5F6B7A]" style={{ fontFamily: "'DM Sans', sans-serif" }}>
+            Free to play &middot; No money involved
+          </p>
         </div>
       </main>
     </div>
   );
 }
 
-// ─── Entry Status Line ───────────────────────────────────────────
+// ─── Section 1: Hero Banner ──────────────────────────────────────
 
-function EntryStatusLine({ entry, picksOpen }: { entry: MyPoolEntry; picksOpen: boolean }) {
-  let dotColor: string;
-  let statusText: string;
+function HeroBanner({ state, totalPlayers, totalPools }: {
+  state: TournamentState | null;
+  totalPlayers: number;
+  totalPools: number;
+}) {
+  if (!state) return null;
 
-  if (entry.is_eliminated) {
-    dotColor = 'bg-[#EF5350]';
-    const roundPart = entry.elimination_round_name
-      ? `Eliminated ${entry.elimination_round_name}`
-      : 'Eliminated';
-    const teamPart = entry.elimination_reason === 'missed_pick'
-      ? 'No pick'
-      : entry.elimination_team_name
-      ? `Picked ${entry.elimination_team_name}`
-      : '';
-    statusText = teamPart ? `${roundPart} \u00b7 ${teamPart}` : roundPart;
-  } else if (entry.has_picked_today) {
-    dotColor = 'bg-[#4CAF50]';
-    statusText = 'Alive · Picked ✓';
-  } else if (picksOpen) {
-    dotColor = 'bg-[#FFB300]';
-    statusText = '⚠️ Needs Pick';
-  } else {
-    dotColor = 'bg-[#4CAF50]';
-    statusText = 'Alive';
-  }
+  const current = state.currentRound;
 
   return (
-    <div className="flex items-center gap-2 py-0.5">
-      <span className={`w-2 h-2 rounded-full flex-shrink-0 ${dotColor}`} />
-      <span className="text-sm text-[#E8E6E1] font-medium truncate" style={{ fontFamily: "'DM Sans', sans-serif" }}>
-        {entry.entry_label}
-      </span>
-      <span className="text-xs text-[#9BA3AE] flex-shrink-0" style={{ fontFamily: "'DM Sans', sans-serif" }}>
-        {statusText}
-      </span>
+    <div
+      className="rounded-[14px] border border-[rgba(255,255,255,0.05)] overflow-hidden"
+      style={{ background: 'radial-gradient(ellipse at center, rgba(255,87,34,0.03) 0%, transparent 70%), #111827' }}
+    >
+      <div className="px-5 py-4">
+        {state.status === 'pre_tournament' && (
+          <>
+            <p className="text-[10px] text-[#FF5722] tracking-[0.2em] uppercase mb-1" style={{ fontFamily: "'Space Mono', monospace" }}>
+              2026 NCAA Tournament
+            </p>
+            <h2 className="text-lg font-bold text-[#E8E6E1] mb-2" style={{ fontFamily: "'Oswald', sans-serif", textTransform: 'uppercase' }}>
+              Survive the Dance
+            </h2>
+            <p className="text-xs text-[#9BA3AE]" style={{ fontFamily: "'DM Sans', sans-serif" }}>
+              <span className="font-bold text-[#E8E6E1]" style={{ fontFamily: "'Space Mono', monospace" }}>{totalPlayers}</span> players &middot;{' '}
+              <span className="font-bold text-[#E8E6E1]" style={{ fontFamily: "'Space Mono', monospace" }}>{totalPools}</span> pools ready
+            </p>
+          </>
+        )}
+
+        {state.status === 'tournament_live' && current?.status === 'pre_round' && (
+          <>
+            <p className="label mb-1">{current.name}</p>
+            <h2 className="text-lg font-bold text-[#E8E6E1] mb-2" style={{ fontFamily: "'Oswald', sans-serif", textTransform: 'uppercase' }}>
+              {current.gamesTotal} Games Today
+            </h2>
+            {!current.isDeadlinePassed && current.deadline && (
+              <p className="text-xs text-[#9BA3AE]" style={{ fontFamily: "'DM Sans', sans-serif" }}>
+                Picks lock at{' '}
+                <span className="text-[#FFB300] font-semibold" style={{ fontFamily: "'Space Mono', monospace" }}>
+                  {formatET(current.deadline)}
+                </span>
+              </p>
+            )}
+          </>
+        )}
+
+        {state.status === 'tournament_live' && current?.status === 'round_live' && (
+          <>
+            <div className="flex items-center gap-2 mb-1">
+              <span className="w-2 h-2 rounded-full bg-[#EF5350]" style={{ animation: 'pulse-dot 1.5s ease-in-out infinite' }} />
+              <p className="text-[10px] text-[#EF5350] font-bold tracking-[0.1em] uppercase" style={{ fontFamily: "'Space Mono', monospace" }}>
+                LIVE
+              </p>
+              <span className="text-[#5F6B7A] text-xs">&middot;</span>
+              <p className="label" style={{ marginBottom: 0 }}>{current.name}</p>
+            </div>
+            <p className="text-sm text-[#9BA3AE] mb-2" style={{ fontFamily: "'DM Sans', sans-serif" }}>
+              <span className="font-bold text-[#E8E6E1]" style={{ fontFamily: "'Space Mono', monospace" }}>{current.gamesFinal}</span> of {current.gamesTotal} games final
+            </p>
+            <div className="w-full h-1.5 bg-[#1B2A3D] rounded-full overflow-hidden">
+              <div
+                className="h-full bg-[#4CAF50] rounded-full transition-all"
+                style={{ width: `${current.gamesTotal > 0 ? (current.gamesFinal / current.gamesTotal) * 100 : 0}%` }}
+              />
+            </div>
+          </>
+        )}
+
+        {state.status === 'tournament_live' && current?.status === 'round_complete' && (() => {
+          const nextRound = state.rounds.find(r => r.status === 'pre_round');
+          return (
+            <>
+              <p className="label mb-1">{current.name}</p>
+              <h2 className="text-lg font-bold text-[#E8E6E1] mb-2" style={{ fontFamily: "'Oswald', sans-serif", textTransform: 'uppercase' }}>
+                Round Complete
+              </h2>
+              {nextRound && (
+                <p className="text-xs text-[#9BA3AE]" style={{ fontFamily: "'DM Sans', sans-serif" }}>
+                  Next: <span className="text-[#E8E6E1]">{nextRound.name}</span>
+                </p>
+              )}
+            </>
+          );
+        })()}
+
+        {state.status === 'tournament_complete' && (
+          <>
+            <p className="text-2xl mb-1">🏆</p>
+            <h2 className="text-lg font-bold text-[#E8E6E1]" style={{ fontFamily: "'Oswald', sans-serif", textTransform: 'uppercase' }}>
+              Tournament Complete
+            </h2>
+            <p className="text-xs text-[#9BA3AE]" style={{ fontFamily: "'DM Sans', sans-serif" }}>
+              2026 NCAA Tournament
+            </p>
+          </>
+        )}
+      </div>
+      {/* Orange accent line */}
+      <div className="h-px bg-gradient-to-r from-transparent via-[rgba(255,87,34,0.3)] to-transparent" />
     </div>
   );
 }
 
-// ─── Pool Card ───────────────────────────────────────────────────
+// ─── Section 2: Survival Summary ─────────────────────────────────
 
-function PoolCard({
-  pool,
-  isActive,
-  isCreator,
-  onActivate,
-  userId,
-  onEntryAdded,
-}: {
+function SurvivalBar({ survived, eliminatedAt, total, currentIdx }: {
+  survived: number;
+  eliminatedAt: number | null;
+  total: number;
+  currentIdx: number | null;
+}) {
+  if (total === 0) return null;
+  return (
+    <div className="flex gap-0.5">
+      {Array.from({ length: total }, (_, i) => {
+        let cls: string;
+        if (i < survived) {
+          cls = 'bg-[#FF5722]';
+        } else if (eliminatedAt !== null && i === eliminatedAt) {
+          cls = 'bg-[#EF5350]';
+        } else if (currentIdx !== null && i === currentIdx && eliminatedAt === null) {
+          cls = 'bg-[#FFB300]';
+        } else {
+          cls = 'bg-[#243447]';
+        }
+        const isPulsing = currentIdx !== null && i === currentIdx && eliminatedAt === null;
+        return (
+          <div
+            key={i}
+            className={`h-1.5 flex-1 rounded-full ${cls}`}
+            style={isPulsing ? { animation: 'segment-pulse 2s ease-in-out infinite' } : undefined}
+          />
+        );
+      })}
+    </div>
+  );
+}
+
+function SurvivalSummary({ pools, rounds }: { pools: MyPool[]; rounds: RoundInfo[] }) {
+  const allEntries = pools.flatMap(pool =>
+    pool.your_entries.map(entry => ({
+      ...entry,
+      poolName: pool.pool_name,
+      poolId: pool.pool_id,
+    }))
+  );
+
+  if (allEntries.length === 0) return null;
+
+  const roundIndexMap = new Map<string, number>();
+  rounds.forEach((r, i) => roundIndexMap.set(r.name, i));
+
+  const totalRounds = rounds.length;
+  const completedRounds = rounds.filter(r => r.status === 'round_complete').length;
+  const currentRoundIdx = rounds.findIndex(r => r.status === 'pre_round' || r.status === 'round_live');
+
+  const aliveCount = allEntries.filter(e => !e.is_eliminated).length;
+  const elimCount = allEntries.filter(e => e.is_eliminated).length;
+
+  return (
+    <div>
+      <div className="flex items-center justify-between mb-2.5">
+        <p className="label">Your Entries</p>
+        <p className="text-xs text-[#9BA3AE]" style={{ fontFamily: "'DM Sans', sans-serif" }}>
+          <span className="text-[#4CAF50]">{aliveCount} alive</span>
+          {elimCount > 0 && <> &middot; <span className="text-[#EF5350]">{elimCount} out</span></>}
+        </p>
+      </div>
+      <div className="space-y-2">
+        {allEntries.map(entry => {
+          const elimRoundIdx = entry.elimination_round_name
+            ? roundIndexMap.get(entry.elimination_round_name) ?? null
+            : null;
+          const survived = entry.is_eliminated
+            ? (elimRoundIdx !== null ? elimRoundIdx : 0)
+            : completedRounds;
+
+          return (
+            <div
+              key={entry.pool_player_id}
+              className={`bg-[#111827] border border-[rgba(255,255,255,0.05)] rounded-[10px] px-3 py-2.5 ${entry.is_eliminated ? 'opacity-45' : ''}`}
+            >
+              <div className="flex items-center justify-between mb-1.5">
+                <p className="text-xs text-[#E8E6E1] font-medium truncate" style={{ fontFamily: "'DM Sans', sans-serif" }}>
+                  <span className="text-[#9BA3AE]">{entry.poolName}</span>
+                  <span className="text-[#5F6B7A] mx-1">&mdash;</span>
+                  {entry.entry_label}
+                </p>
+                <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-[4px] flex-shrink-0 ml-2 ${
+                  entry.is_eliminated
+                    ? 'bg-[rgba(239,83,80,0.1)] text-[#EF5350]'
+                    : 'bg-[rgba(76,175,80,0.1)] text-[#4CAF50]'
+                }`} style={{ fontFamily: "'Space Mono', monospace", letterSpacing: '0.05em' }}>
+                  {entry.is_eliminated ? 'OUT' : 'ALIVE'}
+                </span>
+              </div>
+              {totalRounds > 0 && (
+                <div className="flex items-center gap-2">
+                  <div className="flex-1">
+                    <SurvivalBar
+                      survived={survived}
+                      eliminatedAt={entry.is_eliminated ? elimRoundIdx : null}
+                      total={totalRounds}
+                      currentIdx={currentRoundIdx >= 0 ? currentRoundIdx : null}
+                    />
+                  </div>
+                  <span className="text-[10px] text-[#5F6B7A] flex-shrink-0" style={{ fontFamily: "'Space Mono', monospace" }}>
+                    {survived}/{totalRounds}
+                  </span>
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+// ─── Section 3: Pick CTA ─────────────────────────────────────────
+
+function PickCTA({ pools, activePoolId }: { pools: MyPool[]; activePoolId: string | null }) {
+  const entriesNeedingPicks = pools.flatMap(pool => {
+    if (!pool.deadline_datetime || !pool.current_round_name) return [];
+    if (new Date(pool.deadline_datetime).getTime() <= Date.now()) return [];
+    if (pool.pool_status !== 'active' && pool.pool_status !== 'open') return [];
+    return pool.your_entries
+      .filter(e => !e.is_eliminated && !e.has_picked_today)
+      .map(e => ({ ...e, poolId: pool.pool_id, deadline: pool.deadline_datetime }));
+  });
+
+  if (entriesNeedingPicks.length === 0) return null;
+
+  const firstPoolId = entriesNeedingPicks[0].poolId;
+  const deadline = entriesNeedingPicks[0].deadline;
+  const roundName = pools.find(p => p.pool_id === firstPoolId)?.current_round_name;
+
+  return (
+    <div className="bg-[rgba(255,87,34,0.04)] border border-[rgba(255,87,34,0.2)] rounded-[14px] p-4">
+      <div className="flex items-center gap-2 mb-2">
+        <span className="text-[#FF5722] text-sm">⚠</span>
+        <p className="text-sm font-bold text-[#FF5722]" style={{ fontFamily: "'Oswald', sans-serif", textTransform: 'uppercase' }}>
+          {entriesNeedingPicks.length} {entriesNeedingPicks.length === 1 ? 'Entry Needs' : 'Entries Need'} a Pick
+        </p>
+      </div>
+      {deadline && roundName && (
+        <p className="text-xs text-[#9BA3AE] mb-3" style={{ fontFamily: "'DM Sans', sans-serif" }}>
+          {formatDeadline(deadline).text} &middot; {roundName}
+        </p>
+      )}
+      <Link
+        href={`/pools/${activePoolId || firstPoolId}/pick`}
+        className="block w-full py-3 rounded-[10px] btn-orange font-bold text-sm text-center"
+      >
+        Make Your Picks
+      </Link>
+    </div>
+  );
+}
+
+// ─── Section 4: Pool Cards ───────────────────────────────────────
+
+function SimplePoolCard({ pool, isActive, isCreator, onActivate }: {
   pool: MyPool;
   isActive: boolean;
   isCreator: boolean;
   onActivate: () => void;
-  userId: string | undefined;
-  onEntryAdded: () => Promise<void>;
 }) {
-  const router = useRouter();
   const [copiedCode, setCopiedCode] = useState(false);
-  const [showAddEntry, setShowAddEntry] = useState(false);
-  const [addEntryName, setAddEntryName] = useState('');
-  const [addEntryLoading, setAddEntryLoading] = useState(false);
-  const [addEntryError, setAddEntryError] = useState('');
+  const router = useRouter();
 
   const handleCopy = async (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -183,269 +419,215 @@ function PoolCard({
     handleCopy(e);
   };
 
-  // Status badge
-  const statusConfig = {
-    open: { label: 'PRE-TOURNAMENT', cls: 'bg-[rgba(255,87,34,0.15)] text-[#FF5722]' },
-    active: { label: 'ACTIVE', cls: 'bg-[rgba(76,175,80,0.12)] text-[#4CAF50]' },
-    complete: { label: 'COMPLETE', cls: 'bg-[rgba(138,134,148,0.15)] text-[#9BA3AE]' },
-  };
-  const status = statusConfig[pool.pool_status];
-
-  // Round context
-  let roundContext: string;
-  if (pool.pool_status === 'open') roundContext = 'Pre-Tournament';
-  else if (pool.pool_status === 'complete') roundContext = 'Tournament Complete';
-  else roundContext = pool.current_round_name || 'Waiting for next round';
-
-  // Deadline
   const deadline = pool.deadline_datetime ? formatDeadline(pool.deadline_datetime) : null;
-  const deadlineExpired = deadline?.text === 'Picks locked';
-
-  // CTA logic
-  const aliveEntries = pool.your_entries.filter(e => !e.is_eliminated);
-  const unpickedAliveEntries = aliveEntries.filter(e => !e.has_picked_today);
-  const hasActiveRound = pool.current_round_name !== null;
-  const picksOpen = (pool.pool_status === 'open' || pool.pool_status === 'active')
-    && hasActiveRound && !deadlineExpired;
-  const allEliminated = pool.pool_status === 'active' && aliveEntries.length === 0;
-  const showMakePick = picksOpen && aliveEntries.length > 0 && unpickedAliveEntries.length > 0;
-  const showChangePick = picksOpen && aliveEntries.length > 0 && unpickedAliveEntries.length === 0;
-  const showStandings = (pool.pool_status === 'active' || pool.pool_status === 'complete') && !allEliminated;
-
-  // Add Entry logic — only allowed pre-tournament (pool status 'open')
-  const canAddEntry = pool.max_entries_per_user > 1
-    && pool.your_entries.length < pool.max_entries_per_user
-    && pool.pool_status === 'open';
+  const roundContext = pool.pool_status === 'open'
+    ? 'Pre-Tournament'
+    : pool.pool_status === 'complete'
+    ? 'Tournament Complete'
+    : pool.current_round_name || 'Waiting for next round';
 
   return (
     <div
-      onClick={onActivate}
-      className={`border rounded-[12px] p-5 cursor-pointer transition-colors ${
+      onClick={() => {
+        onActivate();
+        router.push(`/pools/${pool.pool_id}/pick`);
+      }}
+      className={`border rounded-[14px] p-4 cursor-pointer transition-colors ${
         isActive
-          ? 'bg-[rgba(255,87,34,0.04)] border-2 border-[#FF5722] border-l-[4px]'
-          : 'bg-[#111827] border-[rgba(255,255,255,0.05)]'
+          ? 'bg-[rgba(255,87,34,0.04)] border-[#FF5722]'
+          : 'bg-[#111827] border-[rgba(255,255,255,0.05)] hover:border-[rgba(255,87,34,0.2)]'
       }`}
     >
-      {/* Row 1: Pool name + status badge + gear */}
       <div className="flex items-center justify-between mb-1">
-        <div className="flex items-center gap-2 min-w-0 mr-2">
-          <h2 className={`font-bold text-base truncate ${isActive ? 'text-[#FF5722]' : 'text-[#E8E6E1]'}`} style={{ fontFamily: "'Oswald', sans-serif", textTransform: 'uppercase' }}>
+        <div className="flex items-center gap-2 min-w-0">
+          <h3 className={`font-bold text-base truncate ${isActive ? 'text-[#FF5722]' : 'text-[#E8E6E1]'}`} style={{ fontFamily: "'Oswald', sans-serif", textTransform: 'uppercase' }}>
             {pool.pool_name}
-          </h2>
-          {isActive && (
-            <span
-              className="inline-flex items-center px-1.5 py-px rounded-full font-bold bg-[rgba(255,87,34,0.15)] text-[#FF5722] flex-shrink-0"
-              style={{ fontFamily: "'Space Mono', monospace", fontSize: '0.45rem', letterSpacing: '0.15em', textTransform: 'uppercase' }}
-            >
-              VIEWING
-            </span>
-          )}
-        </div>
-        <div className="flex items-center gap-2 flex-shrink-0">
-          <span
-            className={`inline-flex items-center px-2 py-0.5 rounded-full font-bold ${status.cls}`}
-            style={{ fontFamily: "'Space Mono', monospace", fontSize: '0.55rem', letterSpacing: '0.15em', textTransform: 'uppercase' }}
-          >
-            {status.label}
-          </span>
+          </h3>
           {isCreator && (
-            <button
-              onClick={(e) => { e.stopPropagation(); router.push(`/pools/${pool.pool_id}/settings`); }}
-              className="text-[#9BA3AE] hover:text-[#E8E6E1] transition-colors p-0.5"
-              title="Pool Settings"
-            >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.066 2.573c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.573 1.066c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.066-2.573c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-              </svg>
-            </button>
+            <svg className="w-3.5 h-3.5 text-[#9BA3AE] flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.066 2.573c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.573 1.066c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.066-2.573c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+            </svg>
           )}
         </div>
-      </div>
-
-      {/* Row 2: Round context */}
-      <p className="text-xs text-[#9BA3AE] mb-3" style={{ fontFamily: "'DM Sans', sans-serif" }}>
-        {roundContext}
-      </p>
-
-      {/* Row 3: Per-entry status lines */}
-      <div className="mb-3">
-        {pool.your_entries.map(entry => (
-          <EntryStatusLine key={entry.pool_player_id} entry={entry} picksOpen={picksOpen} />
-        ))}
-
-        {/* Row 4: + Add Entry */}
-        {canAddEntry && !showAddEntry && (
-          <button
-            onClick={(e) => { e.stopPropagation(); setShowAddEntry(true); setAddEntryError(''); }}
-            className="text-xs text-[#FF5722] font-semibold mt-1 hover:text-[#E64A19] transition-colors"
-            style={{ fontFamily: "'DM Sans', sans-serif" }}
-          >
-            + Add Entry
-          </button>
-        )}
-        {showAddEntry && (
-          <div onClick={(e) => e.stopPropagation()} className="mt-2 bg-[#1B2A3D] border border-[rgba(255,255,255,0.05)] rounded-[10px] p-3 space-y-2">
-            {addEntryError && (
-              <p className="text-xs text-[#EF5350]" style={{ fontFamily: "'DM Sans', sans-serif" }}>{addEntryError}</p>
-            )}
-            <input
-              type="text"
-              value={addEntryName}
-              onChange={(e) => setAddEntryName(e.target.value)}
-              maxLength={60}
-              className="w-full px-3 py-2 bg-[#111827] border border-[rgba(255,255,255,0.05)] rounded-[8px] text-sm text-[#E8E6E1] placeholder-[#9BA3AE] focus:outline-none focus:ring-1 focus:ring-[#FF5722]"
-              placeholder={`Entry ${pool.your_entries.length + 1} name (optional)`}
-              style={{ fontFamily: "'DM Sans', sans-serif" }}
-            />
-            <div className="flex gap-2">
-              <button
-                onClick={async () => {
-                  if (!userId) return;
-                  setAddEntryLoading(true);
-                  setAddEntryError('');
-                  try {
-                    const { data: { user: authUser } } = await supabase.auth.getUser();
-                    const baseName = authUser?.user_metadata?.display_name || authUser?.email?.split('@')[0] || 'Player';
-                    const entryNumber = pool.your_entries.length + 1;
-                    const entryLabel = addEntryName.trim() || `${baseName}'s Entry ${entryNumber}`;
-                    const { error } = await supabase.from('pool_players').insert({
-                      pool_id: pool.pool_id,
-                      user_id: userId,
-                      display_name: baseName,
-                      entry_number: entryNumber,
-                      entry_label: entryLabel,
-                    });
-                    if (error) throw error;
-                    setShowAddEntry(false);
-                    setAddEntryName('');
-                    await onEntryAdded();
-                  } catch (err: any) {
-                    setAddEntryError(err.message || 'Failed to add entry');
-                  } finally {
-                    setAddEntryLoading(false);
-                  }
-                }}
-                disabled={addEntryLoading}
-                className="flex-1 py-2 rounded-[8px] text-xs font-semibold btn-orange disabled:opacity-50"
-                style={{ fontFamily: "'DM Sans', sans-serif" }}
-              >
-                {addEntryLoading ? 'Adding...' : 'Add Entry'}
-              </button>
-              <button
-                onClick={() => { setShowAddEntry(false); setAddEntryName(''); setAddEntryError(''); }}
-                className="px-3 py-2 rounded-[8px] text-xs font-semibold text-[#9BA3AE] bg-[#111827] border border-[rgba(255,255,255,0.05)] hover:text-[#E8E6E1] transition-colors"
-                style={{ fontFamily: "'DM Sans', sans-serif" }}
-              >
-                Cancel
-              </button>
-            </div>
-          </div>
-        )}
-      </div>
-
-      {/* Row 5: Pool stats + deadline */}
-      <div className="flex items-center justify-between mb-4">
-        <p className="text-xs text-[#9BA3AE]" style={{ fontFamily: "'DM Sans', sans-serif" }}>
-          <span className="font-bold text-[#E8E6E1]" style={{ fontFamily: "'Space Mono', monospace" }}>{pool.alive_players}</span>/{pool.total_players} alive
+        <p className="text-xs text-[#9BA3AE] flex-shrink-0" style={{ fontFamily: "'Space Mono', monospace" }}>
+          <span className="text-[#E8E6E1] font-bold">{pool.alive_players}</span>/{pool.total_players} alive
         </p>
-        {deadline && (
-          <p className={`text-xs font-semibold ${deadline.color}`} style={{ fontFamily: "'Space Mono', monospace" }}>
+      </div>
+
+      <div className="flex items-center justify-between mb-3">
+        <p className="text-xs text-[#9BA3AE]" style={{ fontFamily: "'DM Sans', sans-serif" }}>
+          {roundContext}
+        </p>
+        {deadline && pool.pool_status !== 'complete' && pool.pool_status !== 'open' && (
+          <p className={`text-[10px] font-semibold ${deadline.color}`} style={{ fontFamily: "'Space Mono', monospace" }}>
             {deadline.text}
           </p>
         )}
       </div>
 
-      {/* Row 6: CTA buttons */}
-      <div className="flex gap-2 mb-4">
-        {showMakePick && (
-          <button
-            onClick={(e) => { e.stopPropagation(); router.push(`/pools/${pool.pool_id}/pick`); }}
-            className="flex-1 py-2.5 rounded-[12px] btn-orange text-sm font-bold"
-            style={{ fontFamily: "'DM Sans', sans-serif" }}
-          >
-            Make Pick
-          </button>
-        )}
-        {showChangePick && (
-          <button
-            onClick={(e) => { e.stopPropagation(); router.push(`/pools/${pool.pool_id}/pick`); }}
-            className="flex-1 py-2.5 rounded-[12px] border border-[rgba(255,179,0,0.3)] text-[#FFB300] text-sm font-bold hover:bg-[rgba(255,179,0,0.05)] transition-colors"
-            style={{ fontFamily: "'DM Sans', sans-serif" }}
-          >
-            Change Pick
-          </button>
-        )}
-        {showStandings && (
-          <button
-            onClick={(e) => { e.stopPropagation(); router.push(`/pools/${pool.pool_id}/standings`); }}
-            className="flex-1 py-2.5 rounded-[12px] border border-[rgba(255,255,255,0.05)] text-[#9BA3AE] text-sm font-semibold hover:text-[#E8E6E1] hover:border-[rgba(255,87,34,0.3)] transition-colors"
-            style={{ fontFamily: "'DM Sans', sans-serif" }}
-          >
-            Standings
-          </button>
-        )}
-        {allEliminated && (
-          <>
+      {/* Join code row — hidden for complete pools */}
+      {pool.pool_status !== 'complete' && (
+        <div
+          onClick={(e) => e.stopPropagation()}
+          className="flex items-center justify-between bg-[#1B2A3D] border border-[rgba(255,255,255,0.05)] rounded-[8px] px-3 py-2"
+        >
+          <div className="flex items-center gap-2">
+            <span className="text-[10px] uppercase tracking-widest text-[#9BA3AE]" style={{ fontFamily: "'Space Mono', monospace", letterSpacing: '0.15em' }}>Code</span>
+            <span className="text-sm font-bold text-[#FF5722] tracking-[0.12em]" style={{ fontFamily: "'Space Mono', monospace" }}>
+              {pool.join_code}
+            </span>
+          </div>
+          <div className="flex gap-1.5">
             <button
-              onClick={(e) => { e.stopPropagation(); router.push(`/pools/${pool.pool_id}/standings`); }}
-              className="flex-1 py-2.5 rounded-[12px] border border-[rgba(255,255,255,0.05)] text-[#9BA3AE] text-sm font-semibold hover:text-[#E8E6E1] hover:border-[rgba(255,87,34,0.3)] transition-colors"
+              onClick={handleCopy}
+              className={`px-2.5 py-1 rounded-[6px] text-[11px] font-semibold transition-all ${
+                copiedCode
+                  ? 'bg-[rgba(76,175,80,0.12)] text-[#4CAF50]'
+                  : 'bg-[#111827] border border-[rgba(255,255,255,0.05)] text-[#9BA3AE] hover:text-[#E8E6E1]'
+              }`}
               style={{ fontFamily: "'DM Sans', sans-serif" }}
             >
-              View The Field
+              {copiedCode ? '✓' : 'Copy'}
             </button>
             <button
-              onClick={(e) => { e.stopPropagation(); router.push(`/pools/${pool.pool_id}/bracket`); }}
-              className="flex-1 py-2.5 rounded-[12px] border border-[rgba(255,255,255,0.05)] text-[#9BA3AE] text-sm font-semibold hover:text-[#E8E6E1] hover:border-[rgba(255,87,34,0.3)] transition-colors"
+              onClick={handleShare}
+              className="px-2.5 py-1 rounded-[6px] text-[11px] font-semibold bg-[#111827] border border-[rgba(255,255,255,0.05)] text-[#9BA3AE] hover:text-[#E8E6E1] transition-all"
               style={{ fontFamily: "'DM Sans', sans-serif" }}
             >
-              View Bracket
+              Share
             </button>
-          </>
-        )}
-      </div>
-
-      {/* Row 7: Join Code + Share (hidden for complete pools) */}
-      {pool.pool_status !== 'complete' && <div className="flex items-center justify-between bg-[#1B2A3D] border border-[rgba(255,255,255,0.05)] rounded-[8px] px-3 py-2">
-        <div className="flex items-center gap-2">
-          <span className="text-[10px] uppercase tracking-widest text-[#9BA3AE]" style={{ fontFamily: "'Space Mono', monospace", letterSpacing: '0.15em' }}>Code</span>
-          <span className="text-sm font-bold text-[#FF5722] tracking-[0.12em]" style={{ fontFamily: "'Space Mono', monospace" }}>
-            {pool.join_code}
-          </span>
+          </div>
         </div>
-        <div className="flex gap-1.5">
-          <button
-            onClick={handleCopy}
-            className={`px-2.5 py-1 rounded-[6px] text-[11px] font-semibold transition-all ${
-              copiedCode
-                ? 'bg-[rgba(76,175,80,0.12)] text-[#4CAF50]'
-                : 'bg-[#111827] border border-[rgba(255,255,255,0.05)] text-[#9BA3AE] hover:text-[#E8E6E1]'
-            }`}
-            style={{ fontFamily: "'DM Sans', sans-serif" }}
-          >
-            {copiedCode ? '✓' : 'Copy'}
-          </button>
-          <button
-            onClick={handleShare}
-            className="px-2.5 py-1 rounded-[6px] text-[11px] font-semibold bg-[#111827] border border-[rgba(255,255,255,0.05)] text-[#9BA3AE] hover:text-[#E8E6E1] transition-all"
-            style={{ fontFamily: "'DM Sans', sans-serif" }}
-          >
-            Share
-          </button>
-        </div>
-      </div>}
+      )}
     </div>
   );
 }
 
-// ─── Dashboard ───────────────────────────────────────────────────
+// ─── Section 5: Activity Feed ────────────────────────────────────
+
+function ActivityFeed({ items, loading }: { items: ActivityItem[]; loading: boolean }) {
+  const [showAll, setShowAll] = useState(false);
+  const displayed = showAll ? items : items.slice(0, 8);
+
+  if (loading) {
+    return (
+      <div>
+        <p className="label mb-2.5">Activity</p>
+        <div className="space-y-1">
+          {[1, 2, 3].map(i => (
+            <div key={i} className="h-9 bg-[#111827] border border-[rgba(255,255,255,0.05)] rounded-[8px] animate-pulse" />
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  if (items.length === 0) {
+    return (
+      <div>
+        <p className="label mb-2.5">Activity</p>
+        <div className="bg-[#111827] border border-[rgba(255,255,255,0.05)] rounded-[10px] px-4 py-6 text-center">
+          <p className="text-xs text-[#5F6B7A]" style={{ fontFamily: "'DM Sans', sans-serif" }}>
+            No activity yet &mdash; waiting for tip-off
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  const iconMap: Record<string, string> = {
+    game_final: '🏀',
+    upset: '🚨',
+    elimination: '☠️',
+    player_joined: '👋',
+  };
+
+  return (
+    <div>
+      <p className="label mb-2.5">Activity</p>
+      <div className="space-y-1">
+        {displayed.map(item => (
+          <div
+            key={item.id}
+            className={`flex items-start gap-2.5 px-3 py-2 rounded-[8px] ${
+              item.type === 'elimination'
+                ? 'bg-[rgba(239,83,80,0.04)]'
+                : 'bg-[#111827]'
+            } ${item.isOwnEvent ? 'border-l-2 border-l-[#FF5722]' : ''}`}
+          >
+            <span className="text-xs flex-shrink-0 mt-0.5">{iconMap[item.type] || '·'}</span>
+            <p className="text-xs text-[#9BA3AE] flex-1 min-w-0" style={{ fontFamily: "'DM Sans', sans-serif" }}>
+              {item.text}
+            </p>
+            <span className="text-[10px] text-[#5F6B7A] flex-shrink-0 whitespace-nowrap" style={{ fontFamily: "'Space Mono', monospace" }}>
+              {timeAgo(item.timestamp)}
+            </span>
+          </div>
+        ))}
+      </div>
+      {items.length > 8 && !showAll && (
+        <button
+          onClick={() => setShowAll(true)}
+          className="w-full mt-2 py-2 text-xs text-[#9BA3AE] hover:text-[#E8E6E1] transition-colors"
+          style={{ fontFamily: "'DM Sans', sans-serif" }}
+        >
+          Show more ({items.length - 8} more)
+        </button>
+      )}
+    </div>
+  );
+}
+
+// ─── Main Dashboard ──────────────────────────────────────────────
 
 export default function Dashboard() {
   const { user } = useAuth();
-  const { activePoolId, setActivePool, pools, loadingPools, refreshPools } = useActivePool();
+  const { activePoolId, setActivePool, pools, loadingPools } = useActivePool();
+  const [tournamentState, setTournamentState] = useState<TournamentState | null>(null);
+  const [totalPlayers, setTotalPlayers] = useState(0);
+  const [totalPools, setTotalPools] = useState(0);
+  const [activityItems, setActivityItems] = useState<ActivityItem[]>([]);
+  const [activityLoading, setActivityLoading] = useState(true);
 
-  // Hide create/join links once any pool is active or complete (tournament started)
-  const tournamentStarted = !loadingPools && pools.some(p => p.pool_status === 'active' || p.pool_status === 'complete');
+  // Load tournament state + stats + activity when pools are ready
+  useEffect(() => {
+    if (loadingPools || !user) return;
+
+    async function loadDashboardData() {
+      try {
+        const [state, playersRes, poolsRes] = await Promise.all([
+          getTournamentState(),
+          supabase.from('pool_players').select('id', { count: 'exact', head: true }),
+          supabase.from('pools').select('id', { count: 'exact', head: true }),
+        ]);
+
+        setTournamentState(state);
+        setTotalPlayers(playersRes.count || 0);
+        setTotalPools(poolsRes.count || 0);
+
+        // Load activity feed
+        if (pools.length > 0) {
+          const poolIds = pools.map(p => p.pool_id);
+          const recentRoundIds = state.rounds
+            .filter(r => r.status === 'round_live' || r.status === 'round_complete')
+            .slice(-2)
+            .map(r => r.id);
+
+          const items = await getActivityFeed(user!.id, poolIds, recentRoundIds);
+          setActivityItems(items);
+        }
+      } catch (err) {
+        console.error('Failed to load dashboard data:', err);
+      } finally {
+        setActivityLoading(false);
+      }
+    }
+
+    loadDashboardData();
+  }, [loadingPools, user, pools]);
+
+  const preTournament = !tournamentState || canJoinOrCreate(tournamentState);
 
   return (
     <>
@@ -456,30 +638,62 @@ export default function Dashboard() {
         <EmptyState />
       ) : (
         <div className="min-h-screen bg-[#0D1B2A] pb-24">
-          <div className="max-w-lg mx-auto px-5 py-4 space-y-4">
-            {/* Create / Join links at top — hidden once tournament starts */}
-            {!tournamentStarted && (
-              <div className="flex justify-center gap-4">
-                <Link href="/pools/create" className="text-sm text-[#9BA3AE] hover:text-[#FF5722] transition-colors" style={{ fontFamily: "'DM Sans', sans-serif" }}>
-                  + Create Pool
-                </Link>
-                <Link href="/pools/join" className="text-sm text-[#9BA3AE] hover:text-[#FF5722] transition-colors" style={{ fontFamily: "'DM Sans', sans-serif" }}>
-                  + Join Pool
-                </Link>
-              </div>
+          <div className="max-w-lg mx-auto px-5 py-4 space-y-5">
+            {/* Section 1: Hero Banner */}
+            <HeroBanner state={tournamentState} totalPlayers={totalPlayers} totalPools={totalPools} />
+
+            {/* Create / Join Buttons — always visible */}
+            <div className="flex gap-3">
+              <Link
+                href="/pools/create"
+                className={`flex-1 py-2.5 text-center text-sm font-semibold rounded-[10px] border transition-colors ${
+                  preTournament
+                    ? 'border-[rgba(255,87,34,0.3)] text-[#FF5722] hover:bg-[rgba(255,87,34,0.05)]'
+                    : 'border-[rgba(255,255,255,0.05)] text-[#5F6B7A] hover:text-[#9BA3AE]'
+                }`}
+                style={{ fontFamily: "'DM Sans', sans-serif" }}
+              >
+                + Create Pool
+              </Link>
+              <Link
+                href="/pools/join"
+                className={`flex-1 py-2.5 text-center text-sm font-semibold rounded-[10px] border transition-colors ${
+                  preTournament
+                    ? 'border-[rgba(255,87,34,0.3)] text-[#FF5722] hover:bg-[rgba(255,87,34,0.05)]'
+                    : 'border-[rgba(255,255,255,0.05)] text-[#5F6B7A] hover:text-[#9BA3AE]'
+                }`}
+                style={{ fontFamily: "'DM Sans', sans-serif" }}
+              >
+                + Join Pool
+              </Link>
+            </div>
+
+            {/* Section 2: Survival Summary */}
+            {tournamentState && (
+              <SurvivalSummary pools={pools} rounds={tournamentState.rounds} />
             )}
 
-            {pools.map(pool => (
-              <PoolCard
-                key={pool.pool_id}
-                pool={pool}
-                isActive={pool.pool_id === activePoolId}
-                isCreator={pool.creator_id === user?.id}
-                onActivate={() => setActivePool(pool.pool_id, pool.pool_name)}
-                userId={user?.id}
-                onEntryAdded={refreshPools}
-              />
-            ))}
+            {/* Section 3: Pick CTA */}
+            <PickCTA pools={pools} activePoolId={activePoolId} />
+
+            {/* Section 4: Pool Cards */}
+            <div>
+              <p className="label mb-2.5">Your Pools</p>
+              <div className="space-y-3">
+                {pools.map(pool => (
+                  <SimplePoolCard
+                    key={pool.pool_id}
+                    pool={pool}
+                    isActive={pool.pool_id === activePoolId}
+                    isCreator={pool.creator_id === user?.id}
+                    onActivate={() => setActivePool(pool.pool_id, pool.pool_name)}
+                  />
+                ))}
+              </div>
+            </div>
+
+            {/* Section 5: Activity Feed */}
+            <ActivityFeed items={activityItems} loading={activityLoading} />
 
             {/* Footer */}
             <footer className="pt-4 pb-2 text-center text-sm" style={{ fontFamily: "'DM Sans', sans-serif" }}>
