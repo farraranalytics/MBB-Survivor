@@ -107,7 +107,7 @@ export default function SignUpForm() {
 
             <div>
               <label htmlFor="displayName" className="block text-sm font-medium text-[#9BA3AE] mb-2" style={{ fontFamily: "'DM Sans', sans-serif" }}>Display Name</label>
-              <input id="displayName" type="text" value={displayName} onChange={(e) => setDisplayName(e.target.value)} className={inputClass} placeholder="How you'll appear in pools" style={{ fontFamily: "'DM Sans', sans-serif" }} />
+              <input id="displayName" type="text" value={displayName} onChange={(e) => setDisplayName(e.target.value)} required className={inputClass} placeholder="How you'll appear in pools" style={{ fontFamily: "'DM Sans', sans-serif" }} />
             </div>
 
             <div>
