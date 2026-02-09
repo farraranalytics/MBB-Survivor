@@ -18,57 +18,8 @@ import { useActivePool } from '@/hooks/useActivePool';
 import { supabase } from '@/lib/supabase/client';
 import { getSeedWinProbability } from '@/lib/analyze';
 import { PickableTeam, PickDeadline, Round, Pick, Game } from '@/types/picks';
-import { formatET, formatETShort, formatDeadlineTime } from '@/lib/timezone';
-
-// ─── Countdown Timer ──────────────────────────────────────────────
-
-function DeadlineCountdown({ deadline }: { deadline: PickDeadline }) {
-  const [now, setNow] = useState(Date.now());
-
-  useEffect(() => {
-    const timer = setInterval(() => setNow(Date.now()), 1000);
-    return () => clearInterval(timer);
-  }, []);
-
-  const deadlineMs = new Date(deadline.deadline_datetime).getTime();
-  const diff = Math.max(0, deadlineMs - now);
-  const hours = Math.floor(diff / 3600000);
-  const minutes = Math.floor((diff % 3600000) / 60000);
-  const seconds = Math.floor((diff % 60000) / 1000);
-  const expired = diff === 0;
-
-  const urgencyBg = expired
-    ? 'bg-[#EF5350]'
-    : diff < 300000
-    ? 'bg-[#EF5350] countdown-urgent'
-    : diff < 1800000
-    ? 'bg-[#FFB300]'
-    : diff < 7200000
-    ? 'bg-[rgba(255,179,0,0.8)]'
-    : 'bg-[#4CAF50]';
-
-  return (
-    <div className="flex items-center gap-2">
-      <span className={`${urgencyBg} text-[#E8E6E1] rounded-[6px] px-2.5 py-1 inline-flex items-center gap-1.5`}>
-        {expired ? (
-          <span className="font-bold text-xs" style={{ fontFamily: "'Oswald', sans-serif", textTransform: 'uppercase' }}>Locked</span>
-        ) : (
-          <>
-            <span className="text-[9px] uppercase opacity-70" style={{ fontFamily: "'Space Mono', monospace" }}>in</span>
-            <span className="text-sm font-extrabold tracking-wide" style={{ fontFamily: "'Space Mono', monospace" }}>
-              {hours > 0 && `${hours}:`}{String(minutes).padStart(2, '0')}:{String(seconds).padStart(2, '0')}
-            </span>
-          </>
-        )}
-      </span>
-      {!expired && (
-        <span className="text-[10px] text-[#9BA3AE]" style={{ fontFamily: "'Space Mono', monospace" }}>
-          {formatDeadlineTime(deadline.deadline_datetime)}
-        </span>
-      )}
-    </div>
-  );
-}
+import { formatET, formatETShort } from '@/lib/timezone';
+import { CountdownTimer } from '@/components/CountdownTimer';
 
 // ─── Confirmation Modal ───────────────────────────────────────────
 
@@ -607,15 +558,30 @@ export default function PickPage() {
             <p className="text-sm font-semibold text-[#E8E6E1]" style={{ fontFamily: "'Oswald', sans-serif", textTransform: 'uppercase' }}>
               {round?.name || 'Make Your Pick'}
             </p>
-            {isEliminated ? (
+            {isEliminated && (
               <span className="text-xs font-bold px-2.5 py-1 rounded-[6px] bg-[rgba(239,83,80,0.1)] text-[#EF5350]"
                 style={{ fontFamily: "'Space Mono', monospace", letterSpacing: '0.1em' }}>
                 SPECTATING
               </span>
-            ) : (
-              deadline && <DeadlineCountdown deadline={deadline} />
+            )}
+            {!isEliminated && deadline?.is_expired && (
+              <span className="text-xs font-bold px-2.5 py-1 rounded-[6px] bg-[#EF5350] text-[#E8E6E1]"
+                style={{ fontFamily: "'Oswald', sans-serif", textTransform: 'uppercase' }}>
+                LOCKED
+              </span>
             )}
           </div>
+          {!isEliminated && deadline && !deadline.is_expired && (
+            <div className="mt-2">
+              <CountdownTimer
+                target={deadline.deadline_datetime}
+                label="PICKS LOCK IN"
+                urgentLabel="⚠ DEADLINE APPROACHING"
+                urgentThresholdMs={1800000}
+                size="md"
+              />
+            </div>
+          )}
           {!isEliminated && existingPick && existingPick.team && (
             <div className="mt-1.5 bg-[rgba(255,179,0,0.08)] border border-[rgba(255,179,0,0.2)] rounded-full py-1 px-3 flex items-center justify-center">
               <p className="text-xs text-[#FFB300] truncate" style={{ fontFamily: "'DM Sans', sans-serif" }}>

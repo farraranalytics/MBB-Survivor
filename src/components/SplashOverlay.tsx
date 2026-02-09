@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback, useRef } from 'react';
 import { supabase } from '@/lib/supabase/client';
 import { getTournamentState } from '@/lib/status';
 import { formatDateET } from '@/lib/timezone';
+import { CountdownTimer } from '@/components/CountdownTimer';
 
 // ─── Types ──────────────────────────────────────────────────────
 
@@ -202,47 +203,89 @@ async function fetchSplashData(userId: string): Promise<SplashData> {
   };
 }
 
-// ─── Countdown Components ───────────────────────────────────────
+// ─── Animation Wrapper ──────────────────────────────────────────
 
-function CountdownBox({ value, unit }: { value: number; unit: string }) {
+function AnimateIn({ delay, children, className }: { delay: number; children: React.ReactNode; className?: string }) {
   return (
-    <div className="flex flex-col items-center">
-      <div className="w-16 h-16 rounded-[10px] border border-[rgba(255,87,34,0.3)] bg-[rgba(255,87,34,0.05)] flex items-center justify-center">
-        <span className="text-2xl font-bold text-[#FF5722]" style={{ fontFamily: "'Oswald', sans-serif" }}>
-          {String(value).padStart(2, '0')}
-        </span>
-      </div>
-      <span className="text-[0.6rem] tracking-[0.2em] text-[#5F6B7A] mt-1" style={{ fontFamily: "'Space Mono', monospace" }}>
-        {unit}
+    <div
+      className={className}
+      style={{ animation: `stagger-up 600ms ease-out ${delay}ms both` }}
+    >
+      {children}
+    </div>
+  );
+}
+
+// ─── Court Lines Background ─────────────────────────────────────
+
+function CourtLines() {
+  return (
+    <div className="absolute inset-0 overflow-hidden pointer-events-none">
+      <svg
+        className="absolute bottom-[-10%] left-1/2 -translate-x-1/2 w-[600px] h-[400px] md:w-[900px] md:h-[550px] lg:w-[1100px] lg:h-[650px]"
+        viewBox="0 0 800 500"
+        fill="none"
+        xmlns="http://www.w3.org/2000/svg"
+      >
+        {/* Baseline */}
+        <line x1="50" y1="480" x2="750" y2="480" stroke="rgba(255,87,34,0.06)" strokeWidth="1.5" />
+        {/* Three-point arc */}
+        <path d="M 120 480 A 280 280 0 0 1 680 480" stroke="rgba(255,87,34,0.05)" strokeWidth="1.5" />
+        {/* Free-throw lane */}
+        <rect x="290" y="340" width="220" height="140" rx="2" stroke="rgba(255,87,34,0.04)" strokeWidth="1.5" fill="none" />
+        {/* Free-throw circle */}
+        <circle cx="400" cy="340" r="60" stroke="rgba(255,87,34,0.04)" strokeWidth="1.5" />
+        {/* Center court circle (top) */}
+        <circle cx="400" cy="40" r="60" stroke="rgba(255,87,34,0.03)" strokeWidth="1.5" />
+        {/* Half-court line */}
+        <line x1="50" y1="40" x2="750" y2="40" stroke="rgba(255,87,34,0.03)" strokeWidth="1.5" />
+      </svg>
+    </div>
+  );
+}
+
+// ─── Floating Basketballs (Desktop) ─────────────────────────────
+
+function FloatingBasketballs() {
+  return (
+    <div className="hidden lg:block absolute inset-0 pointer-events-none overflow-hidden">
+      <span
+        className="absolute top-[18%] left-[8%] text-3xl opacity-[0.06]"
+        style={{ animation: 'float-drift 8s ease-in-out infinite' }}
+      >
+        🏀
+      </span>
+      <span
+        className="absolute top-[55%] right-[9%] text-2xl opacity-[0.05]"
+        style={{ animation: 'float-drift 10s ease-in-out infinite 2s' }}
+      >
+        🏀
+      </span>
+      <span
+        className="absolute top-[30%] right-[4%] text-4xl opacity-[0.04]"
+        style={{ animation: 'float-drift 12s ease-in-out infinite 4s' }}
+      >
+        🏀
+      </span>
+      <span
+        className="absolute bottom-[25%] left-[5%] text-xl opacity-[0.04]"
+        style={{ animation: 'float-drift 9s ease-in-out infinite 1s' }}
+      >
+        🏀
       </span>
     </div>
   );
 }
 
-function CountdownTimer({ target, label }: { target: string; label: string }) {
-  const [now, setNow] = useState(Date.now());
+// ─── Bracket Arms (Desktop) ────────────────────────────────────
 
-  useEffect(() => {
-    const interval = setInterval(() => setNow(Date.now()), 1000);
-    return () => clearInterval(interval);
-  }, []);
-
-  const diff = Math.max(0, new Date(target).getTime() - now);
-  const days = Math.floor(diff / 86400000);
-  const hours = Math.floor((diff % 86400000) / 3600000);
-  const minutes = Math.floor((diff % 3600000) / 60000);
-  const seconds = Math.floor((diff % 60000) / 1000);
-  const showDays = days > 0;
-
+function BracketArms() {
   return (
-    <div className="text-center">
-      <p className="text-label-accent mb-3">{label}</p>
-      <div className="flex justify-center gap-3">
-        {showDays && <CountdownBox value={days} unit="DAYS" />}
-        <CountdownBox value={hours} unit="HRS" />
-        <CountdownBox value={minutes} unit="MIN" />
-        {!showDays && <CountdownBox value={seconds} unit="SEC" />}
-      </div>
+    <div className="hidden lg:block absolute inset-0 pointer-events-none">
+      {/* Left bracket */}
+      <div className="absolute top-1/2 left-[4%] -translate-y-1/2 w-[35px] h-[180px] border-l-2 border-t-2 border-b-2 border-[rgba(255,87,34,0.07)] rounded-l-md" />
+      {/* Right bracket */}
+      <div className="absolute top-1/2 right-[4%] -translate-y-1/2 w-[35px] h-[180px] border-r-2 border-t-2 border-b-2 border-[rgba(255,87,34,0.07)] rounded-r-md" />
     </div>
   );
 }
@@ -251,22 +294,25 @@ function CountdownTimer({ target, label }: { target: string; label: string }) {
 
 function Wordmark() {
   return (
-    <div className="flex justify-center mb-6">
+    <div
+      className="flex justify-center mb-6"
+      style={{ animation: 'scale-in 600ms ease-out both' }}
+    >
       <div className="inline-flex flex-col items-center" style={{ gap: 0 }}>
         <span
-          className="text-[0.75rem] tracking-[0.5em]"
+          className="text-[0.95rem] md:text-[1.1rem] lg:text-[1.25rem] tracking-[0.5em]"
           style={{ fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 800, color: 'rgba(232, 230, 225, 0.4)', lineHeight: 1 }}
         >
           SURVIVE
         </span>
         <span
-          className="text-[1.5rem] tracking-[0.15em] text-[#FF5722]"
+          className="text-[1.95rem] md:text-[2.25rem] lg:text-[2.5rem] tracking-[0.15em] text-[#FF5722]"
           style={{ fontFamily: "'Oswald', sans-serif", fontWeight: 700, lineHeight: 1.1 }}
         >
           THE
         </span>
         <span
-          className="text-[2.75rem] tracking-[-0.02em] text-[#E8E6E1]"
+          className="text-[3.6rem] md:text-[4.5rem] lg:text-[5.5rem] tracking-[-0.02em] text-[#E8E6E1]"
           style={{ fontFamily: "'Oswald', sans-serif", fontWeight: 700, lineHeight: 0.85 }}
         >
           DANCE
@@ -280,12 +326,24 @@ function Wordmark() {
 
 function TapToEnter() {
   return (
-    <p
-      className="text-[#5F6B7A] text-xs tracking-[0.15em] mt-8"
-      style={{ fontFamily: "'Space Mono', monospace", animation: 'pulse-dot 2s ease-in-out infinite' }}
-    >
-      &mdash; tap to enter &mdash;
-    </p>
+    <div className="absolute bottom-[10vh] md:bottom-[12vh] left-0 right-0 text-center">
+      <p
+        className="text-[#5F6B7A] text-xs tracking-[0.15em]"
+        style={{ fontFamily: "'Space Mono', monospace", animation: 'pulse-tap 2.5s ease-in-out infinite' }}
+      >
+        &mdash; tap to enter &mdash;
+      </p>
+    </div>
+  );
+}
+
+// ─── Stat Number ────────────────────────────────────────────────
+
+function StatNum({ children }: { children: React.ReactNode }) {
+  return (
+    <span className="text-[#FF5722] font-bold text-base md:text-lg" style={{ fontFamily: "'Space Mono', monospace" }}>
+      {children}
+    </span>
   );
 }
 
@@ -294,25 +352,30 @@ function TapToEnter() {
 function PreTournamentSplash({ data }: { data: SplashData }) {
   return (
     <>
-      <Wordmark />
-      <p
-        className="text-[0.55rem] tracking-[0.35em] text-[#FF5722] uppercase mb-8"
-        style={{ fontFamily: "'Space Mono', monospace" }}
-      >
-        EVERY PICK COULD BE YOUR LAST
-      </p>
+      <AnimateIn delay={0}>
+        <Wordmark />
+      </AnimateIn>
+      <AnimateIn delay={300}>
+        <p
+          className="text-[0.55rem] md:text-[0.65rem] tracking-[0.35em] text-[#FF5722] uppercase mb-8"
+          style={{ fontFamily: "'Space Mono', monospace" }}
+        >
+          EVERY PICK COULD BE YOUR LAST
+        </p>
+      </AnimateIn>
       {data.countdownTarget && data.countdownLabel && (
-        <div className="mb-6">
+        <AnimateIn delay={500} className="mb-6">
           <CountdownTimer target={data.countdownTarget} label={data.countdownLabel} />
-        </div>
+        </AnimateIn>
       )}
-      <p className="text-sm text-[#9BA3AE]" style={{ fontFamily: "'DM Sans', sans-serif" }}>
-        <span className="text-[#E8E6E1] font-bold" style={{ fontFamily: "'Space Mono', monospace" }}>{data.totalPlayers}</span>
-        {' '}players &middot;{' '}
-        <span className="text-[#E8E6E1] font-bold" style={{ fontFamily: "'Space Mono', monospace" }}>{data.totalPools}</span>
-        {' '}pools ready
-      </p>
-      <TapToEnter />
+      <AnimateIn delay={800}>
+        <p className="text-sm md:text-base text-[#9BA3AE]" style={{ fontFamily: "'DM Sans', sans-serif" }}>
+          <StatNum>{data.totalPlayers}</StatNum>
+          {' '}players &middot;{' '}
+          <StatNum>{data.totalPools}</StatNum>
+          {' '}pools ready
+        </p>
+      </AnimateIn>
     </>
   );
 }
@@ -344,51 +407,58 @@ function PreRoundSplash({ data }: { data: SplashData }) {
 
   return (
     <>
-      <h1
-        className="text-2xl font-bold text-[#E8E6E1] mb-6"
-        style={{ fontFamily: "'Oswald', sans-serif", textTransform: 'uppercase' }}
-      >
-        {data.roundName}
-      </h1>
+      <AnimateIn delay={0}>
+        <h1
+          className="text-2xl md:text-4xl lg:text-5xl font-bold text-[#E8E6E1] mb-6"
+          style={{ fontFamily: "'Oswald', sans-serif", textTransform: 'uppercase' }}
+        >
+          {data.roundName}
+        </h1>
+      </AnimateIn>
       {data.countdownTarget && data.countdownLabel && (
-        <div className="mb-6">
+        <AnimateIn delay={300} className="mb-6">
           <CountdownTimer target={data.countdownTarget} label={data.countdownLabel} />
-        </div>
+        </AnimateIn>
       )}
-      <p className="text-sm text-[#9BA3AE] mb-6" style={{ fontFamily: "'DM Sans', sans-serif" }}>
-        <span className="text-[#E8E6E1] font-bold" style={{ fontFamily: "'Space Mono', monospace" }}>{data.gamesTotal}</span>
-        {' '}games today
-      </p>
+      <AnimateIn delay={500}>
+        <p className="text-sm md:text-base text-[#9BA3AE] mb-6" style={{ fontFamily: "'DM Sans', sans-serif" }}>
+          <StatNum>{data.gamesTotal}</StatNum>
+          {' '}games today
+        </p>
+      </AnimateIn>
 
       {/* Pick status card */}
-      {allEliminated ? (
-        <div className="bg-[rgba(155,163,174,0.08)] border border-[rgba(155,163,174,0.2)] rounded-[10px] px-4 py-3">
-          <p className="text-sm font-semibold text-[#9BA3AE]" style={{ fontFamily: "'DM Sans', sans-serif" }}>
-            SPECTATING
-          </p>
-        </div>
-      ) : data.userEntriesAlive > 0 ? (
-        <div className={`${pickCardBg} border ${pickCardBorder} rounded-[10px] px-4 py-3 space-y-1`}>
-          <p className={`text-sm font-semibold ${pickCardText}`} style={{ fontFamily: "'DM Sans', sans-serif" }}>
-            {data.userEntriesPicked} of {data.userEntriesAlive} {data.userEntriesAlive === 1 ? 'entry' : 'entries'} picked {allPicked ? '✓' : ''}
-          </p>
-          {data.userEntriesNeedPick > 0 && (
-            <p className="text-sm font-semibold text-[#FF5722]" style={{ fontFamily: "'DM Sans', sans-serif" }}>
-              ⚠ {data.userEntriesNeedPick} {data.userEntriesNeedPick === 1 ? 'entry needs' : 'entries need'} a pick
+      <AnimateIn delay={700}>
+        {allEliminated ? (
+          <div className="bg-[rgba(155,163,174,0.08)] border border-[rgba(155,163,174,0.2)] rounded-[10px] px-4 py-3">
+            <p className="text-sm font-semibold text-[#9BA3AE]" style={{ fontFamily: "'DM Sans', sans-serif" }}>
+              SPECTATING
             </p>
-          )}
-        </div>
-      ) : null}
+          </div>
+        ) : data.userEntriesAlive > 0 ? (
+          <div className={`${pickCardBg} border ${pickCardBorder} rounded-[10px] px-4 py-3 space-y-1`}>
+            <p className={`text-sm font-semibold ${pickCardText}`} style={{ fontFamily: "'DM Sans', sans-serif" }}>
+              {data.userEntriesPicked} of {data.userEntriesAlive} {data.userEntriesAlive === 1 ? 'entry' : 'entries'} picked {allPicked ? '✓' : ''}
+            </p>
+            {data.userEntriesNeedPick > 0 && (
+              <p className="text-sm font-semibold text-[#FF5722]" style={{ fontFamily: "'DM Sans', sans-serif" }}>
+                ⚠ {data.userEntriesNeedPick} {data.userEntriesNeedPick === 1 ? 'entry needs' : 'entries need'} a pick
+              </p>
+            )}
+          </div>
+        ) : null}
+      </AnimateIn>
 
       {/* Entry alive/eliminated summary */}
       {data.userEntriesTotal > 0 && data.userEntriesEliminated > 0 && (
-        <p className="text-xs text-[#9BA3AE] mt-3" style={{ fontFamily: "'DM Sans', sans-serif" }}>
-          <span className="text-[#4CAF50]">{data.userEntriesAlive} alive</span>
-          {' '}&middot;{' '}
-          <span className="text-[#EF5350]">{data.userEntriesEliminated} eliminated</span>
-        </p>
+        <AnimateIn delay={900}>
+          <p className="text-xs text-[#9BA3AE] mt-3" style={{ fontFamily: "'DM Sans', sans-serif" }}>
+            <span className="text-[#4CAF50]">{data.userEntriesAlive} alive</span>
+            {' '}&middot;{' '}
+            <span className="text-[#EF5350]">{data.userEntriesEliminated} eliminated</span>
+          </p>
+        </AnimateIn>
       )}
-      <TapToEnter />
     </>
   );
 }
@@ -401,65 +471,74 @@ function GamesLiveSplash({ data }: { data: SplashData }) {
 
   return (
     <>
-      <div className="flex items-center justify-center gap-2 mb-1">
-        <span
-          className="w-2.5 h-2.5 rounded-full bg-[#EF5350]"
-          style={{ animation: 'pulse-dot 1.5s ease-in-out infinite' }}
-        />
-        <h1
-          className="text-2xl font-bold text-[#E8E6E1]"
-          style={{ fontFamily: "'Oswald', sans-serif", textTransform: 'uppercase' }}
-        >
-          GAMES ARE LIVE
-        </h1>
-      </div>
-      <p className="text-sm text-[#9BA3AE] mb-6" style={{ fontFamily: "'DM Sans', sans-serif" }}>
-        {data.roundName}
-      </p>
+      <AnimateIn delay={0}>
+        <div className="flex items-center justify-center gap-2 mb-1">
+          <span
+            className="w-2.5 h-2.5 md:w-3 md:h-3 rounded-full bg-[#EF5350]"
+            style={{ animation: 'pulse-dot 1.5s ease-in-out infinite' }}
+          />
+          <h1
+            className="text-2xl md:text-4xl lg:text-5xl font-bold text-[#E8E6E1]"
+            style={{ fontFamily: "'Oswald', sans-serif", textTransform: 'uppercase' }}
+          >
+            GAMES ARE LIVE
+          </h1>
+        </div>
+      </AnimateIn>
+      <AnimateIn delay={200}>
+        <p className="text-sm md:text-base text-[#9BA3AE] mb-6" style={{ fontFamily: "'DM Sans', sans-serif" }}>
+          {data.roundName}
+        </p>
+      </AnimateIn>
 
       {/* Progress bar */}
-      <div className="w-full max-w-[280px] mx-auto bg-[#111827] border border-[rgba(255,255,255,0.05)] rounded-[10px] px-4 py-3 mb-6">
-        <p className="text-xs text-[#9BA3AE] mb-2" style={{ fontFamily: "'DM Sans', sans-serif" }}>
-          <span className="text-[#E8E6E1] font-bold" style={{ fontFamily: "'Space Mono', monospace" }}>{data.gamesFinal}</span>
-          {' '}of {data.gamesTotal} games final
-        </p>
-        <div className="w-full h-2 bg-[#1B2A3D] rounded-full overflow-hidden">
-          <div
-            className="h-full bg-[#4CAF50] rounded-full transition-all"
-            style={{ width: `${progress}%` }}
-          />
+      <AnimateIn delay={400}>
+        <div className="w-full max-w-[280px] md:max-w-[340px] mx-auto bg-[#111827] border border-[rgba(255,255,255,0.05)] rounded-[10px] px-4 py-3 mb-6">
+          <p className="text-xs md:text-sm text-[#9BA3AE] mb-2" style={{ fontFamily: "'DM Sans', sans-serif" }}>
+            <StatNum>{data.gamesFinal}</StatNum>
+            {' '}of {data.gamesTotal} games final
+          </p>
+          <div className="w-full h-2 bg-[#1B2A3D] rounded-full overflow-hidden">
+            <div
+              className="h-full bg-[#4CAF50] rounded-full transition-all"
+              style={{ width: `${progress}%` }}
+            />
+          </div>
+          <p className="text-right text-[0.6rem] text-[#5F6B7A] mt-1" style={{ fontFamily: "'Space Mono', monospace" }}>
+            {Math.round(progress)}%
+          </p>
         </div>
-        <p className="text-right text-[0.6rem] text-[#5F6B7A] mt-1" style={{ fontFamily: "'Space Mono', monospace" }}>
-          {Math.round(progress)}%
-        </p>
-      </div>
+      </AnimateIn>
 
       {data.eliminationsToday > 0 && (
-        <p className="text-sm text-[#9BA3AE] mb-6" style={{ fontFamily: "'DM Sans', sans-serif" }}>
-          <span className="text-[#EF5350] font-bold" style={{ fontFamily: "'Space Mono', monospace" }}>{data.eliminationsToday}</span>
-          {' '}{data.eliminationsToday === 1 ? 'entry' : 'entries'} eliminated today
-        </p>
+        <AnimateIn delay={600}>
+          <p className="text-sm md:text-base text-[#9BA3AE] mb-6" style={{ fontFamily: "'DM Sans', sans-serif" }}>
+            <span className="text-[#EF5350] font-bold text-base md:text-lg" style={{ fontFamily: "'Space Mono', monospace" }}>{data.eliminationsToday}</span>
+            {' '}{data.eliminationsToday === 1 ? 'entry' : 'entries'} eliminated today
+          </p>
+        </AnimateIn>
       )}
 
       {/* Top picked teams */}
       {data.topPickedTeams.length > 0 && totalPicks > 0 && (
-        <div className="w-full max-w-[280px] mx-auto text-left">
-          <p className="text-label-accent mb-2">MOST PICKED</p>
-          <div className="space-y-1.5">
-            {data.topPickedTeams.map((team) => (
-              <div key={team.name} className="flex items-center justify-between">
-                <span className="text-sm text-[#E8E6E1]" style={{ fontFamily: "'Oswald', sans-serif" }}>
-                  ({team.seed}) {team.name}
-                </span>
-                <span className="text-xs text-[#9BA3AE]" style={{ fontFamily: "'Space Mono', monospace" }}>
-                  {Math.round((team.count / totalPicks) * 100)}%
-                </span>
-              </div>
-            ))}
+        <AnimateIn delay={800}>
+          <div className="w-full max-w-[280px] md:max-w-[340px] mx-auto text-left">
+            <p className="text-label-accent mb-2">MOST PICKED</p>
+            <div className="space-y-1.5">
+              {data.topPickedTeams.map((team) => (
+                <div key={team.name} className="flex items-center justify-between">
+                  <span className="text-sm md:text-base text-[#E8E6E1]" style={{ fontFamily: "'Oswald', sans-serif" }}>
+                    ({team.seed}) {team.name}
+                  </span>
+                  <span className="text-xs text-[#9BA3AE]" style={{ fontFamily: "'Space Mono', monospace" }}>
+                    {Math.round((team.count / totalPicks) * 100)}%
+                  </span>
+                </div>
+              ))}
+            </div>
           </div>
-        </div>
+        </AnimateIn>
       )}
-      <TapToEnter />
     </>
   );
 }
@@ -472,63 +551,74 @@ function RoundCompleteSplash({ data }: { data: SplashData }) {
 
   return (
     <>
-      <h1
-        className="text-2xl font-bold text-[#E8E6E1] mb-1"
-        style={{ fontFamily: "'Oswald', sans-serif", textTransform: 'uppercase' }}
-      >
-        ROUND COMPLETE
-      </h1>
-      <p className="text-sm text-[#9BA3AE] mb-6" style={{ fontFamily: "'DM Sans', sans-serif" }}>
-        {data.lastCompletedRoundName || data.roundName}
-      </p>
+      <AnimateIn delay={0}>
+        <h1
+          className="text-2xl md:text-4xl lg:text-5xl font-bold text-[#E8E6E1] mb-1"
+          style={{ fontFamily: "'Oswald', sans-serif", textTransform: 'uppercase' }}
+        >
+          ROUND COMPLETE
+        </h1>
+      </AnimateIn>
+      <AnimateIn delay={200}>
+        <p className="text-sm md:text-base text-[#9BA3AE] mb-6" style={{ fontFamily: "'DM Sans', sans-serif" }}>
+          {data.lastCompletedRoundName || data.roundName}
+        </p>
+      </AnimateIn>
 
       {/* Survival results — show both if mixed */}
       {hasSurvived && (
-        <div className="bg-[rgba(76,175,80,0.08)] border border-[rgba(76,175,80,0.2)] rounded-[10px] px-5 py-3 mb-3">
-          <p
-            className="text-base font-bold text-[#4CAF50]"
-            style={{ fontFamily: "'Oswald', sans-serif", textTransform: 'uppercase' }}
-          >
-            ✓ {data.userSurvivedCount} {data.userSurvivedCount === 1 ? 'entry' : 'entries'} survived
-          </p>
-        </div>
+        <AnimateIn delay={400}>
+          <div className="bg-[rgba(76,175,80,0.08)] border border-[rgba(76,175,80,0.2)] rounded-[10px] px-5 py-3 mb-3">
+            <p
+              className="text-base md:text-lg font-bold text-[#4CAF50]"
+              style={{ fontFamily: "'Oswald', sans-serif", textTransform: 'uppercase' }}
+            >
+              ✓ {data.userSurvivedCount} {data.userSurvivedCount === 1 ? 'entry' : 'entries'} survived
+            </p>
+          </div>
+        </AnimateIn>
       )}
       {hasEliminated && (
-        <div className="bg-[rgba(239,83,80,0.08)] border border-[rgba(239,83,80,0.2)] rounded-[10px] px-5 py-3 mb-3">
-          <p
-            className="text-base font-bold text-[#EF5350]"
-            style={{ fontFamily: "'Oswald', sans-serif", textTransform: 'uppercase' }}
-          >
-            ☠ {data.userEliminatedThisRound} {data.userEliminatedThisRound === 1 ? 'entry' : 'entries'} eliminated
-          </p>
-          {data.eliminatedTeamName && (
-            <p className="text-xs text-[#EF5350] opacity-70 mt-0.5" style={{ fontFamily: "'DM Sans', sans-serif" }}>
-              Picked {data.eliminatedTeamName}
+        <AnimateIn delay={hasSurvived ? 550 : 400}>
+          <div className="bg-[rgba(239,83,80,0.08)] border border-[rgba(239,83,80,0.2)] rounded-[10px] px-5 py-3 mb-3">
+            <p
+              className="text-base md:text-lg font-bold text-[#EF5350]"
+              style={{ fontFamily: "'Oswald', sans-serif", textTransform: 'uppercase' }}
+            >
+              ☠ {data.userEliminatedThisRound} {data.userEliminatedThisRound === 1 ? 'entry' : 'entries'} eliminated
             </p>
-          )}
-        </div>
+            {data.eliminatedTeamName && (
+              <p className="text-xs text-[#EF5350] opacity-70 mt-0.5" style={{ fontFamily: "'DM Sans', sans-serif" }}>
+                Picked {data.eliminatedTeamName}
+              </p>
+            )}
+          </div>
+        </AnimateIn>
       )}
 
       {data.eliminationsToday > 0 && (
-        <p className="text-sm text-[#9BA3AE] mt-3 mb-4" style={{ fontFamily: "'DM Sans', sans-serif" }}>
-          <span className="text-[#EF5350] font-bold" style={{ fontFamily: "'Space Mono', monospace" }}>{data.eliminationsToday}</span>
-          {' '}eliminated &middot;{' '}
-          <span className="text-[#4CAF50] font-bold" style={{ fontFamily: "'Space Mono', monospace" }}>{data.totalAlive}</span>
-          {' '}still alive
-        </p>
+        <AnimateIn delay={700}>
+          <p className="text-sm md:text-base text-[#9BA3AE] mt-3 mb-4" style={{ fontFamily: "'DM Sans', sans-serif" }}>
+            <span className="text-[#EF5350] font-bold text-base md:text-lg" style={{ fontFamily: "'Space Mono', monospace" }}>{data.eliminationsToday}</span>
+            {' '}eliminated &middot;{' '}
+            <span className="text-[#4CAF50] font-bold text-base md:text-lg" style={{ fontFamily: "'Space Mono', monospace" }}>{data.totalAlive}</span>
+            {' '}still alive
+          </p>
+        </AnimateIn>
       )}
 
       {data.nextRoundName && (
-        <div className="text-sm text-[#9BA3AE]" style={{ fontFamily: "'DM Sans', sans-serif" }}>
-          <p>
-            Next round: <span className="text-[#E8E6E1]">{data.nextRoundName}</span>
-          </p>
-          {data.nextRoundDate && (
-            <p className="text-xs text-[#5F6B7A] mt-0.5">Starts {formatDateET(data.nextRoundDate)}</p>
-          )}
-        </div>
+        <AnimateIn delay={900}>
+          <div className="text-sm md:text-base text-[#9BA3AE]" style={{ fontFamily: "'DM Sans', sans-serif" }}>
+            <p>
+              Next round: <span className="text-[#E8E6E1]">{data.nextRoundName}</span>
+            </p>
+            {data.nextRoundDate && (
+              <p className="text-xs text-[#5F6B7A] mt-0.5">Starts {formatDateET(data.nextRoundDate)}</p>
+            )}
+          </div>
+        </AnimateIn>
       )}
-      <TapToEnter />
     </>
   );
 }
@@ -538,17 +628,22 @@ function RoundCompleteSplash({ data }: { data: SplashData }) {
 function TournamentCompleteSplash() {
   return (
     <>
-      <p className="text-5xl mb-4">🏆</p>
-      <h1
-        className="text-2xl font-bold text-[#E8E6E1] mb-6"
-        style={{ fontFamily: "'Oswald', sans-serif", textTransform: 'uppercase' }}
-      >
-        TOURNAMENT COMPLETE
-      </h1>
-      <p className="text-sm text-[#9BA3AE]" style={{ fontFamily: "'DM Sans', sans-serif" }}>
-        See you next March.
-      </p>
-      <TapToEnter />
+      <AnimateIn delay={0}>
+        <p className="text-5xl md:text-6xl mb-4">🏆</p>
+      </AnimateIn>
+      <AnimateIn delay={300}>
+        <h1
+          className="text-2xl md:text-4xl lg:text-5xl font-bold text-[#E8E6E1] mb-6"
+          style={{ fontFamily: "'Oswald', sans-serif", textTransform: 'uppercase' }}
+        >
+          TOURNAMENT COMPLETE
+        </h1>
+      </AnimateIn>
+      <AnimateIn delay={600}>
+        <p className="text-sm md:text-base text-[#9BA3AE]" style={{ fontFamily: "'DM Sans', sans-serif" }}>
+          See you next March.
+        </p>
+      </AnimateIn>
     </>
   );
 }
@@ -560,12 +655,10 @@ export function SplashOverlay({ userId }: { userId: string | undefined }) {
   const [fading, setFading] = useState(false);
   const [data, setData] = useState<SplashData | null>(null);
   const dismissedRef = useRef(false);
-  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const dismiss = useCallback(() => {
     if (dismissedRef.current) return;
     dismissedRef.current = true;
-    if (timerRef.current) clearTimeout(timerRef.current);
     setFading(true);
     markSplashSeen();
     setTimeout(() => setVisible(false), 300);
@@ -576,16 +669,8 @@ export function SplashOverlay({ userId }: { userId: string | undefined }) {
     setVisible(true);
 
     fetchSplashData(userId)
-      .then(result => {
-        setData(result);
-        // Auto-dismiss 5 seconds after data loads
-        timerRef.current = setTimeout(dismiss, 5000);
-      })
+      .then(result => setData(result))
       .catch(() => dismiss());
-
-    return () => {
-      if (timerRef.current) clearTimeout(timerRef.current);
-    };
   }, [userId, dismiss]);
 
   if (!visible) return null;
@@ -593,12 +678,18 @@ export function SplashOverlay({ userId }: { userId: string | undefined }) {
   return (
     <div
       onClick={dismiss}
-      className="fixed inset-0 z-50 bg-[#0D1B2A] flex items-center justify-center cursor-pointer"
+      className="fixed inset-0 z-50 bg-[#0D1B2A] flex flex-col items-center justify-start pt-[12vh] md:pt-[14vh] cursor-pointer overflow-hidden"
       style={{
         animation: fading ? 'fade-out 300ms ease-out forwards' : 'fade-in 300ms ease-out',
       }}
     >
-      <div className="text-center px-6 max-w-sm w-full">
+      {/* Background layers */}
+      <CourtLines />
+      <FloatingBasketballs />
+      <BracketArms />
+
+      {/* Content */}
+      <div className="relative z-10 text-center px-6 max-w-sm md:max-w-lg lg:max-w-2xl w-full">
         {!data ? (
           <Wordmark />
         ) : data.tournamentStatus === 'tournament_complete' ? (
@@ -613,6 +704,9 @@ export function SplashOverlay({ userId }: { userId: string | undefined }) {
           <PreRoundSplash data={data} />
         )}
       </div>
+
+      {/* Tap to enter — anchored at bottom */}
+      {data && <TapToEnter />}
     </div>
   );
 }
