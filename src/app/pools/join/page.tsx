@@ -6,6 +6,7 @@ import { useAuth } from '@/components/auth/AuthProvider';
 import { useActivePool } from '@/hooks/useActivePool';
 import { supabase } from '@/lib/supabase/client';
 import { getTournamentState, canJoinOrCreate } from '@/lib/status';
+import TournamentInProgress from '@/components/TournamentInProgress';
 
 const inputClass = "w-full px-4 py-3 bg-[#1B2A3D] border border-[rgba(255,255,255,0.05)] rounded-[12px] text-[#E8E6E1] placeholder-[#9BA3AE] focus:outline-none focus:ring-2 focus:ring-[#FF5722] focus:border-transparent transition-colors";
 
@@ -20,8 +21,20 @@ function JoinPoolContent() {
   const [entryName, setEntryName] = useState('');
   const [poolInfo, setPoolInfo] = useState<any>(null);
   const [existingEntryCount, setExistingEntryCount] = useState(0);
+  const [tournamentStarted, setTournamentStarted] = useState(false);
+  const [checkingTournament, setCheckingTournament] = useState(true);
   const router = useRouter();
   const autoLookedUp = useRef(false);
+
+  // Check if tournament has started
+  useEffect(() => {
+    async function checkTournament() {
+      const state = await getTournamentState();
+      setTournamentStarted(!canJoinOrCreate(state));
+      setCheckingTournament(false);
+    }
+    checkTournament();
+  }, []);
 
   // Auto-populate join code from URL param
   useEffect(() => {
@@ -115,6 +128,18 @@ function JoinPoolContent() {
       setLoading(false);
     }
   };
+
+  if (checkingTournament) {
+    return (
+      <div className="min-h-screen bg-[#0D1B2A] flex items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-2 border-[rgba(255,255,255,0.08)] border-t-[#FF5722]" />
+      </div>
+    );
+  }
+
+  if (tournamentStarted) {
+    return <TournamentInProgress />;
+  }
 
   // Redirect unauthenticated users, preserving join code in sessionStorage
   if (!user) {

@@ -7,6 +7,7 @@ import { useAuth } from '@/components/auth/AuthProvider';
 import { useActivePool } from '@/hooks/useActivePool';
 import { supabase } from '@/lib/supabase/client';
 import { getTournamentState, canJoinOrCreate } from '@/lib/status';
+import TournamentInProgress from '@/components/TournamentInProgress';
 
 const inputClass = "w-full px-4 py-3 bg-[#1B2A3D] border border-[rgba(255,255,255,0.05)] rounded-[12px] text-[#E8E6E1] placeholder-[#9BA3AE] focus:outline-none focus:ring-2 focus:ring-[#FF5722] focus:border-transparent transition-colors";
 
@@ -238,30 +239,7 @@ export default function CreatePool() {
   }
 
   if (tournamentStarted) {
-    return (
-      <div className="min-h-screen bg-[#0D1B2A] flex items-center justify-center px-5 pb-24">
-        <div className="max-w-sm w-full text-center">
-          <div className="w-16 h-16 bg-[rgba(239,83,80,0.1)] rounded-full flex items-center justify-center mx-auto mb-5">
-            <svg className="w-8 h-8 text-[#EF5350]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-            </svg>
-          </div>
-          <h1 className="text-xl font-bold text-[#E8E6E1] mb-2" style={{ fontFamily: "'Oswald', sans-serif", textTransform: 'uppercase' }}>
-            Pool Creation Closed
-          </h1>
-          <p className="text-[#9BA3AE] text-sm mb-6" style={{ fontFamily: "'DM Sans', sans-serif" }}>
-            Pool creation is closed during the tournament.
-          </p>
-          <Link
-            href="/dashboard"
-            className="inline-block px-6 py-3 rounded-[12px] text-sm font-semibold text-[#9BA3AE] bg-[#1B2A3D] border border-[rgba(255,255,255,0.05)] hover:border-[rgba(255,87,34,0.3)] hover:text-[#E8E6E1] transition-colors"
-            style={{ fontFamily: "'DM Sans', sans-serif" }}
-          >
-            Back to Dashboard
-          </Link>
-        </div>
-      </div>
-    );
+    return <TournamentInProgress />;
   }
 
   return (
