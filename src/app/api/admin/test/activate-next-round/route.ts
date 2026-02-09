@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
-import { supabaseAdmin } from '@/lib/supabase/admin';
+import { getTournamentStateServer } from '@/lib/status-server';
 
 export async function POST(request: NextRequest) {
   // Auth: must be a pool creator
@@ -22,64 +22,26 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    // Get all rounds ordered by date
-    const { data: rounds } = await supabaseAdmin
-      .from('rounds')
-      .select('id, name, date, is_active')
-      .order('date', { ascending: true });
-
-    if (!rounds || rounds.length === 0) {
-      return NextResponse.json({ error: 'No rounds found' }, { status: 400 });
+    const state = await getTournamentStateServer();
+    if (!state.currentRound) {
+      return NextResponse.json({ error: 'No current round' }, { status: 400 });
     }
 
-    const currentlyActive = rounds.find(r => r.is_active);
-
-    // Find the next round after the active one (or the first round if none active)
-    let nextRound;
-    if (currentlyActive) {
-      const currentIndex = rounds.findIndex(r => r.id === currentlyActive.id);
-      nextRound = rounds[currentIndex + 1];
-
-      if (!nextRound) {
-        return NextResponse.json({ error: 'No more rounds — tournament is complete' }, { status: 400 });
-      }
-
-      // Deactivate current
-      await supabaseAdmin
-        .from('rounds')
-        .update({ is_active: false })
-        .eq('id', currentlyActive.id);
-    } else {
-      // No active round — activate the first one that has non-final games
-      nextRound = rounds.find(r => !r.is_active);
-      if (!nextRound) {
-        return NextResponse.json({ error: 'All rounds are complete' }, { status: 400 });
-      }
+    if (state.currentRound.status !== 'round_complete') {
+      return NextResponse.json({
+        error: `Current round "${state.currentRound.name}" is not complete yet. Complete all games first.`,
+        gamesRemaining: state.currentRound.gamesScheduled + state.currentRound.gamesInProgress,
+      }, { status: 400 });
     }
 
-    // Activate next round
-    await supabaseAdmin
-      .from('rounds')
-      .update({ is_active: true })
-      .eq('id', nextRound.id);
-
-    // If this is the first round activation, transition pools from open → active
-    const isFirstRound = rounds[0]?.id === nextRound.id;
-    let poolsTransitioned = 0;
-    if (isFirstRound) {
-      const { data: transitioned } = await supabaseAdmin
-        .from('pools')
-        .update({ status: 'active' })
-        .eq('status', 'open')
-        .select('id');
-      poolsTransitioned = transitioned?.length || 0;
-    }
-
+    // Current round is complete — the next pre_round round is automatically the new current.
+    // Re-fetch state to confirm
+    const newState = await getTournamentStateServer();
     return NextResponse.json({
       success: true,
-      deactivated: currentlyActive?.name || null,
-      activated: nextRound.name,
-      poolsTransitioned,
+      previousRound: state.currentRound.name,
+      newCurrentRound: newState.currentRound?.name || 'Tournament complete',
+      tournamentStatus: newState.status,
     });
 
   } catch (err: any) {

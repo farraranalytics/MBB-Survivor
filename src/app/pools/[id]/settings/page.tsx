@@ -5,6 +5,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { useAuth } from '@/components/auth/AuthProvider';
 import { useActivePool } from '@/hooks/useActivePool';
 import { supabase } from '@/lib/supabase/client';
+import { getTournamentState, canJoinOrCreate } from '@/lib/status';
 import {
   getPoolInfo,
   getPoolMembers,
@@ -274,6 +275,9 @@ export default function PoolSettingsPage() {
   // Join code copy
   const [copiedCode, setCopiedCode] = useState(false);
 
+  // Tournament state for leave pool check
+  const [canLeavePool, setCanLeavePool] = useState(false);
+
   // Tournament Simulator state
   const [simRound, setSimRound] = useState<any>(null);
   const [simGames, setSimGames] = useState<any[]>([]);
@@ -302,6 +306,10 @@ export default function PoolSettingsPage() {
         return;
       }
       setPool(poolData);
+
+      // Check if user can leave pool (pre-tournament only)
+      const tournamentState = await getTournamentState();
+      setCanLeavePool(canJoinOrCreate(tournamentState));
       setName(poolData.name);
       setMaxPlayers(poolData.max_players?.toString() || '');
       setEntryFee(poolData.entry_fee > 0 ? poolData.entry_fee.toString() : '');
@@ -441,10 +449,20 @@ export default function PoolSettingsPage() {
   // ── Simulator Helpers ──────────────────────────────────────────
 
   async function loadSimulatorData() {
+    const state = await getTournamentState();
+    const activeRoundId = state.currentRound?.id;
+
+    if (!activeRoundId) {
+      setSimRound(null);
+      setSimGames([]);
+      setSimStats(null);
+      return;
+    }
+
     const { data: round } = await supabase
       .from('rounds')
-      .select('id, name, date, is_active')
-      .eq('is_active', true)
+      .select('id, name, date')
+      .eq('id', activeRoundId)
       .single();
 
     if (!round) {
@@ -1018,7 +1036,7 @@ export default function PoolSettingsPage() {
         )}
 
         {/* ─── SECTION 6: DANGER ZONE ──────────────────────────────── */}
-        {!isCreator && pool.status === 'open' && (
+        {!isCreator && canLeavePool && (
           <section>
             <SectionHeader label="Danger Zone" />
             <div className="bg-[rgba(239,83,80,0.05)] border border-[rgba(239,83,80,0.15)] rounded-[14px] p-5">

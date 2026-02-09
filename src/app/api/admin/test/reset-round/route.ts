@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { supabaseAdmin } from '@/lib/supabase/admin';
+import { getTournamentStateServer } from '@/lib/status-server';
 
 export async function POST(request: NextRequest) {
   // Auth: must be a pool creator
@@ -35,13 +36,17 @@ export async function POST(request: NextRequest) {
         .single();
       round = data;
     } else {
-      // Default to active round
-      const { data } = await supabaseAdmin
-        .from('rounds')
-        .select('id, name')
-        .eq('is_active', true)
-        .single();
-      round = data;
+      // Default to current round (derived from game states)
+      const state = await getTournamentStateServer();
+      const currentRoundId = state.currentRound?.id;
+      if (currentRoundId) {
+        const { data } = await supabaseAdmin
+          .from('rounds')
+          .select('id, name')
+          .eq('id', currentRoundId)
+          .single();
+        round = data;
+      }
     }
 
     if (!round) {
@@ -97,11 +102,7 @@ export async function POST(request: NextRequest) {
       .eq('elimination_round_id', round.id)
       .select('id');
 
-    // 5. Re-activate this round
-    await supabaseAdmin
-      .from('rounds')
-      .update({ is_active: true })
-      .eq('id', round.id);
+    // 5. Round becomes current automatically when its games are reset to 'scheduled'
 
     // 6. Revert pools back to active (in case they were completed)
     await supabaseAdmin

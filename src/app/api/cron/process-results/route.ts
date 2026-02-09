@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase/admin';
 import { verifyCronAuth } from '@/lib/cron-auth';
+import { getTournamentStateServer } from '@/lib/status-server';
 import {
   processCompletedGame,
   processMissedPicks,
@@ -27,16 +28,12 @@ export async function GET(request: NextRequest) {
       errors: [] as string[],
     };
 
-    // 1. Get active round and its games that aren't final yet
-    const { data: activeRound } = await supabaseAdmin
-      .from('rounds')
-      .select('id, name, date')
-      .eq('is_active', true)
-      .single();
-
-    if (!activeRound) {
-      return NextResponse.json({ message: 'No active round', results });
+    // 1. Get current round from derived tournament state
+    const state = await getTournamentStateServer();
+    if (!state.currentRound) {
+      return NextResponse.json({ message: 'No current round', results });
     }
+    const activeRound = { id: state.currentRound.id, name: state.currentRound.name, date: state.currentRound.date };
 
     const { data: pendingGames } = await supabaseAdmin
       .from('games')

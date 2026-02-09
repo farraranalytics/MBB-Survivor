@@ -1,5 +1,6 @@
 // Standings & Leaderboard data fetching
 import { supabase } from '@/lib/supabase/client';
+import { getTournamentState } from '@/lib/status';
 import {
   StandingsPlayer,
   RoundResult,
@@ -32,8 +33,10 @@ export async function getPoolLeaderboard(poolId: string): Promise<PoolLeaderboar
 
   const allRounds = rounds || [];
 
-  // 3. Active round
-  const activeRound = allRounds.find(r => r.is_active) || null;
+  // 3. Active round — derived from tournament state
+  const state = await getTournamentState();
+  const activeRoundId = state.currentRound?.id || null;
+  const activeRound = allRounds.find(r => r.id === activeRoundId) || null;
 
   // 4. All players in pool
   const { data: players, error: playersError } = await supabase
@@ -74,6 +77,7 @@ export async function getPoolLeaderboard(poolId: string): Promise<PoolLeaderboar
       team1_score,
       team2_score,
       winner_id,
+      game_datetime,
       team1:team1_id(id, name, abbreviation, seed),
       team2:team2_id(id, name, abbreviation, seed)
     `);
@@ -209,13 +213,23 @@ export async function getPoolLeaderboard(poolId: string): Promise<PoolLeaderboar
     .map(r => {
       const roundGames = games.filter(g => g.round_id === r.id);
       const is_complete = roundGames.length > 0 && roundGames.every(g => g.status === 'final');
-      return { id: r.id, name: r.name, date: r.date, deadline_datetime: r.deadline_datetime, is_complete };
+      // Compute deadline from earliest game time
+      const gameTimes = roundGames
+        .map(g => (g as any).game_datetime || '')
+        .filter(Boolean)
+        .sort();
+      const deadline_datetime = gameTimes.length > 0
+        ? new Date(new Date(gameTimes[0]).getTime() - 5 * 60 * 1000).toISOString()
+        : r.deadline_datetime; // fallback to stored value if no game times
+      return { id: r.id, name: r.name, date: r.date, deadline_datetime, is_complete };
     });
 
   return {
     pool_id: poolId,
     pool_name: pool.name,
-    pool_status: pool.status as 'open' | 'active' | 'complete',
+    pool_status: state.status === 'pre_tournament' ? 'open'
+      : state.status === 'tournament_complete' ? 'complete'
+      : 'active',
     total_players: standingsPlayers.length,
     alive_players: standingsPlayers.filter(p => !p.is_eliminated).length,
     eliminated_players: standingsPlayers.filter(p => p.is_eliminated).length,
@@ -278,14 +292,12 @@ export async function getMyPools(userId: string): Promise<MyPool[]> {
     poolGroups.get(key)!.push(m);
   }
 
-  // 2. Get active round
-  const { data: activeRounds } = await supabase
-    .from('rounds')
-    .select('id, name, deadline_datetime')
-    .eq('is_active', true)
-    .limit(1);
-
-  const currentRound = activeRounds?.[0] || null;
+  // 2. Get active round — derived from tournament state
+  const state = await getTournamentState();
+  const currentRoundInfo = state.currentRound;
+  const currentRound = currentRoundInfo
+    ? { id: currentRoundInfo.id, name: currentRoundInfo.name, deadline_datetime: currentRoundInfo.deadline }
+    : null;
 
   // 2b. Build round name lookup for elimination display
   const { data: allRounds } = await supabase
@@ -391,7 +403,9 @@ export async function getMyPools(userId: string): Promise<MyPool[]> {
     myPools.push({
       pool_id: pool.id,
       pool_name: pool.name,
-      pool_status: pool.status as 'open' | 'active' | 'complete',
+      pool_status: state.status === 'pre_tournament' ? 'open'
+        : state.status === 'tournament_complete' ? 'complete'
+        : 'active',
       join_code: pool.join_code,
       creator_id: pool.creator_id,
       max_entries_per_user: pool.max_entries_per_user ?? 1,

@@ -153,11 +153,7 @@ export async function checkRoundCompletion(
     return;
   }
 
-  // Round is complete — deactivate it
-  await supabaseAdmin
-    .from('rounds')
-    .update({ is_active: false })
-    .eq('id', roundId);
+  // Round is complete — status is now derived from game states, no need to toggle is_active
   results.roundsCompleted++;
 
   // Check if this was the LAST round
@@ -197,11 +193,6 @@ export async function checkRoundCompletion(
       results.poolsCompleted++;
     }
   } else {
-    // Auto-advance: activate the next round so users can start picking
-    const nextRound = futureRounds[0];
-    await supabaseAdmin
-      .from('rounds')
-      .update({ is_active: true })
-      .eq('id', nextRound.id);
+    // Next round becomes current automatically — status is derived from game states
   }
 }

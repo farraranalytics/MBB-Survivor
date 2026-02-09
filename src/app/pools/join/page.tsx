@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/components/auth/AuthProvider';
 import { useActivePool } from '@/hooks/useActivePool';
 import { supabase } from '@/lib/supabase/client';
+import { getTournamentState, canJoinOrCreate } from '@/lib/status';
 
 const inputClass = "w-full px-4 py-3 bg-[#1B2A3D] border border-[rgba(255,255,255,0.05)] rounded-[12px] text-[#E8E6E1] placeholder-[#9BA3AE] focus:outline-none focus:ring-2 focus:ring-[#FF5722] focus:border-transparent transition-colors";
 
@@ -47,7 +48,10 @@ function JoinPoolContent() {
         if (poolError.code === 'PGRST116') throw new Error('Pool not found. Check your join code.');
         throw poolError;
       }
-      if (pool.status !== 'open') throw new Error('This pool has already started. You can no longer join.');
+      const tournamentState = await getTournamentState();
+      if (!canJoinOrCreate(tournamentState)) {
+        throw new Error('The tournament has already started. You can no longer join pools.');
+      }
 
       const { data: existingEntries } = await supabase
         .from('pool_players')

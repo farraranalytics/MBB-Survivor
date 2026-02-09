@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { useAuth } from '@/components/auth/AuthProvider';
 import { useActivePool } from '@/hooks/useActivePool';
 import { supabase } from '@/lib/supabase/client';
+import { getTournamentState, canJoinOrCreate } from '@/lib/status';
 
 const inputClass = "w-full px-4 py-3 bg-[#1B2A3D] border border-[rgba(255,255,255,0.05)] rounded-[12px] text-[#E8E6E1] placeholder-[#9BA3AE] focus:outline-none focus:ring-2 focus:ring-[#FF5722] focus:border-transparent transition-colors";
 
@@ -126,27 +127,11 @@ export default function CreatePool() {
   const [checkingTournament, setCheckingTournament] = useState(true);
   const router = useRouter();
 
-  // Check if tournament has started (any round is active or has a past deadline)
+  // Check if tournament has started — derived from game states
   useEffect(() => {
     async function checkTournament() {
-      const { data: activeRounds } = await supabase
-        .from('rounds')
-        .select('id')
-        .eq('is_active', true)
-        .limit(1);
-      if (activeRounds && activeRounds.length > 0) {
-        setTournamentStarted(true);
-        setCheckingTournament(false);
-        return;
-      }
-      const { data: pastRounds } = await supabase
-        .from('rounds')
-        .select('id')
-        .lt('deadline_datetime', new Date().toISOString())
-        .limit(1);
-      if (pastRounds && pastRounds.length > 0) {
-        setTournamentStarted(true);
-      }
+      const state = await getTournamentState();
+      setTournamentStarted(!canJoinOrCreate(state));
       setCheckingTournament(false);
     }
     checkTournament();

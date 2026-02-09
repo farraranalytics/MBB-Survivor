@@ -1,5 +1,6 @@
 // Pick submission logic and validation
 import { supabase } from '@/lib/supabase/client';
+import { getTournamentState } from '@/lib/status';
 import {
   PoolPlayer,
   Round,
@@ -26,18 +27,16 @@ export class PickError extends Error {
  * Get the active round (current tournament day)
  */
 export async function getActiveRound(): Promise<Round | null> {
+  const state = await getTournamentState();
+  if (!state.currentRound) return null;
+
   const { data, error } = await supabase
     .from('rounds')
     .select('*')
-    .eq('is_active', true)
-    .order('date', { ascending: true })
-    .limit(1)
+    .eq('id', state.currentRound.id)
     .single();
 
-  if (error && error.code !== 'PGRST116') {
-    throw new PickError(`Failed to fetch active round: ${error.message}`, 'FETCH_ERROR');
-  }
-
+  if (error) return null;
   return data;
 }
 
@@ -257,27 +256,48 @@ export async function getPickableTeams(poolPlayerId: string, roundId: string): P
  * Check pick deadline status for a round
  */
 export async function getPickDeadline(roundId: string): Promise<PickDeadline> {
-  const [roundRes, gamesRes] = await Promise.all([
-    supabase.from('rounds').select('*').eq('id', roundId).single(),
-    supabase.from('games').select('game_datetime').eq('round_id', roundId)
-      .order('game_datetime', { ascending: true }).limit(1).single()
-  ]);
+  // Get round name
+  const { data: round, error: roundError } = await supabase
+    .from('rounds')
+    .select('id, name')
+    .eq('id', roundId)
+    .single();
 
-  if (roundRes.error) {
-    throw new PickError(`Failed to fetch round: ${roundRes.error.message}`, 'FETCH_ERROR');
+  if (roundError || !round) {
+    throw new PickError(`Failed to fetch round: ${roundError?.message || 'Not found'}`, 'FETCH_ERROR');
   }
 
-  const deadlineTime = new Date(roundRes.data.deadline_datetime);
+  // Get earliest game time for this round
+  const { data: firstGame } = await supabase
+    .from('games')
+    .select('game_datetime')
+    .eq('round_id', roundId)
+    .order('game_datetime', { ascending: true })
+    .limit(1)
+    .single();
+
+  const firstGameTime = firstGame?.game_datetime || null;
+
+  // Deadline = first game - 5 minutes
+  let deadlineDatetime: string;
+  if (firstGameTime) {
+    deadlineDatetime = new Date(new Date(firstGameTime).getTime() - 5 * 60 * 1000).toISOString();
+  } else {
+    // Fallback: no games, use a far-future date
+    deadlineDatetime = new Date('2099-01-01').toISOString();
+  }
+
   const now = new Date();
-  const minutesRemaining = Math.max(0, Math.floor((deadlineTime.getTime() - now.getTime()) / 60000));
+  const diff = new Date(deadlineDatetime).getTime() - now.getTime();
+  const minutesRemaining = Math.max(0, Math.floor(diff / 60000));
 
   return {
     round_id: roundId,
-    round_name: roundRes.data.name,
-    deadline_datetime: roundRes.data.deadline_datetime,
+    round_name: round.name,
+    deadline_datetime: deadlineDatetime,
     minutes_remaining: minutesRemaining,
-    is_expired: minutesRemaining === 0,
-    first_game_time: gamesRes.data?.game_datetime || roundRes.data.deadline_datetime
+    is_expired: diff <= 0,
+    first_game_time: firstGameTime || deadlineDatetime,
   };
 }
 

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { supabaseAdmin } from '@/lib/supabase/admin';
+import { getTournamentStateServer } from '@/lib/status-server';
 import {
   processCompletedGame,
   processMissedPicks,
@@ -31,16 +32,12 @@ export async function POST(request: NextRequest) {
     const body = await request.json().catch(() => ({}));
     const mode = body.mode || 'favorites'; // 'favorites' = higher seed wins, 'random' = coin flip
 
-    // Get active round
-    const { data: activeRound } = await supabaseAdmin
-      .from('rounds')
-      .select('id, name, date')
-      .eq('is_active', true)
-      .single();
-
-    if (!activeRound) {
-      return NextResponse.json({ error: 'No active round' }, { status: 400 });
+    // Get current round from derived tournament state
+    const state = await getTournamentStateServer();
+    if (!state.currentRound) {
+      return NextResponse.json({ error: 'No current round' }, { status: 400 });
     }
+    const activeRound = { id: state.currentRound.id, name: state.currentRound.name, date: state.currentRound.date };
 
     // Get all non-final games for this round
     const { data: pendingGames } = await supabaseAdmin
