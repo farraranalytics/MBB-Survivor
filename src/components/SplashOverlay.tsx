@@ -656,7 +656,8 @@ function TournamentCompleteSplash() {
 // ─── Main Overlay Component ─────────────────────────────────────
 
 export function SplashOverlay({ userId }: { userId: string | undefined }) {
-  const [visible, setVisible] = useState(false);
+  const [mounted, setMounted] = useState(false);
+  const [showSplash, setShowSplash] = useState(false);
   const [fading, setFading] = useState(false);
   const [data, setData] = useState<SplashData | null>(null);
   const dismissedRef = useRef(false);
@@ -666,19 +667,23 @@ export function SplashOverlay({ userId }: { userId: string | undefined }) {
     dismissedRef.current = true;
     setFading(true);
     markSplashSeen();
-    setTimeout(() => setVisible(false), 300);
+    setTimeout(() => setShowSplash(false), 300);
   }, []);
 
+  // Mount check — prevents any render until client-side
   useEffect(() => {
-    if (!userId || hasSeenSplash()) return;
-    setVisible(true);
-
-    fetchSplashData(userId)
-      .then(result => setData(result))
-      .catch(() => dismiss());
+    setMounted(true);
+    if (!userId) return;
+    const alreadyShown = sessionStorage.getItem(SPLASH_KEY) === 'true';
+    if (!alreadyShown) {
+      setShowSplash(true);
+      fetchSplashData(userId)
+        .then(result => setData(result))
+        .catch(() => dismiss());
+    }
   }, [userId, dismiss]);
 
-  if (!visible) return null;
+  if (!mounted || !showSplash) return null;
 
   return (
     <div
