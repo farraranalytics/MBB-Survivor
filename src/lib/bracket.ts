@@ -83,7 +83,7 @@ export function buildPlannerDays(rounds: Round[]): PlannerDay[] {
     return {
       id: round.id,
       label: round.name,
-      date: new Date(round.date + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+      date: new Date(round.date + 'T12:00:00').toLocaleDateString('en-US', { timeZone: 'America/New_York', month: 'short', day: 'numeric' }),
       roundCode,
       half,
       allRegions: roundCode !== 'E8' || !half,

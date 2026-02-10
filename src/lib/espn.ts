@@ -294,9 +294,15 @@ function groupTeamsByRegions(teams: Team[], games: Game[]): Region[] {
 }
 
 function determineRoundFromDate(dateString: string): number {
+  // Use ET date parts — late-night ET games (e.g. 11 PM ET) are already the next UTC day
   const date = new Date(dateString);
-  const month = date.getMonth() + 1; // JavaScript months are 0-based
-  const day = date.getDate();
+  const etParts = date.toLocaleDateString('en-US', {
+    timeZone: 'America/New_York',
+    month: 'numeric',
+    day: 'numeric',
+  }).split('/'); // "3/19" → ['3', '19']
+  const month = parseInt(etParts[0]);
+  const day = parseInt(etParts[1]);
 
   // Rough tournament schedule - adjust based on actual dates
   if (month === 3) {
@@ -337,10 +343,15 @@ function determinetournamentStatus(games: Game[]): 'upcoming' | 'in-progress' | 
 }
 
 function getTodayESPNFormat(): string {
-  const today = new Date();
-  const year = today.getFullYear();
-  const month = String(today.getMonth() + 1).padStart(2, '0');
-  const day = String(today.getDate()).padStart(2, '0');
+  // Use ET date — avoids fetching wrong day when UTC has rolled past midnight but ET hasn't
+  const now = new Date();
+  const etDate = now.toLocaleDateString('en-US', {
+    timeZone: 'America/New_York',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }); // "03/19/2026"
+  const [month, day, year] = etDate.split('/');
   return `${year}${month}${day}`;
 }
 

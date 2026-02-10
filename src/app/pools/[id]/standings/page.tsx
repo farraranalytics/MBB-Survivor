@@ -48,8 +48,8 @@ function PickCell({
   // Hidden (pre-deadline)
   if (!deadlinePassed) {
     return (
-      <div className="flex flex-col items-center justify-center rounded-md px-1 py-1.5 bg-[rgba(255,255,255,0.03)] min-h-[42px]">
-        <svg className="w-3.5 h-3.5 text-[#5F6B7A]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <div className="flex flex-col items-center justify-center rounded-md px-1 py-2 bg-[rgba(255,255,255,0.04)] min-h-[52px]">
+        <svg className="w-4 h-4 text-[#5F6B7A]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
         </svg>
       </div>
@@ -59,46 +59,48 @@ function PickCell({
   // No pick
   if (!result) {
     return (
-      <div className="flex items-center justify-center rounded-md min-h-[42px] text-[#5F6B7A] text-xs">
+      <div className="flex items-center justify-center rounded-md min-h-[52px] text-[#5F6B7A] text-xs">
         —
       </div>
     );
   }
 
   // Determine styling by state
-  let bgClass = 'bg-[rgba(27,58,92,0.3)]'; // pending/scheduled
+  let bgClass = 'bg-[rgba(255,255,255,0.07)]'; // pending/scheduled
   let textColor = '#E8E6E1';
   let icon = '';
   let pulseClass = '';
 
   if (result.is_correct === true) {
-    bgClass = 'bg-[rgba(76,175,80,0.15)]';
+    bgClass = 'bg-[rgba(76,175,80,0.25)]';
     textColor = '#4CAF50';
     icon = '✓';
   } else if (result.is_correct === false) {
-    bgClass = 'bg-[rgba(239,83,80,0.15)]';
+    bgClass = 'bg-[rgba(239,83,80,0.25)]';
     textColor = '#EF5350';
     icon = '✗';
   } else if (result.game_status === 'in_progress') {
-    bgClass = 'bg-[rgba(255,179,0,0.12)]';
+    bgClass = 'bg-[rgba(255,179,0,0.22)]';
     textColor = '#FFB300';
     pulseClass = 'animate-pulse';
     icon = result.game_score || '•••';
   }
 
   return (
-    <div className={`flex flex-col items-center justify-center rounded-md px-1 py-1.5 min-h-[42px] ${bgClass} ${pulseClass}`}>
+    <div className={`flex flex-col items-center justify-center rounded-md px-1 py-2 min-h-[52px] ${bgClass} ${pulseClass}`}>
       <TeamLogo
         espnTeamId={result.team_espn_id}
         teamName={result.team_name}
-        size="xs"
+        size="md"
       />
-      <span
-        className="text-[10px] mt-0.5 font-bold"
-        style={{ fontFamily: "'Space Mono', monospace", color: textColor }}
-      >
-        ({result.team_seed}) {icon}
-      </span>
+      {icon && (
+        <span
+          className="text-[10px] mt-1 font-bold"
+          style={{ fontFamily: "'Space Mono', monospace", color: textColor }}
+        >
+          {icon}
+        </span>
+      )}
     </div>
   );
 }
@@ -349,7 +351,7 @@ export default function StandingsPage() {
                       return (
                         <th
                           key={round.id}
-                          className={`px-1 py-2 text-center whitespace-nowrap min-w-[72px] ${isCurrentRound ? 'border-b-2 border-[#FF5722]' : ''}`}
+                          className={`px-1.5 py-2 text-center whitespace-nowrap min-w-[56px] ${isCurrentRound ? 'border-b-2 border-[#FF5722]' : ''}`}
                         >
                           <div
                             className={`text-[10px] font-bold ${isCurrentRound ? 'text-[#FF5722]' : 'text-[#5F6B7A]'}`}
