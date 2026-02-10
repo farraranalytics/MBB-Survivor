@@ -222,9 +222,9 @@ function ScheduleGameCard({ game }: { game: BracketGame }) {
     statusColor = 'text-[#4CAF50]';
     statusBg = 'bg-[rgba(76,175,80,0.1)]';
   } else if (game.status === 'in_progress') {
-    statusText = 'LIVE';
-    statusColor = 'text-[#EF5350] font-bold';
-    statusBg = 'bg-[rgba(239,83,80,0.1)] animate-pulse';
+    statusText = formatET(game.game_datetime);
+    statusColor = 'text-[#E8E6E1]';
+    statusBg = 'bg-[#1B2A3D]';
   } else {
     statusText = formatET(game.game_datetime);
     statusColor = 'text-[#E8E6E1]';

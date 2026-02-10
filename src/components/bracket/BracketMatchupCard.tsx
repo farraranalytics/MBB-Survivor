@@ -2,6 +2,7 @@
 
 import { BracketGame } from '@/types/bracket';
 import { TeamInfo } from '@/types/picks';
+import { formatETShort } from '@/lib/timezone';
 
 interface BracketMatchupCardProps {
   game: BracketGame;
@@ -86,8 +87,11 @@ export default function BracketMatchupCard({ game, compact }: BracketMatchupCard
     statusText = 'Final';
     statusColor = 'text-[#4CAF50] bg-[rgba(76,175,80,0.1)]';
   } else if (game.status === 'in_progress') {
-    statusText = 'LIVE';
-    statusColor = 'text-[#EF5350] bg-[rgba(239,83,80,0.1)] animate-pulse';
+    statusText = formatETShort(game.game_datetime);
+    statusColor = 'text-[#9BA3AE] bg-[#1B2A3D]';
+  } else if (game.status === 'scheduled') {
+    statusText = formatETShort(game.game_datetime);
+    statusColor = 'text-[#9BA3AE] bg-[#1B2A3D]';
   }
 
   return (
@@ -105,11 +109,9 @@ export default function BracketMatchupCard({ game, compact }: BracketMatchupCard
         isWinner={team2Wins}
         isLoser={team1Wins}
       />
-      {statusText && (
-        <div className={`text-center text-[10px] font-semibold py-1 border-t border-[rgba(255,255,255,0.05)] ${statusColor}`} style={{ fontFamily: "'Space Mono', monospace" }}>
-          {statusText}
-        </div>
-      )}
+      <div className={`text-center text-[10px] font-semibold py-1 border-t border-[rgba(255,255,255,0.05)] ${statusColor}`} style={{ fontFamily: "'Space Mono', monospace" }}>
+        {statusText || '\u00A0'}
+      </div>
     </div>
   );
 }
