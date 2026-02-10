@@ -48,6 +48,7 @@ export interface TeamInfo {
   seed: number;
   region: string;
   logo_url: string;
+  espn_team_id: number | null;
   is_eliminated: boolean;
 }
 
@@ -88,6 +89,7 @@ export interface PickableTeam {
   seed: number;
   region: string;
   logo_url: string;
+  espn_team_id: number | null;
   is_eliminated: boolean;
   // Pick context
   game_id: string;

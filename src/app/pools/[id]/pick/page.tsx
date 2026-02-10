@@ -20,6 +20,7 @@ import { supabase } from '@/lib/supabase/client';
 import { PickableTeam, PickDeadline, Round, Pick, Game } from '@/types/picks';
 import { formatET, formatDateET } from '@/lib/timezone';
 import { mapRoundNameToCode, ROUND_COLORS } from '@/lib/bracket';
+import { TeamLogo, getESPNStatsUrl } from '@/components/TeamLogo';
 
 const REGION_ORDER = ['South', 'East', 'West', 'Midwest'];
 
@@ -60,7 +61,10 @@ function ConfirmModal({
 
         <div className="bg-[rgba(255,87,34,0.08)] border-2 border-[rgba(255,87,34,0.3)] rounded-[12px] p-5 mb-5">
           <div className="text-center">
-            <p className="text-label-accent mb-2">Your pick</p>
+            <p className="text-label-accent mb-3">Your pick</p>
+            <div className="flex justify-center mb-2">
+              <TeamLogo espnTeamId={team.espn_team_id} teamName={team.name} size="lg" />
+            </div>
             <p className="text-2xl font-extrabold text-[#E8E6E1]" style={{ fontFamily: "'Oswald', sans-serif", textTransform: 'uppercase' }}>
               ({team.seed}) {team.name}
             </p>
@@ -70,6 +74,17 @@ function ConfirmModal({
             <p className="text-xs text-[#9BA3AE] mt-1" style={{ fontFamily: "'Space Mono', monospace" }}>
               {formatET(team.game_datetime)}
             </p>
+            {team.espn_team_id && (
+              <a
+                href={getESPNStatsUrl(team.espn_team_id)}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-block mt-2 text-xs text-[#FF5722] hover:text-[#FF7043] transition-colors"
+                style={{ fontFamily: "'DM Sans', sans-serif" }}
+              >
+                View team stats &rarr;
+              </a>
+            )}
           </div>
         </div>
 

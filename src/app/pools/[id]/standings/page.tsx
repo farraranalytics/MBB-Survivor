@@ -1,17 +1,33 @@
 'use client';
 
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, useMemo } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useAuth } from '@/components/auth/AuthProvider';
+import { useActivePool } from '@/hooks/useActivePool';
+import { TeamLogo } from '@/components/TeamLogo';
+import { mapRoundNameToCode, inferHalf } from '@/lib/bracket';
+import { formatDateET } from '@/lib/timezone';
 import {
   PoolLeaderboard,
   StandingsPlayer,
   StandingsFilter,
   RoundResult,
 } from '@/types/standings';
-import { formatDateET } from '@/lib/timezone';
 
-// ─── Helper: should picks be visible for a round? ────────────────
+// ─── Types ──────────────────────────────────────────────────────
+
+type StandingsSort = 'streak' | 'name' | 'picks';
+
+// ─── Round label builder ────────────────────────────────────────
+
+function buildRoundLabel(roundName: string): string {
+  const code = mapRoundNameToCode(roundName);
+  const half = inferHalf(roundName);
+  if (half) return `${code}.${half === 'A' ? '1' : '2'}`;
+  return code;
+}
+
+// ─── Helper: should picks be visible for a round? ───────────────
 
 function isPickVisible(
   round: { deadline_datetime: string; is_complete: boolean },
@@ -20,150 +36,88 @@ function isPickVisible(
   return isOwnEntry || new Date(round.deadline_datetime) < new Date() || round.is_complete;
 }
 
-// ─── Grid Cell — Team Abbreviation with Result Background ────────
+// ─── Pick Cell — Logo-based grid cell ───────────────────────────
 
-function GridCell({
+function PickCell({
   result,
   deadlinePassed,
 }: {
   result: RoundResult | undefined;
   deadlinePassed: boolean;
 }) {
-  // Deadline hasn't passed — hide the pick
+  // Hidden (pre-deadline)
   if (!deadlinePassed) {
     return (
-      <span className="inline-flex items-center justify-center w-7 h-7 rounded-full bg-[rgba(255,255,255,0.05)] text-[#5F6B7A]">
-        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <div className="flex flex-col items-center justify-center rounded-md px-1 py-1.5 bg-[rgba(255,255,255,0.03)] min-h-[42px]">
+        <svg className="w-3.5 h-3.5 text-[#5F6B7A]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
         </svg>
-      </span>
+      </div>
     );
   }
 
-  // No pick for this round
+  // No pick
   if (!result) {
     return (
-      <span className="inline-flex items-center justify-center w-7 h-7 rounded-full bg-[rgba(255,255,255,0.03)] text-[#5F6B7A] text-[10px]">
+      <div className="flex items-center justify-center rounded-md min-h-[42px] text-[#5F6B7A] text-xs">
         —
-      </span>
+      </div>
     );
   }
 
-  // Determine background color based on result
-  let bgClass = 'bg-[rgba(27,58,92,0.3)] text-[#E8E6E1]'; // default: scheduled/pending
+  // Determine styling by state
+  let bgClass = 'bg-[rgba(27,58,92,0.3)]'; // pending/scheduled
+  let textColor = '#E8E6E1';
+  let icon = '';
+  let pulseClass = '';
+
   if (result.is_correct === true) {
-    bgClass = 'bg-[rgba(76,175,80,0.2)] text-[#4CAF50]';
+    bgClass = 'bg-[rgba(76,175,80,0.15)]';
+    textColor = '#4CAF50';
+    icon = '✓';
   } else if (result.is_correct === false) {
-    bgClass = 'bg-[rgba(239,83,80,0.2)] text-[#EF5350] opacity-60';
-  } else if (result.is_correct === null && result.game_status === 'in_progress') {
-    bgClass = 'bg-[rgba(255,179,0,0.15)] text-[#FFB300] animate-pulse';
+    bgClass = 'bg-[rgba(239,83,80,0.15)]';
+    textColor = '#EF5350';
+    icon = '✗';
+  } else if (result.game_status === 'in_progress') {
+    bgClass = 'bg-[rgba(255,179,0,0.12)]';
+    textColor = '#FFB300';
+    pulseClass = 'animate-pulse';
+    icon = result.game_score || '•••';
   }
 
   return (
-    <span
-      className={`inline-flex items-center justify-center w-7 h-7 rounded-full font-bold ${bgClass}`}
-      title={`(${result.team_seed}) ${result.team_name}`}
-      style={{ fontFamily: "'Space Mono', monospace", fontSize: '9px', letterSpacing: '-0.02em' }}
-    >
-      {result.team_abbreviation}
-    </span>
-  );
-}
-
-// ─── Expanded Player Row — Horizontal Chips ─────────────────────
-
-function PlayerPickHistory({
-  player,
-  roundsPlayed,
-  isOwnEntry = false,
-}: {
-  player: StandingsPlayer;
-  roundsPlayed: PoolLeaderboard['rounds_played'];
-  isOwnEntry?: boolean;
-}) {
-  if (player.round_results.length === 0) {
-    return (
-      <div className="px-4 py-2.5 bg-[#0D1B2A] text-xs text-[#9BA3AE]" style={{ fontFamily: "'DM Sans', sans-serif" }}>
-        No picks yet
-      </div>
-    );
-  }
-
-  // Show own picks always; for others, after deadline or when round is complete
-  const visibleResults = player.round_results.filter((result) => {
-    const round = roundsPlayed.find((r) => r.id === result.round_id);
-    return round ? isPickVisible(round, isOwnEntry) : false;
-  });
-
-  if (visibleResults.length === 0) {
-    return (
-      <div className="px-4 py-2.5 bg-[#0D1B2A] text-xs text-[#9BA3AE]" style={{ fontFamily: "'DM Sans', sans-serif" }}>
-        Picks hidden until deadline passes
-      </div>
-    );
-  }
-
-  return (
-    <div className="bg-[#0D1B2A] border-t border-[rgba(255,255,255,0.05)] px-4 py-2.5">
-      <div className="flex flex-wrap gap-1.5">
-        {visibleResults.map((result) => {
-          const roundIndex = roundsPlayed.findIndex((r) => r.id === result.round_id);
-          const roundLabel = `R${roundIndex + 1}`;
-
-          let chipClass = 'bg-[rgba(27,58,92,0.3)] text-[#9BA3AE]';
-          let icon = '';
-          if (result.is_correct === true) {
-            chipClass = 'bg-[rgba(76,175,80,0.15)] text-[#4CAF50]';
-            icon = ' \u2713';
-          } else if (result.is_correct === false) {
-            chipClass = 'bg-[rgba(239,83,80,0.15)] text-[#EF5350]';
-            icon = ' \u2717';
-          } else if (result.game_status === 'in_progress') {
-            chipClass = 'bg-[rgba(255,179,0,0.12)] text-[#FFB300] animate-pulse';
-          }
-
-          return (
-            <span
-              key={result.round_id}
-              className={`inline-flex items-center px-2 py-1 rounded-[6px] font-bold ${chipClass}`}
-              title={`(${result.team_seed}) ${result.team_name}${result.opponent_name ? ` vs (${result.opponent_seed}) ${result.opponent_name}` : ''}${result.game_score ? ` — ${result.game_score}` : ''}`}
-              style={{ fontFamily: "'Space Mono', monospace", fontSize: '10px', letterSpacing: '-0.02em' }}
-            >
-              {roundLabel} {result.team_abbreviation}{icon}
-            </span>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
-
-// ─── Section Header ──────────────────────────────────────────────
-
-function SectionHeader({ label, count }: { label: string; count: number }) {
-  return (
-    <div className="px-4 py-2 bg-[#0D1B2A] border-b border-[rgba(255,255,255,0.05)]">
-      <span className="label">
-        {label} <span className="text-[#9BA3AE] font-normal" style={{ fontFamily: "'DM Sans', sans-serif", textTransform: 'none' }}>&middot; {count} {label === 'ALIVE' ? 'remaining' : ''}</span>
+    <div className={`flex flex-col items-center justify-center rounded-md px-1 py-1.5 min-h-[42px] ${bgClass} ${pulseClass}`}>
+      <TeamLogo
+        espnTeamId={result.team_espn_id}
+        teamName={result.team_name}
+        size="xs"
+      />
+      <span
+        className="text-[10px] mt-0.5 font-bold"
+        style={{ fontFamily: "'Space Mono', monospace", color: textColor }}
+      >
+        ({result.team_seed}) {icon}
       </span>
     </div>
   );
 }
 
-// ─── Main Page ───────────────────────────────────────────────────
+// ─── Main Page ──────────────────────────────────────────────────
 
 export default function StandingsPage() {
   const params = useParams();
   const router = useRouter();
   const { user } = useAuth();
+  const { pools } = useActivePool();
   const poolId = params.id as string;
 
   const [leaderboard, setLeaderboard] = useState<PoolLeaderboard | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [filter, setFilter] = useState<StandingsFilter>('all');
-  const [expandedPlayer, setExpandedPlayer] = useState<string | null>(null);
-  const [showRoundGrid, setShowRoundGrid] = useState(true);
+  const [sort, setSort] = useState<StandingsSort>('streak');
+  const [sortDropdownOpen, setSortDropdownOpen] = useState(false);
   const loadedRef = useRef(false);
 
   useEffect(() => {
@@ -195,6 +149,46 @@ export default function StandingsPage() {
     return () => clearInterval(interval);
   }, [user, poolId]);
 
+  // Filtered + sorted players
+  const sortedPlayers = useMemo(() => {
+    if (!leaderboard) return [];
+
+    const filtered = leaderboard.players.filter((p) => {
+      if (filter === 'alive') return !p.is_eliminated;
+      if (filter === 'eliminated') return p.is_eliminated;
+      return true;
+    });
+
+    return [...filtered].sort((a, b) => {
+      // Alive always before eliminated
+      if (a.is_eliminated !== b.is_eliminated) return a.is_eliminated ? 1 : -1;
+      switch (sort) {
+        case 'streak':
+          return b.survival_streak - a.survival_streak;
+        case 'name':
+          return (a.entry_label || '').localeCompare(b.entry_label || '');
+        case 'picks':
+          return b.picks_count - a.picks_count;
+        default:
+          return 0;
+      }
+    });
+  }, [leaderboard, filter, sort]);
+
+  // Detect multi-entry users
+  const multiEntryUsers = useMemo(() => {
+    if (!leaderboard) return new Set<string>();
+    const counts = new Map<string, number>();
+    for (const p of leaderboard.players) {
+      counts.set(p.user_id, (counts.get(p.user_id) || 0) + 1);
+    }
+    const multi = new Set<string>();
+    for (const [uid, count] of counts) {
+      if (count > 1) multi.add(uid);
+    }
+    return multi;
+  }, [leaderboard]);
+
   if (loading) {
     return (
       <div className="min-h-screen bg-[#0D1B2A] flex items-center justify-center">
@@ -224,63 +218,69 @@ export default function StandingsPage() {
     );
   }
 
-  const filteredPlayers = leaderboard.players.filter((p) => {
-    if (filter === 'alive') return !p.is_eliminated;
-    if (filter === 'eliminated') return p.is_eliminated;
-    return true;
-  });
-
-  const alivePlayers = filteredPlayers.filter((p) => !p.is_eliminated);
-  const eliminatedPlayers = filteredPlayers.filter((p) => p.is_eliminated);
+  const alivePlayers = sortedPlayers.filter((p) => !p.is_eliminated);
+  const eliminatedPlayers = sortedPlayers.filter((p) => p.is_eliminated);
   const hasRounds = leaderboard.rounds_played.length > 0;
-
-  // Detect which user_ids have multiple entries (for showing entry_label)
-  const multiEntryUsers = new Set<string>();
-  const userIdCounts = new Map<string, number>();
-  for (const p of leaderboard.players) {
-    userIdCounts.set(p.user_id, (userIdCounts.get(p.user_id) || 0) + 1);
-  }
-  for (const [uid, count] of userIdCounts) {
-    if (count > 1) multiEntryUsers.add(uid);
-  }
-
-  // Format round date for tooltip: "Round of 64 · Mar 20"
-  function roundTooltip(round: PoolLeaderboard['rounds_played'][number]) {
-    return `${round.name} · ${formatDateET(round.date)}`;
-  }
 
   return (
     <div className="min-h-screen bg-[#0D1B2A] pb-24">
-      <div className="max-w-4xl mx-auto px-5 py-4 sm:py-6">
-        {/* Pool Summary */}
-        <div className="bg-[#111827] border border-[rgba(255,255,255,0.05)] rounded-[12px] p-5 mb-4">
-          <h2 className="text-base font-bold text-[#E8E6E1] mb-3" style={{ fontFamily: "'Oswald', sans-serif", textTransform: 'uppercase' }}>The Field &mdash; {leaderboard.pool_name}</h2>
-          <div className="grid grid-cols-3 gap-3 text-center">
-            <div className="bg-[rgba(76,175,80,0.1)] rounded-[8px] p-2.5">
-              <p className="text-xl font-bold text-[#4CAF50]" style={{ fontFamily: "'Space Mono', monospace" }}>{leaderboard.alive_players}</p>
-              <p className="label" style={{ color: 'rgba(76,175,80,0.7)' }}>Alive</p>
-            </div>
-            <div className="bg-[rgba(239,83,80,0.1)] rounded-[8px] p-2.5">
-              <p className="text-xl font-bold text-[#EF5350]" style={{ fontFamily: "'Space Mono', monospace" }}>{leaderboard.eliminated_players}</p>
-              <p className="label" style={{ color: 'rgba(239,83,80,0.7)' }}>Out</p>
-            </div>
-            <div className="bg-[#1B2A3D] rounded-[8px] p-2.5">
-              <p className="text-xl font-bold text-[#E8E6E1]" style={{ fontFamily: "'Space Mono', monospace" }}>{leaderboard.total_players}</p>
-              <p className="label" style={{ color: '#9BA3AE' }}>Total</p>
-            </div>
+      <div className="max-w-5xl mx-auto px-4 py-4 sm:py-6">
+
+        {/* ─── Pool Tabs ──────────────────────────────────────── */}
+        {pools.length > 1 && (
+          <div className="flex gap-2 mb-4 overflow-x-auto pb-1 scrollbar-hide">
+            {pools.map((pool) => {
+              const isActive = pool.pool_id === poolId;
+              return (
+                <button
+                  key={pool.pool_id}
+                  onClick={() => {
+                    if (!isActive) router.push(`/pools/${pool.pool_id}/standings`);
+                  }}
+                  className={`flex-shrink-0 px-4 py-2 rounded-[8px] border transition-colors ${
+                    isActive
+                      ? 'bg-[rgba(255,87,34,0.1)] border-[rgba(255,87,34,0.3)] text-[#FF5722]'
+                      : 'bg-[#111827] border-[rgba(255,255,255,0.05)] text-[#9BA3AE] hover:text-[#E8E6E1]'
+                  }`}
+                >
+                  <span className="text-xs font-bold" style={{ fontFamily: "'Oswald', sans-serif", textTransform: 'uppercase' }}>
+                    {pool.pool_name}
+                  </span>
+                  <span
+                    className={`ml-2 text-[10px] font-bold ${isActive ? 'text-[rgba(255,87,34,0.6)]' : 'text-[#5F6B7A]'}`}
+                    style={{ fontFamily: "'Space Mono', monospace" }}
+                  >
+                    {pool.alive_players}/{pool.total_players}
+                  </span>
+                </button>
+              );
+            })}
           </div>
-          {leaderboard.current_round && (
-            <div className="mt-3 pt-3 border-t border-[rgba(255,255,255,0.05)]">
-              <p className="text-xs text-[#9BA3AE]" style={{ fontFamily: "'DM Sans', sans-serif" }}>
-                Current: <span className="font-semibold text-[#E8E6E1]">{leaderboard.current_round.name}</span>
-              </p>
-            </div>
-          )}
+        )}
+
+        {/* ─── Summary Stats Bar ─────────────────────────────── */}
+        <div className="grid grid-cols-3 gap-3 mb-4">
+          <div className="bg-[rgba(76,175,80,0.1)] rounded-[10px] p-3 text-center">
+            <p className="text-xl font-bold text-[#4CAF50]" style={{ fontFamily: "'Space Mono', monospace" }}>{leaderboard.alive_players}</p>
+            <p className="label" style={{ color: 'rgba(76,175,80,0.7)' }}>Alive</p>
+          </div>
+          <div className="bg-[rgba(239,83,80,0.1)] rounded-[10px] p-3 text-center">
+            <p className="text-xl font-bold text-[#EF5350]" style={{ fontFamily: "'Space Mono', monospace" }}>{leaderboard.eliminated_players}</p>
+            <p className="label" style={{ color: 'rgba(239,83,80,0.7)' }}>Out</p>
+          </div>
+          <div className="bg-[#1B2A3D] rounded-[10px] p-3 text-center">
+            <p className="text-xl font-bold text-[#E8E6E1]" style={{ fontFamily: "'Space Mono', monospace" }}>
+              {leaderboard.prize_pool > 0 ? `$${leaderboard.prize_pool.toLocaleString()}` : leaderboard.total_players}
+            </p>
+            <p className="label" style={{ color: '#9BA3AE' }}>
+              {leaderboard.prize_pool > 0 ? 'Pot' : 'Total'}
+            </p>
+          </div>
         </div>
 
-        {/* Filter & View Toggle */}
+        {/* ─── Filter Tabs + Sort Dropdown ────────────────────── */}
         <div className="flex items-center justify-between mb-4">
-          <div className="flex space-x-1 bg-[#111827] rounded-[12px] p-1">
+          <div className="flex space-x-1 bg-[#111827] rounded-[10px] p-1">
             {(['all', 'alive', 'eliminated'] as StandingsFilter[]).map((f) => (
               <button
                 key={f}
@@ -292,54 +292,84 @@ export default function StandingsPage() {
                 }`}
                 style={{ fontFamily: "'DM Sans', sans-serif" }}
               >
-                {f === 'all' && `All (${leaderboard.total_players})`}
-                {f === 'alive' && `Alive (${leaderboard.alive_players})`}
-                {f === 'eliminated' && `Out (${leaderboard.eliminated_players})`}
+                {f === 'all' && `All ${leaderboard.total_players}`}
+                {f === 'alive' && `Alive ${leaderboard.alive_players}`}
+                {f === 'eliminated' && `Out ${leaderboard.eliminated_players}`}
               </button>
             ))}
           </div>
 
-          {hasRounds && (
+          {/* Sort dropdown */}
+          <div className="relative">
             <button
-              onClick={() => setShowRoundGrid(!showRoundGrid)}
-              className={`text-xs px-3 py-1.5 rounded-[8px] border transition-colors ${
-                showRoundGrid
-                  ? 'bg-[rgba(255,87,34,0.1)] border-[rgba(255,87,34,0.3)] text-[#FF5722]'
-                  : 'bg-[#111827] border-[rgba(255,255,255,0.05)] text-[#9BA3AE]'
-              }`}
-              style={{ fontFamily: "'DM Sans', sans-serif" }}
+              onClick={() => setSortDropdownOpen(!sortDropdownOpen)}
+              className="flex items-center gap-1 px-3 py-1.5 rounded-[8px] border border-[rgba(255,255,255,0.05)] bg-[#111827] text-[#9BA3AE] text-xs font-bold hover:text-[#E8E6E1] transition-colors"
+              style={{ fontFamily: "'Space Mono', monospace", textTransform: 'uppercase' }}
             >
-              {showRoundGrid ? 'List' : 'Grid'}
+              {sort === 'streak' ? 'Streak' : sort === 'name' ? 'Name' : 'Picks'}
+              <svg className={`w-3 h-3 transition-transform ${sortDropdownOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+              </svg>
             </button>
-          )}
+            {sortDropdownOpen && (
+              <>
+                <div className="fixed inset-0 z-[99]" onClick={() => setSortDropdownOpen(false)} />
+                <div className="absolute right-0 mt-1 z-[100] bg-[#1B2A3D] border border-[rgba(255,255,255,0.1)] rounded-[8px] shadow-xl overflow-hidden min-w-[100px]">
+                  {(['streak', 'name', 'picks'] as StandingsSort[]).map((s) => (
+                    <button
+                      key={s}
+                      onClick={() => { setSort(s); setSortDropdownOpen(false); }}
+                      className={`block w-full text-left px-3 py-2 text-xs font-bold transition-colors ${
+                        sort === s ? 'text-[#FF5722] bg-[rgba(255,87,34,0.08)]' : 'text-[#9BA3AE] hover:text-[#E8E6E1] hover:bg-[rgba(255,255,255,0.05)]'
+                      }`}
+                      style={{ fontFamily: "'Space Mono', monospace", textTransform: 'uppercase' }}
+                    >
+                      {s}
+                    </button>
+                  ))}
+                </div>
+              </>
+            )}
+          </div>
         </div>
 
-        {/* Grid View */}
-        {showRoundGrid && hasRounds && (
-          <div className="bg-[#111827] border border-[rgba(255,255,255,0.05)] rounded-[12px] mb-4 overflow-hidden">
+        {/* ─── Grid Table ─────────────────────────────────────── */}
+        {hasRounds && (
+          <div className="bg-[#111827] border border-[rgba(255,255,255,0.05)] rounded-[12px] overflow-hidden">
             <div className="overflow-x-auto">
-              <table style={{ tableLayout: 'auto' }}>
+              <table className="w-full" style={{ tableLayout: 'auto' }}>
                 <thead>
                   <tr className="border-b border-[rgba(255,255,255,0.05)]">
-                    <th className="sticky left-0 bg-[#111827] z-10 text-left px-3 py-2.5 label whitespace-nowrap">
-                      Player
+                    <th className="sticky left-0 bg-[#111827] z-10 text-left px-3 py-2.5 label whitespace-nowrap min-w-[140px]">
+                      Entry
                     </th>
-                    {leaderboard.rounds_played.map((round, i) => (
-                      <th
-                        key={round.id}
-                        className="px-1.5 py-2.5 text-center whitespace-nowrap label"
-                        title={roundTooltip(round)}
-                      >
-                        R{i + 1}
-                      </th>
-                    ))}
+                    {leaderboard.rounds_played.map((round) => {
+                      const label = buildRoundLabel(round.name);
+                      const isCurrentRound = leaderboard.current_round?.id === round.id;
+                      return (
+                        <th
+                          key={round.id}
+                          className={`px-1 py-2 text-center whitespace-nowrap min-w-[72px] ${isCurrentRound ? 'border-b-2 border-[#FF5722]' : ''}`}
+                        >
+                          <div
+                            className={`text-[10px] font-bold ${isCurrentRound ? 'text-[#FF5722]' : 'text-[#5F6B7A]'}`}
+                            style={{ fontFamily: "'Space Mono', monospace" }}
+                          >
+                            {label}
+                          </div>
+                          <div className="text-[9px] text-[#5F6B7A] mt-0.5" style={{ fontFamily: "'DM Sans', sans-serif" }}>
+                            {formatDateET(round.date)}
+                          </div>
+                        </th>
+                      );
+                    })}
                   </tr>
                 </thead>
                 <tbody>
-                  {/* Alive section header in grid */}
+                  {/* Alive section header */}
                   {filter === 'all' && alivePlayers.length > 0 && (
                     <tr>
-                      <td colSpan={leaderboard.rounds_played.length + 1} className="px-4 py-2 bg-[#0D1B2A] border-b border-[rgba(255,255,255,0.05)]">
+                      <td colSpan={leaderboard.rounds_played.length + 1} className="px-3 py-2 bg-[#0D1B2A] border-b border-[rgba(255,255,255,0.05)]">
                         <span className="label">
                           ALIVE <span className="text-[#9BA3AE] font-normal" style={{ fontFamily: "'DM Sans', sans-serif", textTransform: 'none' }}>&middot; {alivePlayers.length} remaining</span>
                         </span>
@@ -358,12 +388,12 @@ export default function StandingsPage() {
                         <td className="sticky left-0 bg-inherit z-10 px-3 py-2 whitespace-nowrap">
                           <div className="flex items-center space-x-1.5">
                             <span className="inline-block w-1.5 h-1.5 rounded-full flex-shrink-0 bg-[#4CAF50]" />
-                            <div style={{ maxWidth: '140px' }}>
-                              <p className="text-xs font-bold text-[#E8E6E1] leading-tight" style={{ fontFamily: "'Oswald', sans-serif", textTransform: 'uppercase', wordBreak: 'break-word', whiteSpace: 'normal' }}>
+                            <div style={{ maxWidth: '120px' }}>
+                              <p className="text-xs font-bold text-[#E8E6E1] leading-tight truncate" style={{ fontFamily: "'Oswald', sans-serif", textTransform: 'uppercase' }}>
                                 {player.entry_label}
                                 {isYou && <span className="text-[#FF5722] text-[9px] ml-1" style={{ fontFamily: "'Space Mono', monospace" }}>YOU</span>}
                               </p>
-                              <p className="text-[10px] text-[#5F6B7A] leading-tight" style={{ fontFamily: "'DM Sans', sans-serif", whiteSpace: 'normal' }}>
+                              <p className="text-[10px] text-[#5F6B7A] leading-tight truncate" style={{ fontFamily: "'DM Sans', sans-serif" }}>
                                 {player.display_name}
                               </p>
                             </div>
@@ -373,18 +403,19 @@ export default function StandingsPage() {
                           const result = player.round_results.find((r) => r.round_id === round.id);
                           const deadlinePassed = isPickVisible(round, isYou);
                           return (
-                            <td key={round.id} className="px-1.5 py-2 text-center">
-                              <GridCell result={result} deadlinePassed={deadlinePassed} />
+                            <td key={round.id} className="px-1 py-1.5 text-center">
+                              <PickCell result={result} deadlinePassed={deadlinePassed} />
                             </td>
                           );
                         })}
                       </tr>
                     );
                   })}
-                  {/* Eliminated section header in grid */}
+
+                  {/* Eliminated section header */}
                   {filter === 'all' && eliminatedPlayers.length > 0 && (
                     <tr>
-                      <td colSpan={leaderboard.rounds_played.length + 1} className="px-4 py-2 bg-[#0D1B2A] border-b border-[rgba(255,255,255,0.05)]">
+                      <td colSpan={leaderboard.rounds_played.length + 1} className="px-3 py-2 bg-[#0D1B2A] border-b border-[rgba(255,255,255,0.05)]">
                         <span className="label">
                           ELIMINATED <span className="text-[#9BA3AE] font-normal" style={{ fontFamily: "'DM Sans', sans-serif", textTransform: 'none' }}>&middot; {eliminatedPlayers.length}</span>
                         </span>
@@ -403,12 +434,12 @@ export default function StandingsPage() {
                         <td className="sticky left-0 bg-inherit z-10 px-3 py-2 whitespace-nowrap">
                           <div className="flex items-center space-x-1.5">
                             <span className="inline-block w-1.5 h-1.5 rounded-full flex-shrink-0 bg-[#EF5350]" />
-                            <div style={{ maxWidth: '140px' }}>
-                              <p className="text-xs font-bold strikethrough text-[#9BA3AE] leading-tight" style={{ fontFamily: "'Oswald', sans-serif", textTransform: 'uppercase', wordBreak: 'break-word', whiteSpace: 'normal' }}>
+                            <div style={{ maxWidth: '120px' }}>
+                              <p className="text-xs font-bold text-[#9BA3AE] leading-tight truncate" style={{ fontFamily: "'Oswald', sans-serif", textTransform: 'uppercase' }}>
                                 {player.entry_label}
                                 {isYou && <span className="text-[#FF5722] text-[9px] ml-1" style={{ fontFamily: "'Space Mono', monospace" }}>YOU</span>}
                               </p>
-                              <p className="text-[10px] text-[#5F6B7A] leading-tight" style={{ fontFamily: "'DM Sans', sans-serif", whiteSpace: 'normal' }}>
+                              <p className="text-[10px] text-[#5F6B7A] leading-tight truncate" style={{ fontFamily: "'DM Sans', sans-serif" }}>
                                 {player.display_name}
                               </p>
                             </div>
@@ -418,8 +449,8 @@ export default function StandingsPage() {
                           const result = player.round_results.find((r) => r.round_id === round.id);
                           const deadlinePassed = isPickVisible(round, isYou);
                           return (
-                            <td key={round.id} className="px-1.5 py-2 text-center">
-                              <GridCell result={result} deadlinePassed={deadlinePassed} />
+                            <td key={round.id} className="px-1 py-1.5 text-center">
+                              <PickCell result={result} deadlinePassed={deadlinePassed} />
                             </td>
                           );
                         })}
@@ -432,190 +463,23 @@ export default function StandingsPage() {
           </div>
         )}
 
-        {/* List View */}
-        {!showRoundGrid && (
-          <div className="bg-[#111827] border border-[rgba(255,255,255,0.05)] rounded-[14px] overflow-hidden">
-            {filteredPlayers.length === 0 ? (
-              <div className="text-center py-12">
-                <p className="text-[#9BA3AE]" style={{ fontFamily: "'DM Sans', sans-serif" }}>No players match this filter.</p>
-              </div>
-            ) : (
-              <div>
-                {/* Alive section */}
-                {alivePlayers.length > 0 && (filter === 'all' || filter === 'alive') && (
-                  <>
-                    {filter === 'all' && <SectionHeader label="ALIVE" count={alivePlayers.length} />}
-                    {alivePlayers.map((player, index) => {
-                      const isYou = user?.id === player.user_id;
-                      const isExpanded = expandedPlayer === player.pool_player_id;
-
-                      return (
-                        <div key={player.pool_player_id}>
-                          <button
-                            onClick={() => setExpandedPlayer(isExpanded ? null : player.pool_player_id)}
-                            className={`w-full text-left px-4 py-2.5 flex items-center gap-3 transition-colors hover:bg-[#1B2A3D] ${
-                              isYou ? 'bg-[rgba(255,87,34,0.05)] border-l-[3px] border-l-[#FF5722]' : ''
-                            } ${index > 0 || filter === 'all' ? 'border-t border-[rgba(255,255,255,0.05)]' : ''}`}
-                          >
-                            {/* Avatar with green border = alive */}
-                            <span
-                              className="flex-shrink-0 w-8 h-8 rounded-full bg-[#243447] flex items-center justify-center text-[#E8E6E1] border-2 border-[#4CAF50]"
-                              style={{ fontFamily: "'Oswald', sans-serif", fontWeight: 700, fontSize: '0.75rem' }}
-                            >
-                              {player.display_name.charAt(0).toUpperCase()}
-                            </span>
-
-                            {/* Single line: Name — Entry [YOU] */}
-                            <div className="flex-1 min-w-0 flex items-center gap-2">
-                              <p className="text-sm font-semibold truncate text-[#E8E6E1]" style={{ fontFamily: "'Oswald', sans-serif", textTransform: 'uppercase' }}>
-                                {player.display_name} <span className="text-[#9BA3AE] font-normal text-xs" style={{ fontFamily: "'DM Sans', sans-serif", textTransform: 'none' }}>&mdash; {player.entry_label}</span>
-                              </p>
-                              {isYou && (
-                                <span className="flex-shrink-0 text-[#FF5722] font-bold" style={{ fontFamily: "'Space Mono', monospace", fontSize: '0.6rem', letterSpacing: '0.15em' }}>
-                                  YOU
-                                </span>
-                              )}
-                            </div>
-
-                            {/* Chevron */}
-                            <svg
-                              className={`w-4 h-4 text-[#5F6B7A] flex-shrink-0 transition-transform ${isExpanded ? 'rotate-180' : ''}`}
-                              fill="none"
-                              viewBox="0 0 24 24"
-                              stroke="currentColor"
-                            >
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                            </svg>
-                          </button>
-
-                          {isExpanded && <PlayerPickHistory player={player} roundsPlayed={leaderboard.rounds_played} isOwnEntry={isYou} />}
-                        </div>
-                      );
-                    })}
-                  </>
-                )}
-
-                {/* Eliminated section */}
-                {eliminatedPlayers.length > 0 && (filter === 'all' || filter === 'eliminated') && (
-                  <>
-                    {filter === 'all' && <SectionHeader label="ELIMINATED" count={eliminatedPlayers.length} />}
-                    {eliminatedPlayers.map((player, index) => {
-                      const isYou = user?.id === player.user_id;
-                      const isExpanded = expandedPlayer === player.pool_player_id;
-
-                      // Build elimination detail: "R2 · Norfolk State" or "R2 · No pick"
-                      let elimDetail = '';
-                      if (player.elimination_round_name) {
-                        const elimRound = leaderboard.rounds_played.find(r => r.name === player.elimination_round_name);
-                        const elimRoundLabel = elimRound
-                          ? `R${leaderboard.rounds_played.indexOf(elimRound) + 1}`
-                          : '';
-
-                        if (player.elimination_reason === 'missed_pick') {
-                          elimDetail = `${elimRoundLabel} \u00b7 No pick`;
-                        } else {
-                          const wrongResult = player.round_results.find(r => r.is_correct === false);
-                          elimDetail = wrongResult
-                            ? `${elimRoundLabel} \u00b7 ${wrongResult.team_name}`
-                            : elimRoundLabel;
-                        }
-                      }
-
-                      return (
-                        <div key={player.pool_player_id} className="opacity-[0.5]">
-                          <button
-                            onClick={() => setExpandedPlayer(isExpanded ? null : player.pool_player_id)}
-                            className={`w-full text-left px-4 py-2.5 flex items-center gap-3 transition-colors hover:bg-[#1B2A3D] ${
-                              isYou ? 'bg-[rgba(255,87,34,0.05)] border-l-[3px] border-l-[#FF5722]' : ''
-                            } ${index > 0 || filter === 'all' ? 'border-t border-[rgba(255,255,255,0.05)]' : ''}`}
-                          >
-                            {/* Avatar with red border = eliminated */}
-                            <span
-                              className="flex-shrink-0 w-8 h-8 rounded-full bg-[#243447] flex items-center justify-center text-[#9BA3AE] border-2 border-[#EF5350]"
-                              style={{ fontFamily: "'Oswald', sans-serif", fontWeight: 700, fontSize: '0.75rem' }}
-                            >
-                              {player.display_name.charAt(0).toUpperCase()}
-                            </span>
-
-                            {/* Name + elimination detail */}
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-center gap-2">
-                                <p className="text-sm font-semibold truncate text-[#9BA3AE]" style={{ fontFamily: "'Oswald', sans-serif", textTransform: 'uppercase' }}>
-                                  {player.display_name} <span className="font-normal text-xs" style={{ fontFamily: "'DM Sans', sans-serif", textTransform: 'none' }}>&mdash; {player.entry_label}</span>
-                                </p>
-                                {isYou && (
-                                  <span className="flex-shrink-0 text-[#FF5722] font-bold" style={{ fontFamily: "'Space Mono', monospace", fontSize: '0.6rem', letterSpacing: '0.15em' }}>
-                                    YOU
-                                  </span>
-                                )}
-                              </div>
-                              {elimDetail && (
-                                <p className="text-[10px] text-[#5F6B7A] mt-0.5" style={{ fontFamily: "'DM Sans', sans-serif" }}>
-                                  {elimDetail}
-                                </p>
-                              )}
-                            </div>
-
-                            {/* Chevron */}
-                            <svg
-                              className={`w-4 h-4 text-[#5F6B7A] flex-shrink-0 transition-transform ${isExpanded ? 'rotate-180' : ''}`}
-                              fill="none"
-                              viewBox="0 0 24 24"
-                              stroke="currentColor"
-                            >
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                            </svg>
-                          </button>
-
-                          {isExpanded && <PlayerPickHistory player={player} roundsPlayed={leaderboard.rounds_played} isOwnEntry={isYou} />}
-                        </div>
-                      );
-                    })}
-                  </>
-                )}
-              </div>
-            )}
+        {/* No rounds yet */}
+        {!hasRounds && (
+          <div className="bg-[#111827] border border-[rgba(255,255,255,0.05)] rounded-[12px] p-8 text-center">
+            <p className="text-[#9BA3AE]" style={{ fontFamily: "'DM Sans', sans-serif" }}>
+              No rounds have been played yet. The grid will populate once picks are made.
+            </p>
           </div>
         )}
 
-        {/* Legend */}
-        <div className="mt-4 bg-[#111827] border border-[rgba(255,255,255,0.05)] rounded-[12px] p-4">
-          <p className="label mb-3">Legend</p>
-          <div className="flex flex-wrap gap-4 text-xs text-[#9BA3AE]" style={{ fontFamily: "'DM Sans', sans-serif" }}>
-            <div className="flex items-center space-x-1.5">
-              <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-[rgba(76,175,80,0.2)] text-[#4CAF50]">
-                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M5 13l4 4L19 7" /></svg>
-              </span>
-              <span>Win</span>
-            </div>
-            <div className="flex items-center space-x-1.5">
-              <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-[rgba(239,83,80,0.2)] text-[#EF5350] opacity-60">
-                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M6 18L18 6M6 6l12 12" /></svg>
-              </span>
-              <span>Loss</span>
-            </div>
-            <div className="flex items-center space-x-1.5">
-              <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-[rgba(255,179,0,0.15)] text-[#FFB300]" />
-              <span>Live</span>
-            </div>
-            <div className="flex items-center space-x-1.5">
-              <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-[rgba(27,58,92,0.3)]" />
-              <span>Pending</span>
-            </div>
-            <div className="flex items-center space-x-1.5">
-              <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-[rgba(255,255,255,0.05)] text-[#5F6B7A]">
-                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                </svg>
-              </span>
-              <span>Hidden</span>
-            </div>
-            <div className="flex items-center space-x-1.5">
-              <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-[rgba(255,255,255,0.03)] text-[#5F6B7A] text-[10px]">—</span>
-              <span>No Pick</span>
-            </div>
+        {/* Current round info */}
+        {leaderboard.current_round && (
+          <div className="mt-4 text-center">
+            <p className="text-xs text-[#5F6B7A]" style={{ fontFamily: "'DM Sans', sans-serif" }}>
+              Current: <span className="text-[#9BA3AE] font-semibold">{leaderboard.current_round.name}</span>
+            </p>
           </div>
-        </div>
+        )}
       </div>
     </div>
   );

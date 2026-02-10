@@ -17,7 +17,7 @@ export async function getPoolLeaderboard(poolId: string): Promise<PoolLeaderboar
   // 1. Pool info
   const { data: pool, error: poolError } = await supabase
     .from('pools')
-    .select('id, name, status')
+    .select('id, name, status, entry_fee, prize_pool')
     .eq('id', poolId)
     .single();
 
@@ -60,7 +60,7 @@ export async function getPoolLeaderboard(poolId: string): Promise<PoolLeaderboar
           team_id,
           is_correct,
           submitted_at,
-          team:team_id(id, name, abbreviation, seed, logo_url)
+          team:team_id(id, name, abbreviation, seed, logo_url, espn_team_id)
         `)
         .in('pool_player_id', playerIds)
     : { data: [] };
@@ -100,7 +100,7 @@ export async function getPoolLeaderboard(poolId: string): Promise<PoolLeaderboar
         const round = roundMap.get(pick.round_id);
         if (!round) return null;
 
-        const team = pick.team as unknown as { id: string; name: string; abbreviation: string; seed: number; logo_url: string | null } | null;
+        const team = pick.team as unknown as { id: string; name: string; abbreviation: string; seed: number; logo_url: string | null; espn_team_id: number | null } | null;
         const game = findGame(pick.round_id, pick.team_id);
 
         let opponentName: string | null = null;
@@ -134,6 +134,7 @@ export async function getPoolLeaderboard(poolId: string): Promise<PoolLeaderboar
           team_seed: team?.seed || 0,
           team_abbreviation: team?.abbreviation || '???',
           team_logo_url: team?.logo_url || null,
+          team_espn_id: team?.espn_team_id ?? null,
           opponent_name: opponentName,
           opponent_seed: opponentSeed,
           is_correct: pick.is_correct,
@@ -224,12 +225,17 @@ export async function getPoolLeaderboard(poolId: string): Promise<PoolLeaderboar
       return { id: r.id, name: r.name, date: r.date, deadline_datetime, is_complete };
     });
 
+  const entryFee = parseFloat(pool.entry_fee) || 0;
+  const prizePot = parseFloat(pool.prize_pool) || (entryFee * standingsPlayers.length);
+
   return {
     pool_id: poolId,
     pool_name: pool.name,
     pool_status: state.status === 'pre_tournament' ? 'open'
       : state.status === 'tournament_complete' ? 'complete'
       : 'active',
+    entry_fee: entryFee,
+    prize_pool: prizePot,
     total_players: standingsPlayers.length,
     alive_players: standingsPlayers.filter(p => !p.is_eliminated).length,
     eliminated_players: standingsPlayers.filter(p => p.is_eliminated).length,

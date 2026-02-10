@@ -50,8 +50,8 @@ export async function getTodaysGames(roundId: string): Promise<Game[]> {
     .from('games')
     .select(`
       *,
-      team1:team1_id(id, name, mascot, abbreviation, seed, region, logo_url, is_eliminated),
-      team2:team2_id(id, name, mascot, abbreviation, seed, region, logo_url, is_eliminated)
+      team1:team1_id(id, name, mascot, abbreviation, seed, region, logo_url, espn_team_id, is_eliminated),
+      team2:team2_id(id, name, mascot, abbreviation, seed, region, logo_url, espn_team_id, is_eliminated)
     `)
     .eq('round_id', roundId)
     .order('game_datetime', { ascending: true });
@@ -135,7 +135,7 @@ export async function getPlayerPick(poolPlayerId: string, roundId: string): Prom
     .from('picks')
     .select(`
       *,
-      team:team_id(id, name, mascot, abbreviation, seed, region, logo_url, is_eliminated),
+      team:team_id(id, name, mascot, abbreviation, seed, region, logo_url, espn_team_id, is_eliminated),
       round:round_id(id, name, date, deadline_datetime, is_active)
     `)
     .eq('pool_player_id', poolPlayerId)
@@ -157,7 +157,7 @@ export async function getPlayerPicks(poolPlayerId: string): Promise<Pick[]> {
     .from('picks')
     .select(`
       *,
-      team:team_id(id, name, mascot, abbreviation, seed, region, logo_url, is_eliminated),
+      team:team_id(id, name, mascot, abbreviation, seed, region, logo_url, espn_team_id, is_eliminated),
       round:round_id(id, name, date, deadline_datetime, is_active)
     `)
     .eq('pool_player_id', poolPlayerId)
@@ -206,6 +206,7 @@ export async function getPickableTeams(poolPlayerId: string, roundId: string): P
       seed: game.team1.seed,
       region: game.team1.region,
       logo_url: game.team1.logo_url,
+      espn_team_id: (game.team1 as any).espn_team_id ?? null,
       is_eliminated: game.team1.is_eliminated,
       game_id: game.id,
       game_datetime: game.game_datetime,
@@ -228,6 +229,7 @@ export async function getPickableTeams(poolPlayerId: string, roundId: string): P
       seed: game.team2.seed,
       region: game.team2.region,
       logo_url: game.team2.logo_url,
+      espn_team_id: (game.team2 as any).espn_team_id ?? null,
       is_eliminated: game.team2.is_eliminated,
       game_id: game.id,
       game_datetime: game.game_datetime,
@@ -403,7 +405,7 @@ export async function submitPick(submission: PickSubmission): Promise<Pick> {
     })
     .select(`
       *,
-      team:team_id(id, name, mascot, abbreviation, seed, region, logo_url, is_eliminated),
+      team:team_id(id, name, mascot, abbreviation, seed, region, logo_url, espn_team_id, is_eliminated),
       round:round_id(id, name, date, deadline_datetime, is_active)
     `)
     .single();
