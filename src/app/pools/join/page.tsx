@@ -4,6 +4,7 @@ import { Suspense, useState, useEffect, useCallback, useRef } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/components/auth/AuthProvider';
 import { useActivePool } from '@/hooks/useActivePool';
+import { useToast } from '@/hooks/useToast';
 import { supabase } from '@/lib/supabase/client';
 import { getTournamentState, canJoinOrCreate } from '@/lib/status';
 import TournamentInProgress from '@/components/TournamentInProgress';
@@ -15,6 +16,7 @@ function JoinPoolContent() {
   const codeFromUrl = searchParams.get('code');
   const { user } = useAuth();
   const { refreshPools, setActivePool } = useActivePool();
+  const { addToast } = useToast();
   const [joinCode, setJoinCode] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -85,11 +87,11 @@ function JoinPoolContent() {
       setExistingEntryCount(entryCount);
       setPoolInfo(pool);
     } catch (err: any) {
-      setError(err.message || 'Failed to find pool');
+      addToast('error', err.message || 'Pool not found. Check the code and try again.');
     } finally {
       setLoading(false);
     }
-  }, [joinCode, user]);
+  }, [joinCode, user, addToast]);
 
   // Auto-trigger lookup when code comes from URL and user is authenticated
   useEffect(() => {
@@ -122,9 +124,10 @@ function JoinPoolContent() {
 
       await refreshPools();
       setActivePool(poolInfo.id, poolInfo.name);
+      addToast('success', 'Joined pool!');
       router.push('/dashboard');
     } catch (err: any) {
-      setError(err.message || 'Failed to join pool');
+      addToast('error', err.message || 'Failed to join pool');
       setLoading(false);
     }
   };
@@ -159,12 +162,6 @@ function JoinPoolContent() {
     <div className="min-h-screen bg-[#0D1B2A] pb-24">
       <main className="max-w-lg mx-auto px-5 py-6">
         <div className="bg-[#111827] border border-[rgba(255,255,255,0.05)] rounded-[12px] p-6">
-          {error && (
-            <div className="bg-[rgba(239,83,80,0.1)] border border-[rgba(239,83,80,0.3)] text-[#EF5350] px-4 py-3 rounded-[8px] text-sm mb-6" style={{ fontFamily: "'DM Sans', sans-serif" }}>
-              {error}
-            </div>
-          )}
-
           <div className="space-y-5">
             <div>
               <label htmlFor="joinCode" className="block text-sm font-medium text-[#9BA3AE] mb-2" style={{ fontFamily: "'DM Sans', sans-serif" }}>Pool Join Code *</label>

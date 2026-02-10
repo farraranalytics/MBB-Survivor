@@ -15,6 +15,7 @@ import {
   PickError
 } from '@/lib/picks';
 import { useActivePool } from '@/hooks/useActivePool';
+import { useToast } from '@/hooks/useToast';
 import { supabase } from '@/lib/supabase/client';
 import { getSeedWinProbability } from '@/lib/analyze';
 import { PickableTeam, PickDeadline, Round, Pick, Game } from '@/types/picks';
@@ -355,7 +356,6 @@ export default function PickPage() {
   const [selectedTeam, setSelectedTeam] = useState<PickableTeam | null>(null);
   const [showConfirm, setShowConfirm] = useState(false);
   const [submitting, setSubmitting] = useState(false);
-  const [showSuccess, setShowSuccess] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [filterUsed, setFilterUsed] = useState(false);
@@ -374,6 +374,7 @@ export default function PickPage() {
   const [addEntryLoading, setAddEntryLoading] = useState(false);
   const [addEntryError, setAddEntryError] = useState('');
 
+  const { addToast } = useToast();
   const loadedRef = useRef(false);
 
   const loadData = useCallback(async () => {
@@ -501,17 +502,27 @@ export default function PickPage() {
   const handleConfirm = async () => {
     if (!selectedTeam || !poolPlayerId || !round) return;
     setSubmitting(true);
+    const teamForRetry = selectedTeam;
     try {
       const pick = await submitPick({ pool_player_id: poolPlayerId, round_id: round.id, team_id: selectedTeam.id });
       setExistingPick(pick);
       setShowConfirm(false);
-      setShowSuccess(true);
-      setTimeout(() => setShowSuccess(false), 4000);
+      addToast('success', `Pick locked in — (${selectedTeam.seed}) ${selectedTeam.name}`);
       refreshPools();
     } catch (err) {
-      const message = err instanceof PickError ? err.message : 'Failed to submit pick. Please try again.';
-      setError(message);
       setShowConfirm(false);
+      // Auto-retry once after 2s
+      setTimeout(async () => {
+        try {
+          const pick = await submitPick({ pool_player_id: poolPlayerId, round_id: round.id, team_id: teamForRetry.id });
+          setExistingPick(pick);
+          addToast('success', `Pick locked in — (${teamForRetry.seed}) ${teamForRetry.name}`);
+          refreshPools();
+        } catch (retryErr) {
+          const message = retryErr instanceof PickError ? retryErr.message : 'Failed to submit pick. Please try again.';
+          addToast('error', message);
+        }
+      }, 2000);
     } finally {
       setSubmitting(false);
     }
@@ -683,7 +694,6 @@ export default function PickPage() {
                     setLoading(true);
                     setExistingPick(null);
                     setSelectedTeam(null);
-                    setShowSuccess(false);
                     setIsEliminated(false);
                     setPickHistory([]);
                     setEliminationInfo(null);
@@ -890,16 +900,6 @@ export default function PickPage() {
         />
       )}
 
-      {/* Success snackbar — fixed above bottom nav */}
-      {showSuccess && existingPick?.team && (
-        <div className="fixed bottom-20 left-0 right-0 z-30 max-w-lg mx-auto px-5 animate-slide-up">
-          <div className="bg-[#4CAF50] rounded-full px-4 py-2.5 shadow-lg" style={{ boxShadow: '0 4px 20px rgba(76,175,80,0.4)' }}>
-            <p className="text-sm text-white text-center font-semibold" style={{ fontFamily: "'DM Sans', sans-serif" }}>
-              ✓ Pick locked in — ({existingPick.team.seed}) {existingPick.team.name}
-            </p>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

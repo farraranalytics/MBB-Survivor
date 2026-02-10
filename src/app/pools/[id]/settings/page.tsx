@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useAuth } from '@/components/auth/AuthProvider';
 import { useActivePool } from '@/hooks/useActivePool';
+import { useToast } from '@/hooks/useToast';
 import { supabase } from '@/lib/supabase/client';
 import { getTournamentState, canJoinOrCreate } from '@/lib/status';
 import {
@@ -265,7 +266,7 @@ export default function PoolSettingsPage() {
   const [maxEntries, setMaxEntries] = useState('1');
   const [notes, setNotes] = useState('');
   const [saving, setSaving] = useState(false);
-  const [saveSuccess, setSaveSuccess] = useState(false);
+  const { addToast } = useToast();
 
   // Account edit state
   const [editingName, setEditingName] = useState(false);
@@ -346,7 +347,6 @@ export default function PoolSettingsPage() {
 
     setSaving(true);
     setError('');
-    setSaveSuccess(false);
 
     try {
       const updates: PoolAdminUpdate = {
@@ -357,11 +357,10 @@ export default function PoolSettingsPage() {
         notes: notes.trim() || null,
       };
       await updatePoolSettings(poolId, updates);
-      setSaveSuccess(true);
-      setTimeout(() => setSaveSuccess(false), 3000);
+      addToast('success', 'Settings saved');
       refreshPools();
     } catch (err: any) {
-      setError(err.message || 'Failed to save settings');
+      addToast('error', 'Failed to save settings');
     } finally {
       setSaving(false);
     }
@@ -399,8 +398,9 @@ export default function PoolSettingsPage() {
       await supabase.auth.refreshSession();
       setEditingName(false);
       refreshPools();
+      addToast('success', 'Display name updated');
     } catch (err: any) {
-      setError(err.message || 'Failed to update display name');
+      addToast('error', 'Failed to update display name');
     } finally {
       setSavingName(false);
     }
@@ -415,8 +415,9 @@ export default function PoolSettingsPage() {
     try {
       await removePoolMember(memberId);
       await loadData();
+      addToast('success', 'Member removed');
     } catch (err: any) {
-      setError(err.message || `Failed to remove ${memberName}`);
+      addToast('error', 'Failed to remove member');
     }
   };
 
@@ -426,7 +427,7 @@ export default function PoolSettingsPage() {
       await leavePool(poolId, user.id);
       router.push('/dashboard');
     } catch (err: any) {
-      setError(err.message || 'Failed to leave pool');
+      addToast('error', 'Failed to leave pool');
     }
   };
 
@@ -444,6 +445,7 @@ export default function PoolSettingsPage() {
     }
     setCopiedCode(true);
     setTimeout(() => setCopiedCode(false), 2000);
+    addToast('info', 'Join code copied!', 2000);
   };
 
   // ── Simulator Helpers ──────────────────────────────────────────
@@ -591,14 +593,6 @@ export default function PoolSettingsPage() {
         {error && (
           <div className="bg-[rgba(239,83,80,0.1)] border border-[rgba(239,83,80,0.3)] text-[#EF5350] px-4 py-3 rounded-[8px] text-sm" style={{ fontFamily: "'DM Sans', sans-serif" }}>
             {error}
-          </div>
-        )}
-
-        {/* Success toast */}
-        {saveSuccess && (
-          <div className="bg-[rgba(76,175,80,0.1)] border border-[rgba(76,175,80,0.3)] text-[#4CAF50] px-4 py-3 rounded-[8px] text-sm flex items-center gap-2" style={{ fontFamily: "'DM Sans', sans-serif" }}>
-            <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M5 13l4 4L19 7" /></svg>
-            Settings saved successfully
           </div>
         )}
 

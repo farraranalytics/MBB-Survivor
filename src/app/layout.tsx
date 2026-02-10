@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import './globals.css'
 import { AuthProvider } from '@/components/auth/AuthProvider'
 import { ActivePoolProvider } from '@/contexts/ActivePoolContext'
+import { ToastProvider } from '@/contexts/ToastContext'
 import Header from '@/components/Header'
 import BottomNav from '@/components/BottomNav'
 
@@ -45,9 +46,11 @@ export default function RootLayout({
       <body className="bg-[#0D1B2A] text-[#E8E6E1] antialiased" style={{ fontFamily: "'DM Sans', sans-serif" }}>
         <AuthProvider>
           <ActivePoolProvider>
-            <Header />
-            {children}
-            <BottomNav />
+            <ToastProvider>
+              <Header />
+              {children}
+              <BottomNav />
+            </ToastProvider>
           </ActivePoolProvider>
         </AuthProvider>
       </body>

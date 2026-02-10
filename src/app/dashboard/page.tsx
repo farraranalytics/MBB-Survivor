@@ -9,6 +9,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { formatET } from '@/lib/timezone';
 import { SplashOverlay } from '@/components/SplashOverlay';
+import { useToast } from '@/hooks/useToast';
 import { getTournamentState, canJoinOrCreate, TournamentState, RoundInfo } from '@/lib/status';
 import { getActivityFeed, ActivityItem, timeAgo } from '@/lib/activity';
 
@@ -389,6 +390,7 @@ function SimplePoolCard({ pool, isActive, isCreator, onActivate }: {
   onActivate: () => void;
 }) {
   const [copiedCode, setCopiedCode] = useState(false);
+  const { addToast } = useToast();
   const router = useRouter();
 
   const handleCopy = async (e: React.MouseEvent) => {
@@ -405,6 +407,7 @@ function SimplePoolCard({ pool, isActive, isCreator, onActivate }: {
     }
     setCopiedCode(true);
     setTimeout(() => setCopiedCode(false), 2000);
+    addToast('info', 'Join code copied!', 2000);
   };
 
   const handleShare = async (e: React.MouseEvent) => {

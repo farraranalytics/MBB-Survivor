@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/components/auth/AuthProvider';
 import { useActivePool } from '@/hooks/useActivePool';
+import { useToast } from '@/hooks/useToast';
 import { supabase } from '@/lib/supabase/client';
 import { getTournamentState, canJoinOrCreate } from '@/lib/status';
 import TournamentInProgress from '@/components/TournamentInProgress';
@@ -114,6 +115,7 @@ function PoolCreatedSuccess({ pool, onCopy, copied }: { pool: CreatedPoolResult;
 export default function CreatePool() {
   const { user } = useAuth();
   const { setActivePool, refreshPools } = useActivePool();
+  const { addToast } = useToast();
   const [name, setName] = useState('');
   const [entryFee, setEntryFee] = useState('');
   const [maxPlayers, setMaxPlayers] = useState('');
@@ -209,7 +211,7 @@ export default function CreatePool() {
       setCreatedPool({ id: pool.id, name: pool.name, join_code: pool.join_code });
       setLoading(false);
     } catch (err: any) {
-      setError(err.message || 'Failed to create pool');
+      addToast('error', err.message || 'Failed to create pool');
       setLoading(false);
     }
   };
