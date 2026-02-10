@@ -2,7 +2,7 @@
 
 import { BracketGame } from '@/types/bracket';
 import { TeamInfo } from '@/types/picks';
-import { formatETShort } from '@/lib/timezone';
+import { formatETShort, formatDateET } from '@/lib/timezone';
 
 interface BracketMatchupCardProps {
   game: BracketGame;
@@ -81,16 +81,19 @@ export default function BracketMatchupCard({ game, compact }: BracketMatchupCard
   const team1Wins = hasWinner && game.winner_id === game.team1_id;
   const team2Wins = hasWinner && game.winner_id === game.team2_id;
 
+  const dateStr = formatDateET(game.game_datetime);
+  const timeStr = formatETShort(game.game_datetime);
+
   let statusText = '';
   let statusColor = '';
   if (game.status === 'final') {
-    statusText = 'Final';
+    statusText = `FINAL · ${dateStr}`;
     statusColor = 'text-[#4CAF50] bg-[rgba(76,175,80,0.1)]';
   } else if (game.status === 'in_progress') {
-    statusText = formatETShort(game.game_datetime);
-    statusColor = 'text-[#9BA3AE] bg-[#1B2A3D]';
+    statusText = `🔴 LIVE`;
+    statusColor = 'text-[#EF5350] bg-[rgba(239,83,80,0.08)]';
   } else if (game.status === 'scheduled') {
-    statusText = formatETShort(game.game_datetime);
+    statusText = `${dateStr} · ${timeStr}`;
     statusColor = 'text-[#9BA3AE] bg-[#1B2A3D]';
   }
 

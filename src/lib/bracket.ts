@@ -242,9 +242,27 @@ function getBracketIndex(game: BracketGame): number {
   return idx >= 0 ? idx : 99;
 }
 
+/** Map DB round name to a display label for bracket columns */
+export function mapRoundNameToLabel(name: string): string {
+  const code = mapRoundNameToCode(name);
+  switch (code) {
+    case 'R64': return 'Round of 64';
+    case 'R32': return 'Round of 32';
+    case 'S16': return 'Sweet 16';
+    case 'E8': return 'Elite Eight';
+    case 'F4': return 'Final Four';
+    case 'CHIP': return 'Championship';
+    default: return name;
+  }
+}
+
+/** Bracket round order for region brackets (no Final Four / Championship) */
+const BRACKET_ROUND_ORDER = ['R64', 'R32', 'S16', 'E8'];
+
 /**
  * Build a region bracket from games and rounds.
- * Filters games by team region, groups by round, sorts R1 by bracket position.
+ * Groups Day 1 + Day 2 rounds into a single bracket column per round.
+ * Filters games by team region, sorts R64 by bracket position.
  */
 export function buildRegionBracket(
   region: string,
@@ -256,32 +274,45 @@ export function buildRegionBracket(
     g => g.team1?.region === region || g.team2?.region === region
   );
 
-  // Group games by round
-  const gamesByRound = new Map<string, BracketGame[]>();
+  // Group games by round CODE (not round ID) — this merges Day 1 + Day 2
+  const gamesByCode = new Map<string, BracketGame[]>();
   for (const game of regionGames) {
-    const roundId = game.round_id;
-    if (!gamesByRound.has(roundId)) {
-      gamesByRound.set(roundId, []);
+    // Find the round for this game
+    const round = allRounds.find(r => r.id === game.round_id);
+    if (!round) continue;
+    const code = mapRoundNameToCode(round.name);
+    if (!gamesByCode.has(code)) {
+      gamesByCode.set(code, []);
     }
-    gamesByRound.get(roundId)!.push(game);
+    gamesByCode.get(code)!.push(game);
   }
 
-  // Build bracket rounds in order
+  // Build bracket rounds in standard order (R64 → R32 → S16 → E8)
   const bracketRounds: BracketRound[] = [];
-  // Only include rounds that have region games (R1 through Elite 8, not Final Four)
-  const regionRoundNames = ['Round of 64', 'Round of 32', 'Sweet 16', 'Elite Eight'];
 
-  for (const round of allRounds) {
-    if (!regionRoundNames.some(name => round.name.includes(name) || name.includes(round.name))) {
-      // Check if this round has games for this region
-      if (!gamesByRound.has(round.id)) continue;
+  for (const code of BRACKET_ROUND_ORDER) {
+    const games = gamesByCode.get(code) || [];
+    if (games.length === 0) {
+      // Still include the column if any round with this code exists in the DB
+      const dbRound = allRounds.find(r => mapRoundNameToCode(r.name) === code);
+      if (!dbRound) continue;
     }
 
-    const games = gamesByRound.get(round.id) || [];
-    // Sort R1 games by bracket seed position
-    const sorted = games.length === 8 ? sortByBracketPosition(games) : games;
+    // Use the first matching DB round as the representative (for the BracketRound type)
+    // But override its name with the grouped label
+    const dbRound = allRounds.find(r => mapRoundNameToCode(r.name) === code);
+    if (!dbRound) continue;
 
-    bracketRounds.push({ round, games: sorted });
+    // Create a synthetic round with the grouped display name
+    const syntheticRound: Round = {
+      ...dbRound,
+      name: mapRoundNameToLabel(dbRound.name),
+    };
+
+    // Sort R64 games by bracket seed position
+    const sorted = code === 'R64' ? sortByBracketPosition(games) : games;
+
+    bracketRounds.push({ round: syntheticRound, games: sorted });
   }
 
   return { region, rounds: bracketRounds };
