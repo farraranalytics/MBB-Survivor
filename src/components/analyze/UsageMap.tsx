@@ -19,17 +19,18 @@ export default function UsageMap({
     <div className="card p-5 mt-3.5">
       <div className="text-label-accent mb-2">USAGE MAP</div>
       <h3 className="text-heading text-[1.1rem] mb-4">Region × Day</h3>
-      <div className="overflow-x-auto">
-        <table className="w-full" style={{ borderCollapse: 'separate', borderSpacing: 3, tableLayout: 'fixed' }}>
+      <div className="overflow-x-auto -mx-5 px-5">
+        <table style={{ borderCollapse: 'separate', borderSpacing: 3, minWidth: Math.max(days.length * 36 + 110, 320) }}>
           <thead>
             <tr>
-              <th className="label text-[0.5rem] text-left p-1" style={{ width: 70 }}>
+              <th className="label text-[0.5rem] text-left p-1 whitespace-nowrap sticky left-0 z-[1]" style={{ width: 70, background: 'var(--surface-2)' }}>
                 REGION
               </th>
               {days.map(d => (
                 <th
                   key={d.id}
-                  className="font-[family-name:var(--font-mono)] text-[0.4rem] text-[var(--text-tertiary)] text-center p-[3px] font-semibold tracking-[0.08em]"
+                  className="font-[family-name:var(--font-mono)] text-[0.5rem] text-[var(--text-tertiary)] text-center p-1 font-semibold tracking-[0.08em] whitespace-nowrap"
+                  style={{ minWidth: 32 }}
                 >
                   {d.label.replace('Day ', 'D').replace('Round ', 'R')}
                 </th>
@@ -49,7 +50,7 @@ export default function UsageMap({
 
               return (
                 <tr key={region}>
-                  <td className="font-[family-name:var(--font-display)] font-semibold text-[0.8rem] uppercase p-1">
+                  <td className="font-[family-name:var(--font-display)] font-semibold text-[0.8rem] uppercase p-1 whitespace-nowrap sticky left-0 z-[1]" style={{ background: 'var(--surface-2)' }}>
                     {region}
                   </td>
                   {days.map(day => {

@@ -84,6 +84,36 @@ export default function BracketPlanner({
     return statuses;
   }, [games, rounds]);
 
+  // Build actual game indices per round_id per region from DB games
+  // This replaces the hardcoded HALF_A/HALF_B split so the planner
+  // matches the real schedule (which may have uneven region distribution)
+  const actualGameIndices = useMemo(() => {
+    const map: Record<string, Record<string, number[]>> = {};
+    const roundIdToCode = new Map<string, string>();
+    for (const round of rounds) {
+      roundIdToCode.set(round.id, mapRoundNameToCode(round.name));
+    }
+    for (const game of games) {
+      if (!game.team1) continue;
+      const region = (game.team1 as TeamInfo).region;
+      const roundCode = roundIdToCode.get(game.round_id);
+      if (!roundCode) continue;
+      const gameIdx = getGameIndexForRound((game.team1 as TeamInfo).seed, roundCode);
+      if (!map[game.round_id]) map[game.round_id] = {};
+      if (!map[game.round_id][region]) map[game.round_id][region] = [];
+      if (!map[game.round_id][region].includes(gameIdx)) {
+        map[game.round_id][region].push(gameIdx);
+      }
+    }
+    // Sort indices within each group
+    for (const roundId of Object.keys(map)) {
+      for (const region of Object.keys(map[roundId])) {
+        map[roundId][region].sort((a, b) => a - b);
+      }
+    }
+    return map;
+  }, [games, rounds]);
+
   // ── State ───────────────────────────────────────────────────
   const [advancers, setAdvancers] = useState<Record<string, TeamInfo>>({});
   const [picks, setPicks] = useState<Record<string, PlannerPick>>({});
@@ -206,16 +236,25 @@ export default function BracketPlanner({
           : [];
       }
 
-      let half = day.half;
-      if (half && regionFlipped[region]) half = half === 'A' ? 'B' : 'A';
+      // Use actual DB game indices when available, fall back to HALF_A/HALF_B
+      const dbIndices = actualGameIndices[day.id]?.[region];
+      let gameIndices: number[];
 
-      const gameIndices = roundCode === 'E8'
-        ? [0]
-        : half === 'A'
+      if (dbIndices && dbIndices.length > 0) {
+        // Real data — use whatever games are actually on this day for this region
+        gameIndices = dbIndices;
+      } else if (roundCode === 'E8') {
+        gameIndices = [0];
+      } else {
+        // Fallback for future rounds with no games yet
+        let half = day.half;
+        if (half && regionFlipped[region]) half = half === 'A' ? 'B' : 'A';
+        gameIndices = half === 'A'
           ? (HALF_A[roundCode] || [])
           : half === 'B'
             ? (HALF_B[roundCode] || [])
             : [...(HALF_A[roundCode] || []), ...(HALF_B[roundCode] || [])];
+      }
 
       return gameIndices.map(gi => ({
         gameIdx: gi,
@@ -230,7 +269,7 @@ export default function BracketPlanner({
       }));
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [advancers, regionFlipped, bracket]
+    [actualGameIndices, advancers, regionFlipped, bracket]
   );
 
   // ── Actions ──────────────────────────────────────────────────
@@ -271,6 +310,13 @@ export default function BracketPlanner({
   };
 
   const getRegionsForDayWrapped = (day: PlannerDay): string[] => {
+    // Use actual DB data if available to determine which regions have games
+    const dbRegions = actualGameIndices[day.id];
+    if (dbRegions && Object.keys(dbRegions).length > 0) {
+      // Return regions in standard order, filtered to those with games
+      return PLANNER_REGIONS.filter(r => dbRegions[r] && dbRegions[r].length > 0);
+    }
+    // Fallback for future rounds with no games yet
     return getRegionsForDayUtil(day, e8Swapped);
   };
 
@@ -310,7 +356,7 @@ export default function BracketPlanner({
     <div style={{ paddingBottom: showTutorial ? 110 : 0 }}>
       {/* Top bar */}
       <div
-        className="flex items-center justify-between px-5 py-3 mb-4"
+        className="flex flex-wrap items-center justify-between px-4 sm:px-5 py-3 mb-4 gap-2"
         style={{
           borderBottom: '1px solid var(--border-default)',
           background: 'var(--surface-0)',
@@ -321,11 +367,11 @@ export default function BracketPlanner({
           <div className="text-label-accent text-[0.5rem]">ANALYZE</div>
           <div className="text-heading text-[1.2rem]">Bracket Planner</div>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 sm:gap-3">
           {tutorialDismissed && (
             <button
               onClick={restartTutorial}
-              className="font-[family-name:var(--font-mono)] text-[0.5rem] tracking-[0.1em] cursor-pointer px-2.5 py-1"
+              className="font-[family-name:var(--font-mono)] text-[0.5rem] tracking-[0.1em] cursor-pointer px-2 py-1"
               style={{
                 background: 'none',
                 border: '1px solid var(--border-default)',
@@ -333,15 +379,17 @@ export default function BracketPlanner({
                 borderRadius: 'var(--radius-sm)',
               }}
             >
-              ? TUTORIAL
+              ?
             </button>
           )}
-          <div className="font-[family-name:var(--font-mono)] font-bold text-[0.85rem] tracking-[0.03em]"
-            style={{ color: totalPicks === days.length ? 'var(--color-alive)' : 'var(--text-secondary)' }}
-          >
-            {totalPicks}/{days.length}
+          <div className="flex items-center gap-1.5">
+            <div className="font-[family-name:var(--font-mono)] font-bold text-[0.85rem] tracking-[0.03em]"
+              style={{ color: totalPicks === days.length ? 'var(--color-alive)' : 'var(--text-secondary)' }}
+            >
+              {totalPicks}/{days.length}
+            </div>
+            <span className="label text-[0.5rem]">SET</span>
           </div>
-          <span className="label text-[0.5rem]">PICKS SET</span>
           {(Object.keys(picks).length > Object.keys(lockedPicks).length || Object.keys(advancers).length > Object.keys(lockedAdvancers).length) && (
             <button
               onClick={resetAll}

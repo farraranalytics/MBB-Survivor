@@ -71,7 +71,7 @@ export default function DayCard({
       {/* Header — always visible */}
       <div
         onClick={onToggleExpand}
-        className="flex items-center py-3 px-5 cursor-pointer gap-3.5"
+        className="flex flex-wrap items-center py-3 px-4 sm:px-5 cursor-pointer gap-2 sm:gap-3.5"
       >
         {/* Day number */}
         <div
@@ -80,10 +80,10 @@ export default function DayCard({
         >
           {dayIndex + 1}
         </div>
-        <div className="w-px h-8" style={{ background: 'var(--border-default)' }} />
+        <div className="w-px h-8 hidden sm:block" style={{ background: 'var(--border-default)' }} />
 
         {/* Date + label */}
-        <div className="min-w-[110px]">
+        <div className="min-w-0">
           <div className="font-[family-name:var(--font-display)] font-semibold text-[0.95rem] uppercase">
             {day.date}
           </div>
@@ -128,10 +128,10 @@ export default function DayCard({
         </div>
 
         {/* Current pick display */}
-        <div className="flex-1">
+        <div className="flex-1 min-w-0">
           {pick ? (
             <div
-              className="inline-flex items-center gap-2 rounded-[var(--radius-sm)] py-1.5 px-3.5"
+              className="inline-flex items-center gap-1.5 sm:gap-2 rounded-[var(--radius-sm)] py-1 px-2.5 sm:py-1.5 sm:px-3.5"
               style={{
                 background: 'var(--color-orange-subtle)',
                 border: '1.5px solid var(--color-orange)',
@@ -141,10 +141,10 @@ export default function DayCard({
               <span className="font-[family-name:var(--font-display)] font-bold text-[0.55rem] text-[var(--text-tertiary)] min-w-4 text-center">
                 {pick.team.seed}
               </span>
-              <span className="font-[family-name:var(--font-display)] font-bold text-[0.95rem] uppercase text-[var(--color-orange)]">
+              <span className="font-[family-name:var(--font-display)] font-bold text-[0.8rem] sm:text-[0.95rem] uppercase text-[var(--color-orange)] truncate">
                 {pick.team.abbreviation || pick.team.name}
               </span>
-              <span className="font-[family-name:var(--font-mono)] text-[0.5rem] text-[var(--text-tertiary)] tracking-[0.1em]">
+              <span className="font-[family-name:var(--font-mono)] text-[0.5rem] text-[var(--text-tertiary)] tracking-[0.1em] hidden sm:inline">
                 {pick.region.toUpperCase()}
               </span>
               {pick.isSubmitted && (
@@ -154,7 +154,7 @@ export default function DayCard({
               )}
             </div>
           ) : (
-            <span className="font-[family-name:var(--font-body)] text-[0.85rem] text-[var(--text-disabled)]">
+            <span className="font-[family-name:var(--font-body)] text-[0.8rem] sm:text-[0.85rem] text-[var(--text-disabled)]">
               No pick set
             </span>
           )}
@@ -169,11 +169,11 @@ export default function DayCard({
       {/* Expanded content — matchups by region */}
       {isExpanded && (
         <div
-          className="px-5 pb-5 pt-1 gap-2.5"
-          style={{
-            display: 'grid',
-            gridTemplateColumns: `repeat(${Math.min(regions.length, 4)}, 1fr)`,
-          }}
+          className={`px-5 pb-5 pt-1 gap-2.5 grid ${
+            regions.length <= 2
+              ? 'grid-cols-1 sm:grid-cols-2'
+              : 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-4'
+          }`}
         >
           {regions.map(region => {
             const matchups = getMatchupsForRegion(region);
