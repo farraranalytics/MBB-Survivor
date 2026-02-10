@@ -656,8 +656,10 @@ function TournamentCompleteSplash() {
 // ─── Main Overlay Component ─────────────────────────────────────
 
 export function SplashOverlay({ userId }: { userId: string | undefined }) {
-  const [mounted, setMounted] = useState(false);
-  const [showSplash, setShowSplash] = useState(false);
+  // 'pending' = waiting for auth/sessionStorage check (block content)
+  // 'show' = splash visible
+  // 'hide' = splash dismissed or already seen
+  const [splashState, setSplashState] = useState<'pending' | 'show' | 'hide'>('pending');
   const [fading, setFading] = useState(false);
   const [data, setData] = useState<SplashData | null>(null);
   const dismissedRef = useRef(false);
@@ -667,23 +669,29 @@ export function SplashOverlay({ userId }: { userId: string | undefined }) {
     dismissedRef.current = true;
     setFading(true);
     markSplashSeen();
-    setTimeout(() => setShowSplash(false), 300);
+    setTimeout(() => setSplashState('hide'), 300);
   }, []);
 
-  // Mount check — prevents any render until client-side
   useEffect(() => {
-    setMounted(true);
+    // Wait for auth to resolve before deciding
     if (!userId) return;
     const alreadyShown = sessionStorage.getItem(SPLASH_KEY) === 'true';
-    if (!alreadyShown) {
-      setShowSplash(true);
+    if (alreadyShown) {
+      setSplashState('hide');
+    } else {
+      setSplashState('show');
       fetchSplashData(userId)
         .then(result => setData(result))
         .catch(() => dismiss());
     }
   }, [userId, dismiss]);
 
-  if (!mounted || !showSplash) return null;
+  // Still deciding (auth loading) — render opaque blocker to prevent content flash
+  if (splashState === 'pending') {
+    return <div className="fixed inset-0 z-50 bg-[#0D1B2A]" />;
+  }
+
+  if (splashState === 'hide') return null;
 
   return (
     <div
