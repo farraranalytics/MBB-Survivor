@@ -66,21 +66,21 @@ function PickCell({
   }
 
   // Determine styling by state
-  let bgClass = 'bg-[rgba(255,255,255,0.07)]'; // pending/scheduled
+  let bgClass = 'bg-[rgba(255,255,255,0.14)]'; // pending/scheduled
   let textColor = '#E8E6E1';
   let icon = '';
   let pulseClass = '';
 
   if (result.is_correct === true) {
-    bgClass = 'bg-[rgba(76,175,80,0.25)]';
+    bgClass = 'bg-[rgba(76,175,80,0.5)]';
     textColor = '#4CAF50';
     icon = '✓';
   } else if (result.is_correct === false) {
-    bgClass = 'bg-[rgba(239,83,80,0.25)]';
+    bgClass = 'bg-[rgba(239,83,80,0.5)]';
     textColor = '#EF5350';
     icon = '✗';
   } else if (result.game_status === 'in_progress') {
-    bgClass = 'bg-[rgba(255,179,0,0.22)]';
+    bgClass = 'bg-[rgba(255,179,0,0.44)]';
     textColor = '#FFB300';
     pulseClass = 'animate-pulse';
     icon = result.game_score || '•••';
