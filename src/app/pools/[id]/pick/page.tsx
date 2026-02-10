@@ -509,13 +509,14 @@ export default function PickPage() {
     return () => clearInterval(interval);
   }, []);
 
-  // Set default expanded region on mobile after teams load
+  // Set default expanded region on mobile after teams load (run once, not on every collapse)
   useEffect(() => {
     if (isMobile && teams.length > 0 && expandedRegion === null) {
       const firstRegion = REGION_ORDER.find(r => teams.some(t => t.region === r));
       if (firstRegion) setExpandedRegion(firstRegion);
     }
-  }, [isMobile, teams, expandedRegion]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isMobile, teams]);
 
   const loadData = useCallback(async () => {
     if (!user) return;
@@ -1193,7 +1194,7 @@ export default function PickPage() {
 
       {/* ═══ FIXED BOTTOM BAR ═══ */}
       {!isEliminated && (
-        <div className="fixed bottom-16 inset-x-0 z-20 bg-[#111827] border-t border-[rgba(255,255,255,0.05)] tab-bar-shadow">
+        <div className="fixed inset-x-0 z-20 bg-[#111827] border-t border-[rgba(255,255,255,0.05)] tab-bar-shadow" style={{ bottom: 'calc(4rem + env(safe-area-inset-bottom, 0px))' }}>
           <div className="max-w-[740px] mx-auto px-4 sm:px-5 py-3">
             <button
               onClick={() => selectedTeam && !isSameAsExisting && setShowConfirm(true)}
