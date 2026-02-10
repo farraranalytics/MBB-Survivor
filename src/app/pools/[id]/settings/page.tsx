@@ -930,6 +930,44 @@ export default function PoolSettingsPage() {
                   </p>
                 )}
 
+                {/* Round state toggle */}
+                {simRound && (
+                  <div className="space-y-2">
+                    <p className="label text-label-accent">Round State</p>
+                    <div className="flex gap-2">
+                      {([
+                        { key: 'pre_round', label: 'Pre Round', desc: 'Picks open, deadline future' },
+                        { key: 'round_started', label: 'Round Started', desc: 'Picks locked, deadline passed' },
+                        { key: 'round_complete', label: 'Round Complete', desc: 'Games final, results graded' },
+                      ] as const).map(opt => {
+                        const isCurrent =
+                          (opt.key === 'pre_round' && simStats && simStats.scheduled > 0 && simStats.inProgress === 0 && simStats.final === 0) ||
+                          (opt.key === 'round_started' && simStats && simStats.inProgress > 0) ||
+                          (opt.key === 'round_complete' && simStats && simStats.final > 0 && simStats.scheduled === 0 && simStats.inProgress === 0);
+                        return (
+                          <button
+                            key={opt.key}
+                            onClick={() => simAction('/api/admin/test/set-round-state', { state: opt.key })}
+                            disabled={simLoading}
+                            title={opt.desc}
+                            className={`flex-1 py-2 rounded-[6px] text-[11px] font-semibold transition-colors disabled:opacity-50 ${
+                              isCurrent
+                                ? 'bg-[#FF5722] text-white'
+                                : 'bg-[#1B2A3D] text-[#9BA3AE] hover:bg-[#243447] hover:text-[#E8E6E1]'
+                            }`}
+                            style={{ fontFamily: "'DM Sans', sans-serif" }}
+                          >
+                            {opt.label}
+                          </button>
+                        );
+                      })}
+                    </div>
+                    <p className="text-[10px] text-[#5F6B7A]" style={{ fontFamily: "'DM Sans', sans-serif" }}>
+                      Toggle to test pick locking, deadline behavior, and pick visibility.
+                    </p>
+                  </div>
+                )}
+
                 {/* Games list */}
                 {simGames.length > 0 && (
                   <div className="space-y-2">
