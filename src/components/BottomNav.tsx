@@ -68,8 +68,8 @@ export default function BottomNav() {
     },
     {
       label: 'Analyze',
-      href: poolBase ? `${poolBase}/analyze` : '/dashboard',
-      match: /^\/pools\/[^/]+\/analyze$/.test(pathname),
+      href: poolBase ? `${poolBase}/analyze` : '/analyze',
+      match: /^\/pools\/[^/]+\/analyze$/.test(pathname) || pathname === '/analyze',
       icon: (
         <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M4 20h16M4 20V10m0 10h4V14m0 6h4V8m0 12h4V12m0 8h4V6" />

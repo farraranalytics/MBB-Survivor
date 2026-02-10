@@ -1,19 +1,197 @@
-// Bracket data fetching and structuring
+// Bracket data fetching, structuring, and planner utilities
 import { supabase } from '@/lib/supabase/client';
-import { Round, Game } from '@/types/picks';
+import { Round, Game, TeamInfo } from '@/types/picks';
 import { BracketGame, BracketRound, RegionBracket } from '@/types/bracket';
 
-// Standard NCAA bracket seed matchup order (top to bottom)
-const BRACKET_SEED_ORDER = [
-  [1, 16],
-  [8, 9],
-  [5, 12],
-  [4, 13],
-  [6, 11],
-  [3, 14],
-  [7, 10],
-  [2, 15],
-];
+// ── NCAA Bracket Structure Constants ─────────────────────────────────
+// Standard seed matchup order (top to bottom of bracket)
+export const R64_SEED_PAIRINGS = [[1,16],[8,9],[5,12],[4,13],[6,11],[3,14],[7,10],[2,15]];
+export const R32_FEEDERS = [[0,1],[2,3],[4,5],[6,7]];
+export const S16_FEEDERS = [[0,1],[2,3]];
+export const E8_FEEDERS = [[0,1]];
+
+export const HALF_A: Record<string, number[]> = { R64: [0,1,2,3], R32: [0,1], S16: [0] };
+export const HALF_B: Record<string, number[]> = { R64: [4,5,6,7], R32: [2,3], S16: [1] };
+
+export const PREV_ROUND: Record<string, string> = { R32: 'R64', S16: 'R32', E8: 'S16', F4: 'E8' };
+export const FEEDERS_MAP: Record<string, number[][]> = { R32: R32_FEEDERS, S16: S16_FEEDERS, E8: E8_FEEDERS };
+
+export const PLANNER_REGIONS = ['East', 'South', 'West', 'Midwest'];
+
+export const ROUND_COLORS: Record<string, string> = {
+  R64: '#5F6B7A', R32: '#9BA3AE', S16: '#42A5F5',
+  E8: '#FFB300', F4: '#EF5350', CHIP: '#FF5722',
+};
+
+// ── Planner Types ────────────────────────────────────────────────────
+
+export interface PlannerDay {
+  id: string;           // round UUID
+  label: string;        // round name from DB
+  date: string;         // formatted "Mar 19"
+  roundCode: string;    // "R64", "R32", "S16", "E8", "F4", "CHIP"
+  half: string | null;  // "A", "B", or null
+  allRegions: boolean;
+  fixedRegions?: string[];
+  deadline?: string;
+}
+
+export interface PlannerPick {
+  team: TeamInfo;
+  region: string;
+  dayId: string;        // round UUID
+  isSubmitted: boolean; // true = real pick from DB, locked
+}
+
+// ── Planner Helpers ──────────────────────────────────────────────────
+
+export function mapRoundNameToCode(name: string): string {
+  const n = name.toLowerCase();
+  if (n.startsWith('round 1') || n.includes('round of 64')) return 'R64';
+  if (n.startsWith('round 2') || n.includes('round of 32')) return 'R32';
+  if (n.includes('sweet 16') || n.includes('sweet sixteen')) return 'S16';
+  if (n.includes('elite eight') || n.includes('elite 8')) return 'E8';
+  if (n.includes('final four')) return 'F4';
+  if (n.includes('championship')) return 'CHIP';
+  return 'R64';
+}
+
+export function inferHalf(name: string): string | null {
+  if (name.includes('Day 1')) return 'A';
+  if (name.includes('Day 2')) return 'B';
+  return null;
+}
+
+export function getRegionsForDay(day: PlannerDay, e8Swapped: boolean): string[] {
+  if (day.fixedRegions) {
+    const base = [...day.fixedRegions];
+    return e8Swapped ? base.reverse() : base;
+  }
+  if (day.allRegions) return PLANNER_REGIONS;
+  return PLANNER_REGIONS;
+}
+
+export function buildPlannerDays(rounds: Round[]): PlannerDay[] {
+  return rounds.map(round => {
+    const roundCode = mapRoundNameToCode(round.name);
+    const half = inferHalf(round.name);
+
+    let fixedRegions: string[] | undefined;
+    if (roundCode === 'E8' && half === 'A') fixedRegions = ['East', 'South'];
+    if (roundCode === 'E8' && half === 'B') fixedRegions = ['West', 'Midwest'];
+
+    return {
+      id: round.id,
+      label: round.name,
+      date: new Date(round.date + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+      roundCode,
+      half,
+      allRegions: roundCode !== 'E8' || !half,
+      fixedRegions,
+      deadline: round.deadline_datetime,
+    };
+  });
+}
+
+/** Map a team's seed to its R64 game index (bracket position) */
+export function seedToR64Index(seed: number): number {
+  return R64_SEED_PAIRINGS.findIndex(pair => pair.includes(seed));
+}
+
+/** Given a team seed, determine its game index at any round */
+export function getGameIndexForRound(teamSeed: number, roundCode: string): number {
+  const r64 = seedToR64Index(teamSeed);
+  if (r64 < 0) return 0;
+  switch (roundCode) {
+    case 'R64': return r64;
+    case 'R32': return Math.floor(r64 / 2);
+    case 'S16': return Math.floor(r64 / 4);
+    case 'E8': return 0;
+    default: return 0;
+  }
+}
+
+/** Get game indices for a day — combines halves when no half split */
+export function getGameIndicesForDay(roundCode: string, half: string | null): number[] {
+  if (roundCode === 'E8') return [0];
+  if (roundCode === 'F4' || roundCode === 'CHIP') return [0];
+  if (!half) {
+    // No half split — show all games for this round
+    const a = HALF_A[roundCode] || [];
+    const b = HALF_B[roundCode] || [];
+    return [...a, ...b];
+  }
+  return half === 'A' ? (HALF_A[roundCode] || []) : (HALF_B[roundCode] || []);
+}
+
+/** Build initial advancers from completed games */
+export function buildLockedAdvancers(
+  games: BracketGame[],
+  rounds: Round[],
+  bracket: Record<string, TeamInfo[]>,
+): { advancers: Record<string, TeamInfo>; lockedKeys: Set<string> } {
+  const advancers: Record<string, TeamInfo> = {};
+  const lockedKeys = new Set<string>();
+
+  const roundIdToCode = new Map<string, string>();
+  for (const round of rounds) {
+    roundIdToCode.set(round.id, mapRoundNameToCode(round.name));
+  }
+
+  for (const game of games) {
+    if (game.status !== 'final' || !game.winner_id) continue;
+    const t1 = game.team1 as TeamInfo | undefined;
+    const t2 = game.team2 as TeamInfo | undefined;
+    if (!t1 || !t2) continue;
+
+    const winner = game.winner_id === t1.id ? t1 : t2;
+    const region = t1.region;
+    const roundCode = roundIdToCode.get(game.round_id);
+    if (!roundCode) continue;
+
+    const gameIdx = getGameIndexForRound(t1.seed, roundCode);
+    const key = `${region}_${roundCode}_${gameIdx}`;
+    advancers[key] = winner;
+    lockedKeys.add(key);
+  }
+
+  return { advancers, lockedKeys };
+}
+
+/** Build initial picks from submitted picks */
+export function buildLockedPicks(
+  picks: Array<{ round_id: string; team_id: string; team?: TeamInfo | null }>,
+  bracket: Record<string, TeamInfo[]>,
+): { picks: Record<string, PlannerPick>; lockedDayIds: Set<string> } {
+  const plannerPicks: Record<string, PlannerPick> = {};
+  const lockedDayIds = new Set<string>();
+
+  // Build a team lookup by ID from all regions
+  const teamById = new Map<string, TeamInfo>();
+  for (const region of Object.values(bracket)) {
+    for (const team of region) {
+      teamById.set(team.id, team);
+    }
+  }
+
+  for (const pick of picks) {
+    const team = (pick.team as TeamInfo) || teamById.get(pick.team_id);
+    if (!team) continue;
+
+    plannerPicks[pick.round_id] = {
+      team,
+      region: team.region,
+      dayId: pick.round_id,
+      isSubmitted: true,
+    };
+    lockedDayIds.add(pick.round_id);
+  }
+
+  return { picks: plannerPicks, lockedDayIds };
+}
+
+// Backward compat alias
+const BRACKET_SEED_ORDER = R64_SEED_PAIRINGS;
 
 /**
  * Fetch all rounds ordered by date
