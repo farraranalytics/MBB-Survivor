@@ -1,7 +1,6 @@
 'use client';
 
-import React from 'react';
-import { RegionBracket as RegionBracketType, BracketGame, BracketRound } from '@/types/bracket';
+import { RegionBracket as RegionBracketType, BracketGame } from '@/types/bracket';
 import BracketMatchupCard from './BracketMatchupCard';
 
 interface RegionBracketProps {
@@ -34,120 +33,138 @@ function TBDMatchupCard() {
   );
 }
 
-const EXPECTED_GAMES = [8, 4, 2, 1];
-const ROUND_LABELS = ['Round of 64', 'Round of 32', 'Sweet 16', 'Elite Eight'];
-const CARD_HEIGHT = 58; // Approximate height of a matchup card in px
-const CONNECTOR_GAP = 16; // Horizontal gap for connector lines
-
-function RoundColumn({
-  bracketRound,
-  expectedGames,
-  roundIndex,
-}: {
-  bracketRound: BracketRound | null;
-  expectedGames: number;
-  roundIndex: number;
-}) {
-  const label = bracketRound?.round.name || ROUND_LABELS[roundIndex] || `Round ${roundIndex + 1}`;
-  const games = bracketRound?.games || [];
-
-  const slots: (BracketGame | null)[] = [];
-  for (let i = 0; i < expectedGames; i++) {
-    slots.push(games[i] ?? null);
-  }
-
-  // Calculate spacing: later rounds need more vertical space between cards
-  // R64: no extra gap, R32: 1x, S16: 3x, E8: 7x (binary tree spacing)
-  const spacingMultiplier = Math.pow(2, roundIndex) - 1;
-  const verticalGap = CARD_HEIGHT * spacingMultiplier + (spacingMultiplier > 0 ? 8 * spacingMultiplier : 0);
-
+/** Reusable bracket connector — merges two feeder games into one output.
+ *  Uses viewBox so the same SVG works for any row span (2, 4, or 8 rows). */
+function BracketConnector() {
   return (
-    <div className="flex flex-col flex-shrink-0" style={{ width: '175px' }}>
-      {/* Column header */}
-      <div className="text-center mb-2 pb-2 border-b border-[rgba(255,255,255,0.06)]">
-        <span className="text-[10px] font-bold tracking-[0.12em] text-[#9BA3AE]" style={{ fontFamily: "'Space Mono', monospace", textTransform: 'uppercase' }}>
-          {label}
-        </span>
-      </div>
-      {/* Games */}
-      <div className="flex flex-col items-stretch" style={{ gap: `${Math.max(verticalGap, 4)}px` }}>
-        {slots.map((game, idx) => (
-          <div key={game?.id ?? `tbd-${roundIndex}-${idx}`}>
-            {game ? (
-              <BracketMatchupCard game={game} compact={roundIndex > 0} />
-            ) : (
-              <TBDMatchupCard />
-            )}
-          </div>
-        ))}
-      </div>
-    </div>
+    <svg
+      viewBox="0 0 100 100"
+      preserveAspectRatio="none"
+      className="w-full h-full block"
+    >
+      <line x1={0} y1={25} x2={50} y2={25} stroke="rgba(255,255,255,0.1)" strokeWidth={1} vectorEffect="non-scaling-stroke" />
+      <line x1={0} y1={75} x2={50} y2={75} stroke="rgba(255,255,255,0.1)" strokeWidth={1} vectorEffect="non-scaling-stroke" />
+      <line x1={50} y1={25} x2={50} y2={75} stroke="rgba(255,255,255,0.1)" strokeWidth={1} vectorEffect="non-scaling-stroke" />
+      <line x1={50} y1={50} x2={100} y2={50} stroke="rgba(255,255,255,0.1)" strokeWidth={1} vectorEffect="non-scaling-stroke" />
+    </svg>
   );
 }
 
-/** SVG connector lines between round columns */
-function ConnectorLines({ roundIndex, gameCount }: { roundIndex: number; gameCount: number }) {
-  // Each pair of games in round N feeds one game in round N+1
-  const pairs = gameCount / 2;
-  const prevCardHeight = CARD_HEIGHT;
-  const prevMultiplier = Math.pow(2, roundIndex) - 1;
-  const prevGap = prevCardHeight * prevMultiplier + (prevMultiplier > 0 ? 8 * prevMultiplier : 0);
-  const prevStride = prevCardHeight + Math.max(prevGap, 4); // total vertical distance per card
+const ROUND_LABELS = ['Round of 64', 'Round of 32', 'Sweet 16', 'Elite Eight'];
+const CARD_COLS = [1, 3, 5, 7];
+const CONN_COLS = [2, 4, 6];
 
-  // Height of header
-  const headerHeight = 30;
-
-  const svgHeight = headerHeight + pairs * prevStride * 2;
-  const lines: React.ReactNode[] = [];
-
-  for (let i = 0; i < pairs; i++) {
-    const topGameCenter = headerHeight + i * 2 * prevStride + prevCardHeight / 2;
-    const bottomGameCenter = headerHeight + (i * 2 + 1) * prevStride + prevCardHeight / 2;
-    const midY = (topGameCenter + bottomGameCenter) / 2;
-    const midX = CONNECTOR_GAP / 2;
-
-    // Line from top game right edge to mid
-    lines.push(
-      <line key={`t-${i}`} x1={0} y1={topGameCenter} x2={midX} y2={topGameCenter} stroke="rgba(255,255,255,0.08)" strokeWidth={1} />,
-      <line key={`tv-${i}`} x1={midX} y1={topGameCenter} x2={midX} y2={midY} stroke="rgba(255,255,255,0.08)" strokeWidth={1} />,
-    );
-    // Line from bottom game right edge to mid
-    lines.push(
-      <line key={`b-${i}`} x1={0} y1={bottomGameCenter} x2={midX} y2={bottomGameCenter} stroke="rgba(255,255,255,0.08)" strokeWidth={1} />,
-      <line key={`bv-${i}`} x1={midX} y1={bottomGameCenter} x2={midX} y2={midY} stroke="rgba(255,255,255,0.08)" strokeWidth={1} />,
-    );
-    // Horizontal line from mid to next round
-    lines.push(
-      <line key={`m-${i}`} x1={midX} y1={midY} x2={CONNECTOR_GAP} y2={midY} stroke="rgba(255,255,255,0.08)" strokeWidth={1} />,
-    );
-  }
-
+function GameCell({ game, gridColumn, gridRow, compact }: {
+  game: BracketGame | null;
+  gridColumn: number;
+  gridRow: string;
+  compact: boolean;
+}) {
   return (
-    <svg width={CONNECTOR_GAP} height={svgHeight} className="flex-shrink-0" style={{ overflow: 'visible' }}>
-      {lines}
-    </svg>
+    <div
+      style={{ gridColumn, gridRow }}
+      className="flex items-center py-[3px]"
+    >
+      {game ? (
+        <BracketMatchupCard game={game} compact={compact} />
+      ) : (
+        <TBDMatchupCard />
+      )}
+    </div>
   );
 }
 
 export default function RegionBracket({ bracket }: RegionBracketProps) {
   return (
     <div className="overflow-x-auto pb-4">
-      <div className="flex min-w-max px-2 items-start">
-        {EXPECTED_GAMES.map((expectedCount, roundIndex) => {
-          const bracketRound = bracket.rounds[roundIndex] ?? null;
-          return (
-            <div key={roundIndex} className="flex items-start">
-              <RoundColumn
-                bracketRound={bracketRound}
-                expectedGames={expectedCount}
-                roundIndex={roundIndex}
-              />
-              {roundIndex < EXPECTED_GAMES.length - 1 && (
-                <ConnectorLines roundIndex={roundIndex} gameCount={expectedCount} />
-              )}
-            </div>
-          );
-        })}
+      <div
+        style={{
+          display: 'grid',
+          gridTemplateColumns: '165px 20px 165px 20px 165px 20px 165px',
+          gridTemplateRows: 'auto repeat(8, 1fr)',
+        }}
+      >
+        {/* ── Column Headers (row 1) ── */}
+        {ROUND_LABELS.map((label, i) => (
+          <div
+            key={label}
+            style={{ gridColumn: CARD_COLS[i], gridRow: 1 }}
+            className="text-center pb-2 mb-1 border-b border-[rgba(255,255,255,0.06)]"
+          >
+            <span
+              className="text-[10px] font-bold tracking-[0.12em] text-[#9BA3AE]"
+              style={{ fontFamily: "'Space Mono', monospace", textTransform: 'uppercase' }}
+            >
+              {bracket.rounds[i]?.round.name || label}
+            </span>
+          </div>
+        ))}
+
+        {/* ── R64: 8 games, one per row (rows 2–9) ── */}
+        {Array.from({ length: 8 }).map((_, i) => (
+          <GameCell
+            key={`r64-${i}`}
+            game={bracket.rounds[0]?.games[i] ?? null}
+            gridColumn={CARD_COLS[0]}
+            gridRow={`${i + 2}`}
+            compact={false}
+          />
+        ))}
+
+        {/* ── R64→R32 connectors: 4, each spanning 2 rows ── */}
+        {Array.from({ length: 4 }).map((_, i) => (
+          <div
+            key={`c0-${i}`}
+            style={{ gridColumn: CONN_COLS[0], gridRow: `${i * 2 + 2} / span 2` }}
+          >
+            <BracketConnector />
+          </div>
+        ))}
+
+        {/* ── R32: 4 games, each spanning 2 rows ── */}
+        {Array.from({ length: 4 }).map((_, i) => (
+          <GameCell
+            key={`r32-${i}`}
+            game={bracket.rounds[1]?.games[i] ?? null}
+            gridColumn={CARD_COLS[1]}
+            gridRow={`${i * 2 + 2} / span 2`}
+            compact
+          />
+        ))}
+
+        {/* ── R32→S16 connectors: 2, each spanning 4 rows ── */}
+        {Array.from({ length: 2 }).map((_, i) => (
+          <div
+            key={`c1-${i}`}
+            style={{ gridColumn: CONN_COLS[1], gridRow: `${i * 4 + 2} / span 4` }}
+          >
+            <BracketConnector />
+          </div>
+        ))}
+
+        {/* ── S16: 2 games, each spanning 4 rows ── */}
+        {Array.from({ length: 2 }).map((_, i) => (
+          <GameCell
+            key={`s16-${i}`}
+            game={bracket.rounds[2]?.games[i] ?? null}
+            gridColumn={CARD_COLS[2]}
+            gridRow={`${i * 4 + 2} / span 4`}
+            compact
+          />
+        ))}
+
+        {/* ── S16→E8 connector: 1, spanning all 8 rows ── */}
+        <div style={{ gridColumn: CONN_COLS[2], gridRow: '2 / span 8' }}>
+          <BracketConnector />
+        </div>
+
+        {/* ── E8: 1 game, spanning all 8 rows ── */}
+        <GameCell
+          game={bracket.rounds[3]?.games[0] ?? null}
+          gridColumn={CARD_COLS[3]}
+          gridRow="2 / span 8"
+          compact
+        />
       </div>
     </div>
   );
