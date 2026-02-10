@@ -679,10 +679,16 @@ export function SplashOverlay({ userId }: { userId: string | undefined }) {
     if (alreadyShown) {
       setSplashState('hide');
     } else {
-      setSplashState('show');
+      // Stay in 'pending' (opaque blocker) until data is ready
       fetchSplashData(userId)
-        .then(result => setData(result))
-        .catch(() => dismiss());
+        .then(result => {
+          setData(result);
+          setSplashState('show');
+        })
+        .catch(() => {
+          markSplashSeen();
+          setSplashState('hide');
+        });
     }
   }, [userId, dismiss]);
 

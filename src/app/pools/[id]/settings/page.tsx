@@ -407,8 +407,13 @@ export default function PoolSettingsPage() {
   };
 
   const handleSaveEntryLabel = async (entryId: string, newLabel: string) => {
-    await updateEntryLabel(entryId, newLabel);
-    setMyEntries(prev => prev.map(e => e.id === entryId ? { ...e, entry_label: newLabel } : e));
+    try {
+      await updateEntryLabel(entryId, newLabel);
+      setMyEntries(prev => prev.map(e => e.id === entryId ? { ...e, entry_label: newLabel } : e));
+      addToast('success', 'Entry name updated');
+    } catch (err: any) {
+      addToast('error', 'Failed to update entry name');
+    }
   };
 
   const handleRemoveMember = async (memberId: string, memberName: string) => {
