@@ -22,10 +22,10 @@ function TeamRow({
 }) {
   if (!team) {
     return (
-      <div className="flex items-center justify-between px-2.5 py-2 bg-[#1B2A3D]">
+      <div className="flex items-center justify-between px-2 py-[5px]">
         <div className="flex items-center gap-1.5">
-          <span className="text-xs text-[#9BA3AE] w-5 text-center" style={{ fontFamily: "'Space Mono', monospace" }}>-</span>
-          <span className="text-xs text-[#9BA3AE] italic" style={{ fontFamily: "'DM Sans', sans-serif" }}>TBD</span>
+          <span className="text-[10px] text-[#5F6B7A] w-4 text-center" style={{ fontFamily: "'Space Mono', monospace" }}>-</span>
+          <span className="text-[11px] text-[#5F6B7A] italic" style={{ fontFamily: "'DM Sans', sans-serif" }}>TBD</span>
         </div>
       </div>
     );
@@ -33,26 +33,24 @@ function TeamRow({
 
   return (
     <div
-      className={`flex items-center justify-between px-2.5 py-2 transition-colors ${
+      className={`flex items-center justify-between px-2 py-[5px] ${
         isWinner
-          ? 'bg-[rgba(76,175,80,0.1)]'
-          : isLoser
-            ? 'bg-[#1B2A3D]'
-            : 'bg-[#111827]'
+          ? 'bg-[rgba(76,175,80,0.08)]'
+          : ''
       }`}
     >
       <div className="flex items-center gap-1.5 min-w-0">
-        <span className={`text-[10px] font-bold w-5 text-center flex-shrink-0 rounded py-0.5 ${
-          isWinner ? 'bg-[rgba(76,175,80,0.2)] text-[#4CAF50]' : 'text-[#9BA3AE]'
+        <span className={`text-[10px] font-bold w-4 text-center flex-shrink-0 ${
+          isWinner ? 'text-[#4CAF50]' : 'text-[#9BA3AE]'
         }`} style={{ fontFamily: "'Space Mono', monospace" }}>
           {team.seed}
         </span>
         <span
-          className={`text-xs truncate ${
+          className={`text-[11px] truncate ${
             isWinner
               ? 'font-bold text-[#E8E6E1]'
               : isLoser
-                ? 'text-[#9BA3AE]'
+                ? 'text-[#5F6B7A]'
                 : 'font-medium text-[#E8E6E1]'
           }`}
           style={{ fontFamily: "'Oswald', sans-serif", textTransform: 'uppercase' }}
@@ -62,8 +60,8 @@ function TeamRow({
       </div>
       {score !== null && (
         <span
-          className={`text-xs ml-2 flex-shrink-0 ${
-            isWinner ? 'font-bold text-[#E8E6E1]' : 'text-[#9BA3AE]'
+          className={`text-[10px] ml-1.5 flex-shrink-0 tabular-nums ${
+            isWinner ? 'font-bold text-[#E8E6E1]' : 'text-[#5F6B7A]'
           }`}
           style={{ fontFamily: "'Space Mono', monospace" }}
         >
@@ -74,47 +72,68 @@ function TeamRow({
   );
 }
 
+/** Format game datetime as compact "THU 12:15P" style */
+function formatCompactDateTime(dateString: string): { day: string; time: string } {
+  const date = new Date(dateString);
+  const day = date.toLocaleDateString('en-US', {
+    timeZone: 'America/New_York',
+    weekday: 'short',
+  }).toUpperCase();
+  const time = date.toLocaleTimeString('en-US', {
+    timeZone: 'America/New_York',
+    hour: 'numeric',
+    minute: '2-digit',
+    hour12: true,
+  }).replace(' AM', 'A').replace(' PM', 'P');
+  return { day, time };
+}
+
 export default function BracketMatchupCard({ game, compact }: BracketMatchupCardProps) {
   const team1 = game.team1 ?? null;
   const team2 = game.team2 ?? null;
   const hasWinner = game.winner_id !== null;
   const team1Wins = hasWinner && game.winner_id === game.team1_id;
   const team2Wins = hasWinner && game.winner_id === game.team2_id;
+  const isTBD = !team1 && !team2;
 
-  const dateStr = formatDateET(game.game_datetime);
-  const timeStr = formatETShort(game.game_datetime);
-
-  let statusText = '';
-  let statusColor = '';
-  if (game.status === 'final') {
-    statusText = `FINAL · ${dateStr}`;
-    statusColor = 'text-[#4CAF50] bg-[rgba(76,175,80,0.1)]';
-  } else if (game.status === 'in_progress') {
-    statusText = `🔴 LIVE`;
-    statusColor = 'text-[#EF5350] bg-[rgba(239,83,80,0.08)]';
-  } else if (game.status === 'scheduled') {
-    statusText = `${dateStr} · ${timeStr}`;
-    statusColor = 'text-[#9BA3AE] bg-[#1B2A3D]';
-  }
+  const { day, time } = formatCompactDateTime(game.game_datetime);
 
   return (
-    <div className={`w-52 border border-[rgba(255,255,255,0.05)] rounded-[12px] overflow-hidden bg-[#111827] shadow-sm hover:border-[rgba(255,87,34,0.3)] transition-colors ${compact ? 'text-xs' : ''}`}>
+    <div className={`w-full border rounded-[6px] overflow-hidden transition-colors ${
+      isTBD
+        ? 'border-dashed border-[rgba(255,255,255,0.06)] bg-[#0D1B2A]'
+        : game.status === 'final'
+          ? 'border-[rgba(76,175,80,0.15)] bg-[#111827]'
+          : 'border-[rgba(255,255,255,0.06)] bg-[#111827] hover:border-[rgba(255,87,34,0.25)]'
+    }`}>
+      {/* Time header */}
+      <div className="flex items-center justify-between px-2 py-[3px] bg-[rgba(255,255,255,0.02)]">
+        <span className="text-[9px] font-semibold text-[#5F6B7A] tracking-wider" style={{ fontFamily: "'Space Mono', monospace" }}>
+          {game.status === 'final' ? 'FINAL' : game.status === 'in_progress' ? 'LIVE' : `${day} ${time}`}
+        </span>
+        {game.status === 'in_progress' && (
+          <span className="w-1.5 h-1.5 rounded-full bg-[#EF5350]" />
+        )}
+        {isTBD && (
+          <span className="text-[8px] font-bold text-[#5F6B7A] bg-[rgba(255,255,255,0.04)] px-1.5 py-0.5 rounded" style={{ fontFamily: "'Space Mono', monospace" }}>
+            TBD
+          </span>
+        )}
+      </div>
+      {/* Teams */}
       <TeamRow
         team={team1}
         score={game.team1_score}
         isWinner={team1Wins}
         isLoser={team2Wins}
       />
-      <div className="border-t border-[rgba(255,255,255,0.05)]" />
+      <div className="border-t border-[rgba(255,255,255,0.04)]" />
       <TeamRow
         team={team2}
         score={game.team2_score}
         isWinner={team2Wins}
         isLoser={team1Wins}
       />
-      <div className={`text-center text-[10px] font-semibold py-1 border-t border-[rgba(255,255,255,0.05)] ${statusColor}`} style={{ fontFamily: "'Space Mono', monospace" }}>
-        {statusText || '\u00A0'}
-      </div>
     </div>
   );
 }
