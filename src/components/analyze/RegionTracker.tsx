@@ -81,7 +81,7 @@ export default function RegionTracker({
 
             {/* Footer */}
             <div className="flex justify-between items-center mt-1.5">
-              <span className="font-[family-name:var(--font-mono)] text-[0.6rem] text-[var(--text-tertiary)]">
+              <span className="font-[family-name:var(--font-mono)] text-[0.6rem] text-[var(--text-secondary)]">
                 {avail}/{total} LEFT
               </span>
               <button
@@ -90,7 +90,7 @@ export default function RegionTracker({
                 style={{
                   background: 'none',
                   border: '1px solid var(--border-default)',
-                  color: regionFlipped[region] ? 'var(--color-orange)' : 'var(--text-tertiary)',
+                  color: regionFlipped[region] ? 'var(--color-orange)' : 'var(--text-secondary)',
                 }}
               >
                 {regionFlipped[region] ? '⇄ FLIPPED' : '⇄ FLIP'}

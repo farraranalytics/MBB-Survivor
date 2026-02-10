@@ -68,102 +68,92 @@ export default function DayCard({
         position: 'relative',
       }}
     >
-      {/* Header — always visible */}
-      <div
-        onClick={onToggleExpand}
-        className="flex flex-wrap items-center py-3 px-4 sm:px-5 cursor-pointer gap-2 sm:gap-3.5"
-      >
-        {/* Day number */}
-        <div
-          className="font-[family-name:var(--font-display)] font-bold text-[0.9rem] min-w-7 text-center"
-          style={{ color: rc }}
-        >
-          {dayIndex + 1}
-        </div>
-        <div className="w-px h-8 hidden sm:block" style={{ background: 'var(--border-default)' }} />
-
-        {/* Date + label */}
-        <div className="min-w-0">
-          <div className="font-[family-name:var(--font-display)] font-semibold text-[0.95rem] uppercase">
-            {day.date}
+      {/* Header — always visible, two-row layout */}
+      <div onClick={onToggleExpand} className="py-3 px-4 sm:px-5 cursor-pointer">
+        {/* Row 1: Day number + date + region pills */}
+        <div className="flex items-center gap-2.5">
+          <div
+            className="font-[family-name:var(--font-display)] font-bold text-[1rem] min-w-7 text-center"
+            style={{ color: rc }}
+          >
+            {dayIndex + 1}
           </div>
-          <div className="font-[family-name:var(--font-mono)] text-[0.55rem] tracking-[0.15em] mt-0.5" style={{ color: rc }}>
-            {day.label}
-            {day.half && (
-              <span className="text-[var(--text-tertiary)]"> · {day.half === 'A' ? 'TOP' : 'BTM'} HALF</span>
+          <div className="min-w-0">
+            <div className="font-[family-name:var(--font-display)] font-semibold text-[0.95rem] uppercase text-[var(--text-primary)]">
+              {day.date}
+            </div>
+            <div className="font-[family-name:var(--font-mono)] text-[0.6rem] tracking-[0.12em] mt-0.5" style={{ color: rc }}>
+              {day.label}
+              {day.half && (
+                <span className="text-[var(--text-secondary)]"> · {day.half === 'A' ? 'TOP' : 'BTM'} HALF</span>
+              )}
+            </div>
+          </div>
+          <div className="flex gap-1 items-center ml-auto">
+            {regions.map(r => (
+              <span
+                key={r}
+                className="badge"
+                style={{
+                  background: 'var(--surface-3)',
+                  color: 'var(--text-primary)',
+                  border: '1px solid var(--border-default)',
+                  fontSize: '0.55rem',
+                  padding: '3px 7px',
+                }}
+              >
+                {r.slice(0, 2)}
+              </span>
+            ))}
+            {day.roundCode === 'E8' && (
+              <button
+                onClick={(e) => { e.stopPropagation(); onToggleE8Swap(); }}
+                className="font-[family-name:var(--font-mono)] text-[0.6rem] cursor-pointer px-1.5 py-0.5 rounded-[4px]"
+                style={{
+                  background: 'none',
+                  border: '1px solid var(--border-default)',
+                  color: 'var(--text-secondary)',
+                }}
+              >
+                ⇄
+              </button>
             )}
           </div>
         </div>
 
-        {/* Region pills */}
-        <div className="flex gap-1 items-center">
-          {regions.map(r => (
-            <span
-              key={r}
-              className="badge"
-              style={{
-                background: 'var(--surface-3)',
-                color: 'var(--text-secondary)',
-                border: '1px solid var(--border-default)',
-                fontSize: '0.5rem',
-                padding: '3px 7px',
-              }}
-            >
-              {r.slice(0, 2)}
-            </span>
-          ))}
-          {day.roundCode === 'E8' && (
-            <button
-              onClick={(e) => { e.stopPropagation(); onToggleE8Swap(); }}
-              className="font-[family-name:var(--font-mono)] text-[0.6rem] cursor-pointer px-1.5 py-0.5 rounded-[4px]"
-              style={{
-                background: 'none',
-                border: '1px solid var(--border-default)',
-                color: 'var(--text-tertiary)',
-              }}
-            >
-              ⇄
-            </button>
-          )}
-        </div>
-
-        {/* Current pick display */}
-        <div className="flex-1 min-w-0">
-          {pick ? (
-            <div
-              className="inline-flex items-center gap-1.5 sm:gap-2 rounded-[var(--radius-sm)] py-1 px-2.5 sm:py-1.5 sm:px-3.5"
-              style={{
-                background: 'var(--color-orange-subtle)',
-                border: '1.5px solid var(--color-orange)',
-                boxShadow: '0 0 0 1px rgba(255,87,34,0.15), 0 0 20px rgba(255,87,34,0.12)',
-              }}
-            >
-              <span className="font-[family-name:var(--font-display)] font-bold text-[0.55rem] text-[var(--text-tertiary)] min-w-4 text-center">
-                {pick.team.seed}
-              </span>
-              <span className="font-[family-name:var(--font-display)] font-bold text-[0.8rem] sm:text-[0.95rem] uppercase text-[var(--color-orange)] truncate">
-                {pick.team.abbreviation || pick.team.name}
-              </span>
-              <span className="font-[family-name:var(--font-mono)] text-[0.5rem] text-[var(--text-tertiary)] tracking-[0.1em] hidden sm:inline">
-                {pick.region.toUpperCase()}
-              </span>
-              {pick.isSubmitted && (
-                <span className="font-[family-name:var(--font-mono)] text-[0.45rem] text-[var(--text-tertiary)] tracking-[0.1em]">
-                  🔒
+        {/* Row 2: Pick display + chevron */}
+        <div className="flex items-center gap-2 mt-2">
+          <div className="flex-1 min-w-0">
+            {pick ? (
+              <div
+                className="inline-flex items-center gap-2 rounded-[var(--radius-sm)] py-1.5 px-3"
+                style={{
+                  background: 'var(--color-orange-subtle)',
+                  border: '1.5px solid var(--color-orange)',
+                  boxShadow: '0 0 0 1px rgba(255,87,34,0.15), 0 0 20px rgba(255,87,34,0.12)',
+                }}
+              >
+                <span className="font-[family-name:var(--font-display)] font-bold text-[0.6rem] text-[var(--text-secondary)] min-w-4 text-center">
+                  {pick.team.seed}
                 </span>
-              )}
-            </div>
-          ) : (
-            <span className="font-[family-name:var(--font-body)] text-[0.8rem] sm:text-[0.85rem] text-[var(--text-disabled)]">
-              No pick set
-            </span>
-          )}
+                <span className="font-[family-name:var(--font-display)] font-bold text-[0.9rem] uppercase text-[var(--color-orange)] truncate">
+                  {pick.team.abbreviation || pick.team.name}
+                </span>
+                <span className="font-[family-name:var(--font-mono)] text-[0.5rem] text-[var(--text-secondary)] tracking-[0.1em]">
+                  {pick.region.toUpperCase()}
+                </span>
+                {pick.isSubmitted && <span className="text-[0.45rem]">🔒</span>}
+              </div>
+            ) : (
+              <span className="font-[family-name:var(--font-body)] text-[0.85rem] text-[var(--text-secondary)]">
+                No pick set
+              </span>
+            )}
+          </div>
+          <span className="text-[var(--text-secondary)] text-[0.7rem]">
+            {isExpanded ? '▲' : '▼'}
+          </span>
         </div>
-
-        {/* Chevron */}
-        <span className="text-[var(--text-tertiary)] text-[0.7rem]">
-          {isExpanded ? '▲' : '▼'}
-        </span>
       </div>
 
       {/* Expanded content — matchups by region */}
@@ -188,10 +178,10 @@ export default function DayCard({
                 }}
               >
                 <div className="flex justify-between mb-2.5">
-                  <span className="font-[family-name:var(--font-display)] font-semibold text-[0.85rem] uppercase">
+                  <span className="font-[family-name:var(--font-display)] font-semibold text-[0.85rem] uppercase text-[var(--text-primary)]">
                     {region}
                   </span>
-                  <span className="label text-[0.5rem]">
+                  <span className="font-[family-name:var(--font-mono)] text-[0.55rem] tracking-[0.1em] text-[var(--text-secondary)]">
                     {matchups.length} GAME{matchups.length !== 1 ? 'S' : ''}
                   </span>
                 </div>

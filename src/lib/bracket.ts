@@ -19,7 +19,7 @@ export const FEEDERS_MAP: Record<string, number[][]> = { R32: R32_FEEDERS, S16: 
 export const PLANNER_REGIONS = ['East', 'South', 'West', 'Midwest'];
 
 export const ROUND_COLORS: Record<string, string> = {
-  R64: '#5F6B7A', R32: '#9BA3AE', S16: '#42A5F5',
+  R64: '#9BA3AE', R32: '#C4CDD5', S16: '#42A5F5',
   E8: '#FFB300', F4: '#EF5350', CHIP: '#FF5722',
 };
 

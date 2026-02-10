@@ -63,7 +63,7 @@ export default function MatchupCard({
     >
       {/* Header row */}
       <div className="flex justify-between mb-1.5">
-        <span className="label text-[0.5rem]">
+        <span className="font-[family-name:var(--font-mono)] text-[0.55rem] tracking-[0.1em] font-semibold text-[var(--text-secondary)]">
           {isSingle ? label : `GAME ${gameIdx + 1}`}
         </span>
         <div className="flex items-center gap-1.5">
@@ -73,7 +73,7 @@ export default function MatchupCard({
             </span>
           )}
           {isFinal && (
-            <span className="badge" style={{ background: 'rgba(255,255,255,0.06)', color: 'var(--text-tertiary)', fontSize: '0.5rem', padding: '2px 6px' }}>
+            <span className="badge" style={{ background: 'rgba(255,255,255,0.1)', color: 'var(--text-secondary)', fontSize: '0.5rem', padding: '2px 6px' }}>
               FINAL
             </span>
           )}
@@ -115,10 +115,8 @@ export default function MatchupCard({
                 color: isPick
                   ? 'var(--color-orange)'
                   : isUsed && !isPick
-                    ? 'var(--text-disabled)'
-                    : isAdv
-                      ? 'var(--text-primary)'
-                      : 'var(--text-secondary)',
+                    ? 'var(--text-tertiary)'
+                    : 'var(--text-primary)',
                 border: isPick
                   ? '1.5px solid var(--color-orange)'
                   : isAdv && !isSingle
@@ -129,12 +127,12 @@ export default function MatchupCard({
                 opacity: isUsed && !isPick ? 0.35 : 1,
               }}
             >
-              <span className="font-[family-name:var(--font-display)] font-bold text-[0.75rem] text-[var(--text-tertiary)] min-w-[18px] text-center">
+              <span className="font-[family-name:var(--font-display)] font-bold text-[0.75rem] text-[var(--text-secondary)] min-w-[18px] text-center">
                 {team.seed}
               </span>
               <span className="truncate">{team.abbreviation || team.name}</span>
               {score !== null && (
-                <span className="font-[family-name:var(--font-mono)] text-[0.75rem] ml-auto" style={{ color: isWinner ? 'var(--text-primary)' : 'var(--text-tertiary)' }}>
+                <span className="font-[family-name:var(--font-mono)] text-[0.75rem] ml-auto" style={{ color: isWinner ? 'var(--text-primary)' : 'var(--text-secondary)' }}>
                   {score}
                 </span>
               )}
@@ -145,7 +143,7 @@ export default function MatchupCard({
                 <span className="font-[family-name:var(--font-mono)] text-[0.55rem] text-[var(--color-alive)] ml-1">W</span>
               )}
               {isLoser && (
-                <span className="font-[family-name:var(--font-mono)] text-[0.55rem] text-[var(--text-tertiary)] ml-1">L</span>
+                <span className="font-[family-name:var(--font-mono)] text-[0.55rem] text-[var(--text-secondary)] ml-1">L</span>
               )}
             </button>
 
@@ -160,7 +158,7 @@ export default function MatchupCard({
                 style={{
                   background: isPick ? 'var(--color-orange-subtle)' : 'transparent',
                   border: isPick ? '1.5px solid var(--color-orange)' : '1.5px solid var(--border-default)',
-                  color: isPick ? 'var(--color-orange)' : canPick ? 'var(--text-tertiary)' : 'var(--text-disabled)',
+                  color: isPick ? 'var(--color-orange)' : canPick ? 'var(--text-secondary)' : 'var(--text-disabled)',
                   cursor: canPick ? 'pointer' : 'not-allowed',
                   opacity: canPick ? 1 : 0.25,
                   fontFamily: 'var(--font-body)',
