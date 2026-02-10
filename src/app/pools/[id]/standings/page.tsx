@@ -3,7 +3,6 @@
 import { useEffect, useState, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useAuth } from '@/components/auth/AuthProvider';
-import { getPoolLeaderboard } from '@/lib/standings';
 import {
   PoolLeaderboard,
   StandingsPlayer,
@@ -173,7 +172,12 @@ export default function StandingsPage() {
     const fetchLeaderboard = async (showSpinner: boolean) => {
       try {
         if (showSpinner) setLoading(true);
-        const data = await getPoolLeaderboard(poolId);
+        const res = await fetch(`/api/pools/${poolId}/standings`);
+        if (!res.ok) {
+          const body = await res.json().catch(() => ({}));
+          throw new Error(body.error || 'Failed to load standings');
+        }
+        const data: PoolLeaderboard = await res.json();
         setLeaderboard(data);
       } catch (err) {
         console.error('Failed to fetch standings:', err);

@@ -25,8 +25,55 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json().catch(() => ({}));
     const roundId = body.roundId; // Optional — defaults to active round
+    const resetAll = body.all === true; // Reset ALL rounds back to pre-tournament
 
-    // Get the round to reset
+    // ── Full tournament reset ─────────────────────────────────
+    if (resetAll) {
+      // Reset all games
+      const { data: allGames } = await supabaseAdmin
+        .from('games')
+        .select('id')
+        .neq('status', 'scheduled');
+
+      await supabaseAdmin
+        .from('games')
+        .update({ status: 'scheduled', winner_id: null, team1_score: null, team2_score: null })
+        .neq('status', 'scheduled');
+
+      // Un-eliminate all teams
+      await supabaseAdmin
+        .from('teams')
+        .update({ is_eliminated: false })
+        .eq('is_eliminated', true);
+
+      // Clear all pick results
+      await supabaseAdmin
+        .from('picks')
+        .update({ is_correct: null })
+        .not('is_correct', 'is', null);
+
+      // Un-eliminate all players
+      const { data: revivedPlayers } = await supabaseAdmin
+        .from('pool_players')
+        .update({ is_eliminated: false, elimination_round_id: null, elimination_reason: null })
+        .eq('is_eliminated', true)
+        .select('id');
+
+      // Revert pools
+      await supabaseAdmin
+        .from('pools')
+        .update({ status: 'active', winner_id: null })
+        .eq('status', 'complete');
+
+      return NextResponse.json({
+        success: true,
+        mode: 'full_reset',
+        gamesReset: allGames?.length || 0,
+        playersRevived: revivedPlayers?.length || 0,
+      });
+    }
+
+    // ── Single round reset ────────────────────────────────────
     let round;
     if (roundId) {
       const { data } = await supabaseAdmin

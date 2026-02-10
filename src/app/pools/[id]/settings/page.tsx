@@ -1016,6 +1016,14 @@ export default function PoolSettingsPage() {
                   >
                     Reset This Round
                   </button>
+                  <button
+                    onClick={() => simAction('/api/admin/test/reset-round', { all: true })}
+                    disabled={simLoading}
+                    className="w-full py-2.5 rounded-[8px] text-xs font-semibold text-[#EF5350] bg-[rgba(239,83,80,0.1)] border border-[rgba(239,83,80,0.2)] hover:border-[rgba(239,83,80,0.4)] transition-colors disabled:opacity-50"
+                    style={{ fontFamily: "'DM Sans', sans-serif" }}
+                  >
+                    Reset All Rounds (Pre-Tournament)
+                  </button>
                 </div>
 
                 {/* Response log */}
