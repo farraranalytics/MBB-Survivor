@@ -23,6 +23,7 @@ import { mapRoundNameToCode, ROUND_COLORS } from '@/lib/bracket';
 import { TeamLogo, getESPNStatsUrl } from '@/components/TeamLogo';
 import { PageHeader, PoolSelectorBar, EntryTabs } from '@/components/pool';
 import type { EntryTabItem } from '@/components/pool';
+import { useClockOffset } from '@/hooks/useClockOffset';
 
 const REGION_ORDER = ['South', 'East', 'West', 'Midwest'];
 
@@ -488,6 +489,7 @@ export default function PickPage() {
   const [expandedRegion, setExpandedRegion] = useState<string | null>(null);
   const [isMobile, setIsMobile] = useState(false);
   const [now, setNow] = useState(Date.now());
+  const clockOffset = useClockOffset();
 
   const { addToast } = useToast();
   const loadedRef = useRef(false);
@@ -799,9 +801,10 @@ export default function PickPage() {
     ? `(${existingPick.team.seed}) ${existingPick.team.abbreviation}`
     : 'FIRST PICK';
 
-  // Status bar countdown
+  // Status bar countdown (apply clock offset for simulated time)
+  const simulatedNow = now + clockOffset;
   const deadlineDiff = deadline && !deadline.is_expired
-    ? Math.max(0, new Date(deadline.deadline_datetime).getTime() - now)
+    ? Math.max(0, new Date(deadline.deadline_datetime).getTime() - simulatedNow)
     : 0;
   const cHours = Math.floor(deadlineDiff / 3600000);
   const cMinutes = Math.floor((deadlineDiff % 3600000) / 60000);

@@ -279,7 +279,14 @@ export default function PoolSettingsPage() {
   // Tournament state for leave pool check
   const [canLeavePool, setCanLeavePool] = useState(false);
 
-  // Tournament Simulator state
+  // Test Mode state
+  const [testMode, setTestMode] = useState(false);
+  const [testPhase, setTestPhase] = useState<string>('pre_round');
+  const [testRoundId, setTestRoundId] = useState<string>('');
+  const [testSimulatedTime, setTestSimulatedTime] = useState<string | null>(null);
+  const [allRounds, setAllRounds] = useState<any[]>([]);
+
+  // Simulator state
   const [simRound, setSimRound] = useState<any>(null);
   const [simGames, setSimGames] = useState<any[]>([]);
   const [simStats, setSimStats] = useState<{ alive: number; eliminated: number; scheduled: number; inProgress: number; final: number } | null>(null);
@@ -294,9 +301,12 @@ export default function PoolSettingsPage() {
     loadData();
   }, [user, poolId]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Load simulator data once pool is loaded and user is creator
+  // Load simulator + test mode data once pool is loaded and user is creator
   useEffect(() => {
-    if (isCreator) loadSimulatorData();
+    if (isCreator) {
+      loadSimulatorData();
+      loadTestState();
+    }
   }, [isCreator]); // eslint-disable-line react-hooks/exhaustive-deps
 
   async function loadData() {
@@ -452,6 +462,100 @@ export default function PoolSettingsPage() {
     setTimeout(() => setCopiedCode(false), 2000);
     addToast('info', 'Join code copied!', 2000);
   };
+
+  // ── Test Mode Helpers ─────────────────────────────────────────
+
+  async function loadTestState() {
+    try {
+      const res = await fetch('/api/admin/test/set-clock');
+      const data = await res.json();
+      setTestMode(data.is_test_mode || false);
+      setTestPhase(data.phase || 'pre_round');
+      setTestRoundId(data.target_round_id || '');
+      setTestSimulatedTime(data.simulated_datetime || null);
+    } catch { /* ignore */ }
+
+    // Load all rounds for the dropdown
+    const { data: rounds } = await supabase
+      .from('rounds')
+      .select('id, name, date, deadline_datetime')
+      .order('date', { ascending: true });
+    setAllRounds(rounds || []);
+  }
+
+  async function toggleTestMode(enabled: boolean) {
+    setSimLoading(true);
+    try {
+      if (!enabled) {
+        await fetch('/api/admin/test/set-clock', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ enabled: false }),
+        });
+        setTestMode(false);
+        setTestSimulatedTime(null);
+      } else {
+        // Enable with current round and phase
+        const roundId = testRoundId || allRounds[0]?.id;
+        if (!roundId) return;
+        const res = await fetch('/api/admin/test/set-clock', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ round_id: roundId, phase: testPhase }),
+        });
+        const data = await res.json();
+        setTestMode(true);
+        setTestSimulatedTime(data.simulated_datetime || null);
+        setTestRoundId(roundId);
+      }
+      await loadTestState();
+      await loadSimulatorData();
+    } catch (err: any) {
+      setSimLog(`Error: ${err.message}`);
+    } finally {
+      setSimLoading(false);
+    }
+  }
+
+  async function setClockPhase(phase: string) {
+    if (!testRoundId) return;
+    setSimLoading(true);
+    try {
+      const res = await fetch('/api/admin/test/set-clock', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ round_id: testRoundId, phase }),
+      });
+      const data = await res.json();
+      setTestPhase(phase);
+      setTestSimulatedTime(data.simulated_datetime || null);
+    } catch (err: any) {
+      setSimLog(`Error: ${err.message}`);
+    } finally {
+      setSimLoading(false);
+    }
+  }
+
+  async function setClockRound(roundId: string) {
+    setTestRoundId(roundId);
+    if (testMode) {
+      setSimLoading(true);
+      try {
+        const res = await fetch('/api/admin/test/set-clock', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ round_id: roundId, phase: testPhase }),
+        });
+        const data = await res.json();
+        setTestSimulatedTime(data.simulated_datetime || null);
+        await loadSimulatorData();
+      } catch (err: any) {
+        setSimLog(`Error: ${err.message}`);
+      } finally {
+        setSimLoading(false);
+      }
+    }
+  }
 
   // ── Simulator Helpers ──────────────────────────────────────────
 
@@ -892,20 +996,107 @@ export default function PoolSettingsPage() {
               </div>
             </section>
 
-            {/* ─── SECTION 6: TOURNAMENT SIMULATOR (creator only) ────── */}
+            {/* ─── SECTION 6: TEST MODE (creator only) ────────────────── */}
             <section>
               <div className="flex items-center gap-3 pt-2 mb-3">
                 <div className="flex-1 h-px bg-[rgba(255,87,34,0.2)]" />
                 <span className="text-[10px] font-bold tracking-[0.2em] text-[#FF5722] uppercase" style={{ fontFamily: "'Space Mono', monospace" }}>
-                  Tournament Simulator
+                  Test Mode
                 </span>
                 <div className="flex-1 h-px bg-[rgba(255,87,34,0.2)]" />
               </div>
 
-              <div className="bg-[#111827] border border-[rgba(255,255,255,0.05)] rounded-[14px] p-5 space-y-4">
-                <p className="text-xs text-[#9BA3AE]" style={{ fontFamily: "'DM Sans', sans-serif" }}>
-                  Test round advancement and eliminations with simulated game results.
-                </p>
+              <div className={`bg-[#111827] border rounded-[14px] p-5 space-y-4 ${testMode ? 'border-[rgba(255,87,34,0.3)]' : 'border-[rgba(255,255,255,0.05)]'}`}>
+
+                {/* Toggle + status */}
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-semibold text-[#E8E6E1]" style={{ fontFamily: "'DM Sans', sans-serif" }}>
+                      Simulated Clock
+                    </p>
+                    <p className="text-[10px] text-[#9BA3AE]" style={{ fontFamily: "'DM Sans', sans-serif" }}>
+                      {testMode ? 'App thinks it\'s tournament time' : 'Using real system clock'}
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => toggleTestMode(!testMode)}
+                    disabled={simLoading}
+                    className={`relative w-12 h-6 rounded-full transition-colors disabled:opacity-50 ${
+                      testMode ? 'bg-[#FF5722]' : 'bg-[#1B2A3D] border border-[rgba(255,255,255,0.1)]'
+                    }`}
+                  >
+                    <span className={`absolute top-0.5 w-5 h-5 rounded-full bg-white transition-transform ${
+                      testMode ? 'left-[26px]' : 'left-0.5'
+                    }`} />
+                  </button>
+                </div>
+
+                {/* Clock controls (only when test mode is on) */}
+                {testMode && (
+                  <>
+                    {/* Round selector */}
+                    <div className="space-y-1.5">
+                      <p className="label text-label-accent">Round</p>
+                      <select
+                        value={testRoundId}
+                        onChange={(e) => setClockRound(e.target.value)}
+                        disabled={simLoading}
+                        className="w-full px-3 py-2 bg-[#1B2A3D] border border-[rgba(255,255,255,0.1)] rounded-[8px] text-sm text-[#E8E6E1] focus:outline-none focus:border-[#FF5722] transition-colors disabled:opacity-50"
+                        style={{ fontFamily: "'DM Sans', sans-serif" }}
+                      >
+                        {allRounds.map((r: any) => (
+                          <option key={r.id} value={r.id}>{r.name}</option>
+                        ))}
+                      </select>
+                    </div>
+
+                    {/* Phase toggle */}
+                    <div className="space-y-1.5">
+                      <p className="label text-label-accent">Phase</p>
+                      <div className="flex gap-2">
+                        {([
+                          { key: 'pre_round', label: 'Pre-Round', desc: 'Before deadline' },
+                          { key: 'live', label: 'Live', desc: 'After deadline' },
+                          { key: 'post_round', label: 'Done', desc: 'All games final' },
+                        ] as const).map(opt => (
+                          <button
+                            key={opt.key}
+                            onClick={() => setClockPhase(opt.key)}
+                            disabled={simLoading}
+                            title={opt.desc}
+                            className={`flex-1 py-2 rounded-[6px] text-[11px] font-semibold transition-colors disabled:opacity-50 ${
+                              testPhase === opt.key
+                                ? 'bg-[#FF5722] text-white'
+                                : 'bg-[#1B2A3D] text-[#9BA3AE] hover:bg-[#243447] hover:text-[#E8E6E1]'
+                            }`}
+                            style={{ fontFamily: "'DM Sans', sans-serif" }}
+                          >
+                            {opt.label}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Simulated time display */}
+                    {testSimulatedTime && (
+                      <div className="bg-[rgba(255,87,34,0.06)] border border-[rgba(255,87,34,0.15)] rounded-[8px] px-3 py-2">
+                        <p className="text-[10px] text-[#9BA3AE] mb-0.5" style={{ fontFamily: "'DM Sans', sans-serif" }}>
+                          Simulated Time
+                        </p>
+                        <p className="text-sm font-medium text-[#FF5722]" style={{ fontFamily: "'Space Mono', monospace" }}>
+                          {new Date(testSimulatedTime).toLocaleString('en-US', {
+                            timeZone: 'America/New_York',
+                            month: 'short', day: 'numeric', year: 'numeric',
+                            hour: 'numeric', minute: '2-digit', hour12: true,
+                          })} ET
+                        </p>
+                      </div>
+                    )}
+                  </>
+                )}
+
+                {/* Divider */}
+                <div className="border-t border-[rgba(255,255,255,0.05)]" />
 
                 {/* Active round info */}
                 {simRound ? (
@@ -916,7 +1107,7 @@ export default function PoolSettingsPage() {
                     {simStats && (
                       <>
                         <p className="text-xs text-[#9BA3AE]" style={{ fontFamily: "'Space Mono', monospace" }}>
-                          Games: {simStats.scheduled} scheduled · {simStats.inProgress} in progress · {simStats.final} final
+                          Games: {simStats.scheduled} scheduled · {simStats.inProgress} live · {simStats.final} final
                         </p>
                         <p className="text-xs text-[#9BA3AE]" style={{ fontFamily: "'Space Mono', monospace" }}>
                           Players: {simStats.alive} alive · {simStats.eliminated} eliminated
@@ -926,93 +1117,56 @@ export default function PoolSettingsPage() {
                   </div>
                 ) : (
                   <p className="text-sm text-[#9BA3AE]" style={{ fontFamily: "'DM Sans', sans-serif" }}>
-                    No active round. Use &quot;Activate Next Round&quot; to start.
+                    No active round.
                   </p>
-                )}
-
-                {/* Round state toggle */}
-                {simRound && (
-                  <div className="space-y-2">
-                    <p className="label text-label-accent">Round State</p>
-                    <div className="flex gap-2">
-                      {([
-                        { key: 'pre_round', label: 'Pre Round', desc: 'Picks open, deadline future' },
-                        { key: 'round_started', label: 'Round Started', desc: 'Picks locked, deadline passed' },
-                        { key: 'round_complete', label: 'Round Complete', desc: 'Games final, results graded' },
-                      ] as const).map(opt => {
-                        const isCurrent =
-                          (opt.key === 'pre_round' && simStats && simStats.scheduled > 0 && simStats.inProgress === 0 && simStats.final === 0) ||
-                          (opt.key === 'round_started' && simStats && simStats.inProgress > 0) ||
-                          (opt.key === 'round_complete' && simStats && simStats.final > 0 && simStats.scheduled === 0 && simStats.inProgress === 0);
-                        return (
-                          <button
-                            key={opt.key}
-                            onClick={() => simAction('/api/admin/test/set-round-state', { state: opt.key })}
-                            disabled={simLoading}
-                            title={opt.desc}
-                            className={`flex-1 py-2 rounded-[6px] text-[11px] font-semibold transition-colors disabled:opacity-50 ${
-                              isCurrent
-                                ? 'bg-[#FF5722] text-white'
-                                : 'bg-[#1B2A3D] text-[#9BA3AE] hover:bg-[#243447] hover:text-[#E8E6E1]'
-                            }`}
-                            style={{ fontFamily: "'DM Sans', sans-serif" }}
-                          >
-                            {opt.label}
-                          </button>
-                        );
-                      })}
-                    </div>
-                    <p className="text-[10px] text-[#5F6B7A]" style={{ fontFamily: "'DM Sans', sans-serif" }}>
-                      Toggle to test pick locking, deadline behavior, and pick visibility.
-                    </p>
-                  </div>
                 )}
 
                 {/* Games list */}
                 {simGames.length > 0 && (
                   <div className="space-y-2">
-                    <p className="label text-label-accent">Games In This Round</p>
-                    <div className="space-y-2">
+                    <p className="label text-label-accent">Games</p>
+                    <div className="space-y-1.5">
                       {simGames.map((game: any) => {
                         const t1 = game.team1;
                         const t2 = game.team2;
                         const isFinal = game.status === 'final';
+                        const isWinner1 = isFinal && game.winner_id === t1?.id;
+                        const isWinner2 = isFinal && game.winner_id === t2?.id;
 
                         return (
-                          <div key={game.id} className="bg-[#1B2A3D] rounded-[10px] p-3">
-                            <div className="flex items-center justify-between mb-2">
-                              <p className="text-xs text-[#E8E6E1]" style={{ fontFamily: "'DM Sans', sans-serif" }}>
-                                ({t1?.seed}) {t1?.name} vs ({t2?.seed}) {t2?.name}
-                              </p>
-                              <span
-                                className={`text-[10px] font-bold tracking-wider uppercase ${
-                                  isFinal ? 'text-[#4CAF50]' : 'text-[#9BA3AE]'
-                                }`}
-                                style={{ fontFamily: "'Space Mono', monospace" }}
-                              >
-                                {isFinal ? `${game.team1_score}-${game.team2_score}` : game.status}
-                              </span>
-                            </div>
-                            {!isFinal && (
-                              <div className="flex gap-2">
-                                <button
-                                  onClick={() => simAction('/api/admin/test/complete-game', { gameId: game.id, winnerId: t1?.id })}
-                                  disabled={simLoading}
-                                  className="flex-1 py-1.5 rounded-[6px] text-xs font-semibold bg-[#243447] text-[#E8E6E1] hover:bg-[#2D3E52] transition-colors disabled:opacity-50"
-                                  style={{ fontFamily: "'DM Sans', sans-serif" }}
-                                >
-                                  {t1?.abbreviation || t1?.name} Wins
-                                </button>
-                                <button
-                                  onClick={() => simAction('/api/admin/test/complete-game', { gameId: game.id, winnerId: t2?.id })}
-                                  disabled={simLoading}
-                                  className="flex-1 py-1.5 rounded-[6px] text-xs font-semibold bg-[#243447] text-[#E8E6E1] hover:bg-[#2D3E52] transition-colors disabled:opacity-50"
-                                  style={{ fontFamily: "'DM Sans', sans-serif" }}
-                                >
-                                  {t2?.abbreviation || t2?.name} Wins
-                                </button>
+                          <div key={game.id} className="bg-[#1B2A3D] rounded-[8px] p-2.5">
+                            <div className="flex items-center justify-between">
+                              <div className="flex-1 min-w-0">
+                                <p className="text-xs text-[#E8E6E1] truncate" style={{ fontFamily: "'DM Sans', sans-serif" }}>
+                                  {isFinal && (
+                                    <span className="text-[#4CAF50] mr-1">&#10003;</span>
+                                  )}
+                                  <span className={isWinner1 ? 'font-bold' : isFinal ? 'text-[#9BA3AE]' : ''}>
+                                    ({t1?.seed}) {t1?.abbreviation}
+                                  </span>
+                                  {isFinal && (
+                                    <span className="text-[#9BA3AE]"> {game.team1_score}</span>
+                                  )}
+                                  <span className="text-[#5F6B7A] mx-1.5">vs</span>
+                                  <span className={isWinner2 ? 'font-bold' : isFinal ? 'text-[#9BA3AE]' : ''}>
+                                    ({t2?.seed}) {t2?.abbreviation}
+                                  </span>
+                                  {isFinal && (
+                                    <span className="text-[#9BA3AE]"> {game.team2_score}</span>
+                                  )}
+                                </p>
                               </div>
-                            )}
+                              {!isFinal && (
+                                <button
+                                  onClick={() => simAction('/api/admin/test/complete-game', { gameId: game.id, useRealResults: true })}
+                                  disabled={simLoading}
+                                  className="ml-2 px-2.5 py-1 rounded-[5px] text-[10px] font-semibold bg-[#243447] text-[#E8E6E1] hover:bg-[#2D3E52] transition-colors disabled:opacity-50 flex-shrink-0"
+                                  style={{ fontFamily: "'DM Sans', sans-serif" }}
+                                >
+                                  Complete
+                                </button>
+                              )}
+                            </div>
                           </div>
                         );
                       })}
@@ -1021,22 +1175,22 @@ export default function PoolSettingsPage() {
                 )}
 
                 {/* Bulk actions */}
-                <div className="space-y-2 pt-2">
+                <div className="space-y-2 pt-1">
+                  <button
+                    onClick={() => simAction('/api/admin/test/complete-round', { mode: 'real_results' })}
+                    disabled={simLoading || !simRound}
+                    className="w-full py-2.5 rounded-[8px] text-xs font-semibold bg-[#243447] text-[#E8E6E1] hover:bg-[#2D3E52] transition-colors disabled:opacity-50"
+                    style={{ fontFamily: "'DM Sans', sans-serif" }}
+                  >
+                    Complete All Games (Real 2025 Results)
+                  </button>
                   <button
                     onClick={() => simAction('/api/admin/test/complete-round', { mode: 'favorites' })}
                     disabled={simLoading || !simRound}
                     className="w-full py-2.5 rounded-[8px] text-xs font-semibold bg-[#243447] text-[#E8E6E1] hover:bg-[#2D3E52] transition-colors disabled:opacity-50"
                     style={{ fontFamily: "'DM Sans', sans-serif" }}
                   >
-                    Complete Round — Favorites Win
-                  </button>
-                  <button
-                    onClick={() => simAction('/api/admin/test/complete-round', { mode: 'random' })}
-                    disabled={simLoading || !simRound}
-                    className="w-full py-2.5 rounded-[8px] text-xs font-semibold bg-[#243447] text-[#E8E6E1] hover:bg-[#2D3E52] transition-colors disabled:opacity-50"
-                    style={{ fontFamily: "'DM Sans', sans-serif" }}
-                  >
-                    Complete Round — Random Winners
+                    Complete All Games (Favorites Win)
                   </button>
                   <button
                     onClick={() => simAction('/api/admin/test/activate-next-round')}
@@ -1047,7 +1201,7 @@ export default function PoolSettingsPage() {
                     Activate Next Round
                   </button>
                   <button
-                    onClick={() => simAction('/api/admin/test/reset-round')}
+                    onClick={() => { simAction('/api/admin/test/reset-round'); loadTestState(); }}
                     disabled={simLoading}
                     className="w-full py-2.5 rounded-[8px] text-xs font-semibold text-[#EF5350] bg-[rgba(239,83,80,0.1)] border border-[rgba(239,83,80,0.2)] hover:border-[rgba(239,83,80,0.4)] transition-colors disabled:opacity-50"
                     style={{ fontFamily: "'DM Sans', sans-serif" }}
@@ -1055,12 +1209,12 @@ export default function PoolSettingsPage() {
                     Reset This Round
                   </button>
                   <button
-                    onClick={() => simAction('/api/admin/test/reset-round', { all: true })}
+                    onClick={() => { simAction('/api/admin/test/reset-round', { all: true }); loadTestState(); }}
                     disabled={simLoading}
                     className="w-full py-2.5 rounded-[8px] text-xs font-semibold text-[#EF5350] bg-[rgba(239,83,80,0.1)] border border-[rgba(239,83,80,0.2)] hover:border-[rgba(239,83,80,0.4)] transition-colors disabled:opacity-50"
                     style={{ fontFamily: "'DM Sans', sans-serif" }}
                   >
-                    Reset All Rounds (Pre-Tournament)
+                    Reset All Rounds (Full Reset)
                   </button>
                 </div>
 

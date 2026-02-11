@@ -2,10 +2,12 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { supabaseAdmin } from '@/lib/supabase/admin';
 import { getTournamentStateServer } from '@/lib/status-server';
+import { clearServerClockCache } from '@/lib/clock-server';
 import {
   processCompletedGame,
   processMissedPicks,
   checkRoundCompletion,
+  cascadeGameResult,
   createEmptyResults,
 } from '@/lib/game-processing';
 
@@ -33,27 +35,99 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json().catch(() => ({}));
     const targetState = body.state as RoundState;
+    const roundId = body.roundId; // Optional — defaults to current round
 
     if (!['pre_round', 'round_started', 'round_complete'].includes(targetState)) {
       return NextResponse.json({ error: 'Invalid state. Use: pre_round, round_started, round_complete' }, { status: 400 });
     }
 
-    // Get current round
-    const state = await getTournamentStateServer();
-    if (!state.currentRound) {
-      return NextResponse.json({ error: 'No current round' }, { status: 400 });
+    // Get target round
+    let targetRoundId: string;
+    let roundName: string;
+    let roundDate: string;
+    let deadlineDatetime: string;
+
+    if (roundId) {
+      const { data: round } = await supabaseAdmin
+        .from('rounds')
+        .select('id, name, date, deadline_datetime')
+        .eq('id', roundId)
+        .single();
+      if (!round) return NextResponse.json({ error: 'Round not found' }, { status: 404 });
+      targetRoundId = round.id;
+      roundName = round.name;
+      roundDate = round.date;
+      deadlineDatetime = round.deadline_datetime;
+    } else {
+      const state = await getTournamentStateServer();
+      if (!state.currentRound) {
+        return NextResponse.json({ error: 'No current round' }, { status: 400 });
+      }
+      targetRoundId = state.currentRound.id;
+      roundName = state.currentRound.name;
+      roundDate = state.currentRound.date;
+      deadlineDatetime = state.currentRound.deadline;
     }
 
-    const roundId = state.currentRound.id;
-    const roundName = state.currentRound.name;
-    const now = new Date();
+    // Map phase to simulated clock phase
+    const phaseMap: Record<string, string> = {
+      'pre_round': 'pre_round',
+      'round_started': 'live',
+      'round_complete': 'post_round',
+    };
+    const clockPhase = phaseMap[targetState];
 
+    // Compute simulated datetime for the phase
+    let simulatedDatetime: string;
+    switch (clockPhase) {
+      case 'pre_round':
+        simulatedDatetime = `${roundDate}T12:00:00+00:00`; // 8 AM ET
+        break;
+      case 'live': {
+        const deadline = new Date(deadlineDatetime);
+        simulatedDatetime = new Date(deadline.getTime() + 60 * 60 * 1000).toISOString();
+        break;
+      }
+      case 'post_round':
+        simulatedDatetime = `${roundDate}T03:55:00+00:00`; // 11:55 PM ET
+        break;
+      default:
+        simulatedDatetime = new Date().toISOString();
+    }
+
+    // 1. Update admin_test_state (simulated clock)
+    await supabaseAdmin
+      .from('admin_test_state')
+      .update({
+        is_test_mode: true,
+        simulated_datetime: simulatedDatetime,
+        target_round_id: targetRoundId,
+        phase: clockPhase,
+        updated_by: user.id,
+        updated_at: new Date().toISOString(),
+      })
+      .not('id', 'is', null);
+
+    clearServerClockCache();
+
+    // 2. Set is_active on the target round, false on all others
+    await supabaseAdmin
+      .from('rounds')
+      .update({ is_active: false })
+      .neq('id', targetRoundId);
+
+    await supabaseAdmin
+      .from('rounds')
+      .update({ is_active: true })
+      .eq('id', targetRoundId);
+
+    // 3. Handle game status changes based on target state
     if (targetState === 'pre_round') {
-      return await setPreRound(roundId, roundName, now);
+      return await handlePreRound(targetRoundId, roundName, simulatedDatetime);
     } else if (targetState === 'round_started') {
-      return await setRoundStarted(roundId, roundName, now);
+      return await handleRoundStarted(targetRoundId, roundName, simulatedDatetime);
     } else {
-      return await setRoundComplete(roundId, roundName, now);
+      return await handleRoundComplete(targetRoundId, roundName, simulatedDatetime);
     }
 
   } catch (err: any) {
@@ -62,11 +136,8 @@ export async function POST(request: NextRequest) {
   }
 }
 
-// ── Pre Round: reset games, set datetimes to future ──────────────────
-async function setPreRound(roundId: string, roundName: string, now: Date) {
-  const tomorrow = new Date(now.getTime() + 24 * 60 * 60 * 1000);
-  const deadlineTomorrow = new Date(tomorrow.getTime() - 5 * 60 * 1000);
-
+// ── Pre Round: reset games, simulated clock to before deadline ──────
+async function handlePreRound(roundId: string, roundName: string, simulatedDatetime: string) {
   // Get games to find losers for un-elimination
   const { data: games } = await supabaseAdmin
     .from('games')
@@ -81,7 +152,7 @@ async function setPreRound(roundId: string, roundName: string, now: Date) {
     }
   }
 
-  // 1. Reset all games to scheduled, set game_datetime to tomorrow
+  // Reset all games to scheduled — DO NOT touch game_datetime
   await supabaseAdmin
     .from('games')
     .update({
@@ -89,17 +160,10 @@ async function setPreRound(roundId: string, roundName: string, now: Date) {
       winner_id: null,
       team1_score: null,
       team2_score: null,
-      game_datetime: tomorrow.toISOString(),
     })
     .eq('round_id', roundId);
 
-  // 2. Update rounds.deadline_datetime to future
-  await supabaseAdmin
-    .from('rounds')
-    .update({ deadline_datetime: deadlineTomorrow.toISOString() })
-    .eq('id', roundId);
-
-  // 3. Un-eliminate teams that lost in this round
+  // Un-eliminate teams
   if (loserIds.length > 0) {
     await supabaseAdmin
       .from('teams')
@@ -107,20 +171,20 @@ async function setPreRound(roundId: string, roundName: string, now: Date) {
       .in('id', loserIds);
   }
 
-  // 4. Clear pick results
+  // Clear pick results
   await supabaseAdmin
     .from('picks')
     .update({ is_correct: null })
     .eq('round_id', roundId);
 
-  // 5. Un-eliminate players eliminated in this round
+  // Un-eliminate players
   const { data: revivedPlayers } = await supabaseAdmin
     .from('pool_players')
     .update({ is_eliminated: false, elimination_round_id: null, elimination_reason: null })
     .eq('elimination_round_id', roundId)
     .select('id');
 
-  // 6. Revert pools back to active
+  // Revert pools
   await supabaseAdmin
     .from('pools')
     .update({ status: 'active', winner_id: null })
@@ -130,42 +194,23 @@ async function setPreRound(roundId: string, roundName: string, now: Date) {
     success: true,
     state: 'pre_round',
     round: roundName,
-    description: 'Picks OPEN, deadline in future, other picks HIDDEN',
+    simulatedDatetime,
+    description: 'Simulated clock set to pre-deadline. Picks OPEN, other picks HIDDEN.',
     gamesReset: games?.length || 0,
     teamsRevived: loserIds.length,
     playersRevived: revivedPlayers?.length || 0,
   });
 }
 
-// ── Round Started: set datetimes to past, games to in_progress ───────
-async function setRoundStarted(roundId: string, roundName: string, now: Date) {
-  const tenMinAgo = new Date(now.getTime() - 10 * 60 * 1000);
-  const fifteenMinAgo = new Date(now.getTime() - 15 * 60 * 1000);
-
-  // 1. Set game_datetime to past and status to in_progress (only scheduled games)
+// ── Round Started: set games to in_progress via simulated clock ──────
+async function handleRoundStarted(roundId: string, roundName: string, simulatedDatetime: string) {
+  // Set scheduled games to in_progress (simulates games starting)
   await supabaseAdmin
     .from('games')
-    .update({
-      status: 'in_progress',
-      game_datetime: tenMinAgo.toISOString(),
-    })
+    .update({ status: 'in_progress' })
     .eq('round_id', roundId)
     .eq('status', 'scheduled');
 
-  // Also update game_datetime on already-in-progress games
-  await supabaseAdmin
-    .from('games')
-    .update({ game_datetime: tenMinAgo.toISOString() })
-    .eq('round_id', roundId)
-    .eq('status', 'in_progress');
-
-  // 2. Update rounds.deadline_datetime to past
-  await supabaseAdmin
-    .from('rounds')
-    .update({ deadline_datetime: fifteenMinAgo.toISOString() })
-    .eq('id', roundId);
-
-  // Count updated games
   const { data: inProgressGames } = await supabaseAdmin
     .from('games')
     .select('id')
@@ -176,35 +221,21 @@ async function setRoundStarted(roundId: string, roundName: string, now: Date) {
     success: true,
     state: 'round_started',
     round: roundName,
-    description: 'Picks LOCKED, deadline passed, other picks VISIBLE',
+    simulatedDatetime,
+    description: 'Simulated clock set to post-deadline. Picks LOCKED, other picks VISIBLE.',
     gamesInProgress: inProgressGames?.length || 0,
   });
 }
 
-// ── Round Complete: complete all games with winners, process results ──
-async function setRoundComplete(roundId: string, roundName: string, now: Date) {
-  const twoHoursAgo = new Date(now.getTime() - 2 * 60 * 60 * 1000);
-  const twoHoursAgoDeadline = new Date(twoHoursAgo.getTime() - 5 * 60 * 1000);
-
-  // 1. Set game_datetime to past
-  await supabaseAdmin
-    .from('games')
-    .update({ game_datetime: twoHoursAgo.toISOString() })
-    .eq('round_id', roundId);
-
-  // 2. Update rounds.deadline_datetime to past
-  await supabaseAdmin
-    .from('rounds')
-    .update({ deadline_datetime: twoHoursAgoDeadline.toISOString() })
-    .eq('id', roundId);
-
-  // 3. Complete all non-final games (favorites mode: higher seed wins)
+// ── Round Complete: complete all games, process results ──────────────
+async function handleRoundComplete(roundId: string, roundName: string, simulatedDatetime: string) {
+  // Complete all non-final games (favorites mode: higher seed wins)
   const { data: pendingGames } = await supabaseAdmin
     .from('games')
     .select(`
       id, team1_id, team2_id, status,
-      team1:team1_id(seed),
-      team2:team2_id(seed)
+      team1:team1_id(seed, abbreviation),
+      team2:team2_id(seed, abbreviation)
     `)
     .eq('round_id', roundId)
     .in('status', ['scheduled', 'in_progress']);
@@ -213,16 +244,39 @@ async function setRoundComplete(roundId: string, roundName: string, now: Date) {
   const gameResults: any[] = [];
 
   for (const game of (pendingGames || [])) {
-    const seed1 = (game as any).team1?.seed ?? 8;
-    const seed2 = (game as any).team2?.seed ?? 8;
-    const winnerId = seed1 <= seed2 ? game.team1_id : game.team2_id;
+    const team1 = (game as any).team1;
+    const team2 = (game as any).team2;
+
+    // Try real results first, fall back to favorites
+    let winnerId: string;
+    let team1Score: number;
+    let team2Score: number;
+
+    const { lookupRealResult } = await import('@/lib/test-results');
+    const result = team1 && team2 ? lookupRealResult(team1.abbreviation, team2.abbreviation) : null;
+
+    if (result) {
+      winnerId = result.winner === team1?.abbreviation ? game.team1_id : game.team2_id;
+      if (winnerId === game.team1_id) {
+        team1Score = result.winnerScore;
+        team2Score = result.loserScore;
+      } else {
+        team1Score = result.loserScore;
+        team2Score = result.winnerScore;
+      }
+    } else {
+      const seed1 = team1?.seed ?? 8;
+      const seed2 = team2?.seed ?? 8;
+      winnerId = seed1 <= seed2 ? game.team1_id : game.team2_id;
+      const ws = Math.floor(Math.random() * 26) + 70;
+      const ls = Math.floor(Math.random() * 21) + 50;
+      team1Score = winnerId === game.team1_id ? ws : ls;
+      team2Score = winnerId === game.team2_id ? ws : ls;
+    }
+
     const loserId = winnerId === game.team1_id ? game.team2_id : game.team1_id;
 
-    const winnerScore = Math.floor(Math.random() * 26) + 70;
-    const loserScore = Math.floor(Math.random() * 21) + 50;
-    const team1Score = winnerId === game.team1_id ? winnerScore : loserScore;
-    const team2Score = winnerId === game.team2_id ? winnerScore : loserScore;
-
+    // NEVER touch game_datetime
     await supabaseAdmin
       .from('games')
       .update({
@@ -234,6 +288,7 @@ async function setRoundComplete(roundId: string, roundName: string, now: Date) {
       .eq('id', game.id);
 
     await processCompletedGame(roundId, winnerId, loserId, results);
+    await cascadeGameResult(game.id, winnerId, results);
 
     gameResults.push({
       gameId: game.id,
@@ -242,7 +297,6 @@ async function setRoundComplete(roundId: string, roundName: string, now: Date) {
     });
   }
 
-  // 4. Process missed picks + check round completion
   await processMissedPicks(roundId, results);
   await checkRoundCompletion(roundId, results);
 
@@ -250,7 +304,8 @@ async function setRoundComplete(roundId: string, roundName: string, now: Date) {
     success: true,
     state: 'round_complete',
     round: roundName,
-    description: 'All games FINAL, picks graded, eliminations processed',
+    simulatedDatetime,
+    description: 'Simulated clock set to post-round. All games FINAL, picks graded.',
     gamesCompleted: gameResults.length,
     gameResults,
     results,

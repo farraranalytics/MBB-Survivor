@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { supabaseAdmin } from '@/lib/supabase/admin';
 import { getTournamentStateServer } from '@/lib/status-server';
+import { deleteCascadedGames } from '@/lib/game-processing';
+import { clearServerClockCache } from '@/lib/clock-server';
 
 export async function POST(request: NextRequest) {
   // Auth: must be a pool creator
@@ -24,17 +26,32 @@ export async function POST(request: NextRequest) {
 
   try {
     const body = await request.json().catch(() => ({}));
-    const roundId = body.roundId; // Optional — defaults to active round
-    const resetAll = body.all === true; // Reset ALL rounds back to pre-tournament
+    const roundId = body.roundId;
+    const resetAll = body.all === true;
 
     // ── Full tournament reset ─────────────────────────────────
     if (resetAll) {
-      // Reset all games
+      // Delete all cascade-created games (games with bracket_position set)
+      const { data: cascadeGames } = await supabaseAdmin
+        .from('games')
+        .delete()
+        .not('bracket_position', 'is', null)
+        .select('id');
+
+      // Also delete any games with only one team (partial cascade)
       const { data: allGames } = await supabaseAdmin
         .from('games')
-        .select('id')
-        .neq('status', 'scheduled');
+        .select('id, team1_id, team2_id');
 
+      const partialIds = (allGames || [])
+        .filter(g => (!g.team1_id || !g.team2_id) && (g.team1_id || g.team2_id))
+        .map(g => g.id);
+
+      if (partialIds.length > 0) {
+        await supabaseAdmin.from('games').delete().in('id', partialIds);
+      }
+
+      // Reset remaining games (seed data R64 games)
       await supabaseAdmin
         .from('games')
         .update({ status: 'scheduled', winner_id: null, team1_score: null, team2_score: null })
@@ -65,10 +82,24 @@ export async function POST(request: NextRequest) {
         .update({ status: 'active', winner_id: null })
         .eq('status', 'complete');
 
+      // Reset test mode clock
+      await supabaseAdmin
+        .from('admin_test_state')
+        .update({
+          is_test_mode: false,
+          simulated_datetime: null,
+          target_round_id: null,
+          phase: 'pre_round',
+          updated_at: new Date().toISOString(),
+        })
+        .not('id', 'is', null);
+
+      clearServerClockCache();
+
       return NextResponse.json({
         success: true,
         mode: 'full_reset',
-        gamesReset: allGames?.length || 0,
+        cascadeGamesDeleted: (cascadeGames?.length || 0) + partialIds.length,
         playersRevived: revivedPlayers?.length || 0,
       });
     }
@@ -83,7 +114,6 @@ export async function POST(request: NextRequest) {
         .single();
       round = data;
     } else {
-      // Default to current round (derived from game states)
       const state = await getTournamentStateServer();
       const currentRoundId = state.currentRound?.id;
       if (currentRoundId) {
@@ -100,7 +130,10 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Round not found' }, { status: 404 });
     }
 
-    // 1. Reset all games in this round
+    // 1. Delete cascade-created games in NEXT rounds
+    const cascadeDeleted = await deleteCascadedGames(round.id);
+
+    // 2. Get games in this round to find losers
     const { data: games } = await supabaseAdmin
       .from('games')
       .select('id, team1_id, team2_id, winner_id')
@@ -114,6 +147,7 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // 3. Reset all games in this round — NEVER touch game_datetime
     await supabaseAdmin
       .from('games')
       .update({
@@ -124,7 +158,7 @@ export async function POST(request: NextRequest) {
       })
       .eq('round_id', round.id);
 
-    // 2. Un-eliminate teams that lost in this round
+    // 4. Un-eliminate teams that lost in this round
     if (loserIds.length > 0) {
       await supabaseAdmin
         .from('teams')
@@ -132,13 +166,13 @@ export async function POST(request: NextRequest) {
         .in('id', loserIds);
     }
 
-    // 3. Reset picks for this round (clear is_correct)
+    // 5. Reset picks for this round (clear is_correct)
     await supabaseAdmin
       .from('picks')
       .update({ is_correct: null })
       .eq('round_id', round.id);
 
-    // 4. Un-eliminate players eliminated in this round
+    // 6. Un-eliminate players eliminated in this round
     const { data: revivedPlayers } = await supabaseAdmin
       .from('pool_players')
       .update({
@@ -149,9 +183,7 @@ export async function POST(request: NextRequest) {
       .eq('elimination_round_id', round.id)
       .select('id');
 
-    // 5. Round becomes current automatically when its games are reset to 'scheduled'
-
-    // 6. Revert pools back to active (in case they were completed)
+    // 7. Revert pools back to active
     await supabaseAdmin
       .from('pools')
       .update({ status: 'active', winner_id: null })
@@ -163,6 +195,7 @@ export async function POST(request: NextRequest) {
       gamesReset: games?.length || 0,
       teamsRevived: loserIds.length,
       playersRevived: revivedPlayers?.length || 0,
+      cascadeGamesDeleted: cascadeDeleted,
     });
 
   } catch (err: any) {

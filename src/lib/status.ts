@@ -3,6 +3,7 @@
 // This replaces rounds.is_active, rounds.deadline_datetime reads, and pools.status reads.
 
 import { supabase } from '@/lib/supabase/client';
+import { getEffectiveNow } from '@/lib/clock';
 
 // ─── Types ────────────────────────────────────────────────────
 
@@ -44,7 +45,7 @@ export async function getTournamentState(): Promise<TournamentState> {
     return { status: 'pre_tournament', currentRound: null, rounds: [] };
   }
 
-  const now = new Date();
+  const now = await getEffectiveNow();
 
   const roundInfos: RoundInfo[] = rounds.map(round => {
     const games = (round as any).games || [];
@@ -136,15 +137,15 @@ export function arePicksVisible(roundInfo: RoundInfo): boolean {
 }
 
 /** Get deadline display info */
-export function getDeadlineDisplay(state: TournamentState): {
+export async function getDeadlineDisplay(state: TournamentState): Promise<{
   deadline: string;
   isExpired: boolean;
   minutesRemaining: number;
-} | null {
+} | null> {
   if (!state.currentRound?.deadline) return null;
 
   const deadlineTime = new Date(state.currentRound.deadline);
-  const now = new Date();
+  const now = await getEffectiveNow();
   const diff = deadlineTime.getTime() - now.getTime();
 
   return {

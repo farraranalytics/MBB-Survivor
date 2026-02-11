@@ -1,6 +1,7 @@
 // Pick submission logic and validation
 import { supabase } from '@/lib/supabase/client';
 import { getTournamentState } from '@/lib/status';
+import { getEffectiveNow } from '@/lib/clock';
 import {
   PoolPlayer,
   Round,
@@ -289,7 +290,7 @@ export async function getPickDeadline(roundId: string): Promise<PickDeadline> {
     deadlineDatetime = new Date('2099-01-01').toISOString();
   }
 
-  const now = new Date();
+  const now = await getEffectiveNow();
   const diff = new Date(deadlineDatetime).getTime() - now.getTime();
   const minutesRemaining = Math.max(0, Math.floor(diff / 60000));
 

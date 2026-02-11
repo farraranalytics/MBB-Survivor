@@ -5,8 +5,10 @@ import {
   processCompletedGame,
   processMissedPicks,
   checkRoundCompletion,
+  cascadeGameResult,
   createEmptyResults,
 } from '@/lib/game-processing';
+import { lookupRealResult } from '@/lib/test-results';
 
 export async function POST(request: NextRequest) {
   // Auth: must be a pool creator
@@ -28,16 +30,21 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    const { gameId, winnerId } = await request.json();
+    const body = await request.json();
+    const { gameId, winnerId, useRealResults } = body;
 
-    if (!gameId || !winnerId) {
-      return NextResponse.json({ error: 'gameId and winnerId are required' }, { status: 400 });
+    if (!gameId) {
+      return NextResponse.json({ error: 'gameId is required' }, { status: 400 });
     }
 
-    // Get the game
+    // Get the game with team info
     const { data: game } = await supabaseAdmin
       .from('games')
-      .select('id, round_id, team1_id, team2_id, status')
+      .select(`
+        id, round_id, team1_id, team2_id, status,
+        team1:team1_id(id, abbreviation, seed),
+        team2:team2_id(id, abbreviation, seed)
+      `)
       .eq('id', gameId)
       .single();
 
@@ -49,36 +56,77 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Game is already final' }, { status: 400 });
     }
 
-    // Validate winnerId is one of the two teams
-    if (winnerId !== game.team1_id && winnerId !== game.team2_id) {
-      return NextResponse.json({ error: 'winnerId must be team1_id or team2_id' }, { status: 400 });
+    const team1 = (game as any).team1;
+    const team2 = (game as any).team2;
+
+    let resolvedWinnerId: string;
+    let team1Score: number;
+    let team2Score: number;
+
+    if (useRealResults && team1 && team2) {
+      // Look up real 2025 results
+      const result = lookupRealResult(team1.abbreviation, team2.abbreviation);
+      if (result) {
+        // Determine which DB team is the winner
+        resolvedWinnerId = result.winner === team1.abbreviation ? game.team1_id : game.team2_id;
+        // Assign scores correctly
+        if (resolvedWinnerId === game.team1_id) {
+          team1Score = result.winnerScore;
+          team2Score = result.loserScore;
+        } else {
+          team1Score = result.loserScore;
+          team2Score = result.winnerScore;
+        }
+      } else {
+        // No real result found — fall back to favorites or winnerId
+        if (winnerId) {
+          resolvedWinnerId = winnerId;
+        } else {
+          // Favorites: lower seed wins
+          const seed1 = team1?.seed ?? 8;
+          const seed2 = team2?.seed ?? 8;
+          resolvedWinnerId = seed1 <= seed2 ? game.team1_id : game.team2_id;
+        }
+        const winnerScore = Math.floor(Math.random() * 26) + 70;
+        const loserScore = Math.floor(Math.random() * 21) + 50;
+        team1Score = resolvedWinnerId === game.team1_id ? winnerScore : loserScore;
+        team2Score = resolvedWinnerId === game.team2_id ? winnerScore : loserScore;
+      }
+    } else if (winnerId) {
+      // Manual winner selection
+      if (winnerId !== game.team1_id && winnerId !== game.team2_id) {
+        return NextResponse.json({ error: 'winnerId must be team1_id or team2_id' }, { status: 400 });
+      }
+      resolvedWinnerId = winnerId;
+      const winnerScore = Math.floor(Math.random() * 26) + 70;
+      const loserScore = Math.floor(Math.random() * 21) + 50;
+      team1Score = resolvedWinnerId === game.team1_id ? winnerScore : loserScore;
+      team2Score = resolvedWinnerId === game.team2_id ? winnerScore : loserScore;
+    } else {
+      return NextResponse.json({ error: 'winnerId or useRealResults is required' }, { status: 400 });
     }
 
-    const loserId = winnerId === game.team1_id ? game.team2_id : game.team1_id;
+    const loserId = resolvedWinnerId === game.team1_id ? game.team2_id : game.team1_id;
 
-    // Generate fake scores (winner gets 70-95, loser gets 50-70)
-    const winnerScore = Math.floor(Math.random() * 26) + 70;
-    const loserScore = Math.floor(Math.random() * 21) + 50;
-
-    const team1Score = winnerId === game.team1_id ? winnerScore : loserScore;
-    const team2Score = winnerId === game.team2_id ? winnerScore : loserScore;
-
-    // Update game to final
+    // 1. Update game to final — NEVER touch game_datetime
     await supabaseAdmin
       .from('games')
       .update({
         status: 'final',
-        winner_id: winnerId,
+        winner_id: resolvedWinnerId,
         team1_score: team1Score,
         team2_score: team2Score,
       })
       .eq('id', gameId);
 
-    // Process picks and eliminations using the SAME logic as the real cron
+    // 2. Process picks and eliminations
     const results = createEmptyResults();
-    await processCompletedGame(game.round_id, winnerId, loserId, results);
+    await processCompletedGame(game.round_id, resolvedWinnerId, loserId, results);
 
-    // Check if all games in round are now final → process missed picks + round completion
+    // 3. Cascade: create/populate next-round game
+    await cascadeGameResult(gameId, resolvedWinnerId, results);
+
+    // 4. Check round completion (missed picks, pool advancement)
     await processMissedPicks(game.round_id, results);
     await checkRoundCompletion(game.round_id, results);
 
@@ -86,7 +134,8 @@ export async function POST(request: NextRequest) {
       success: true,
       game: {
         id: gameId,
-        winner: winnerId,
+        winner: resolvedWinnerId,
+        loser: loserId,
         score: `${team1Score}-${team2Score}`,
       },
       results,

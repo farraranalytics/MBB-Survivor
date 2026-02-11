@@ -3,6 +3,7 @@
 // Uses supabaseAdmin (service role) for API routes and cron jobs.
 
 import { supabaseAdmin } from '@/lib/supabase/admin';
+import { getEffectiveNowServer } from '@/lib/clock-server';
 
 // Re-export types from status.ts
 export type { TournamentStatus, RoundStatus, RoundInfo, TournamentState } from '@/lib/status';
@@ -21,7 +22,7 @@ export async function getTournamentStateServer(): Promise<import('@/lib/status')
     return { status: 'pre_tournament', currentRound: null, rounds: [] };
   }
 
-  const now = new Date();
+  const now = await getEffectiveNowServer();
 
   const roundInfos: import('@/lib/status').RoundInfo[] = rounds.map(round => {
     const games = (round as any).games || [];

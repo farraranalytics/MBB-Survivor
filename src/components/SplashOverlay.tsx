@@ -5,6 +5,7 @@ import { supabase } from '@/lib/supabase/client';
 import { getTournamentState } from '@/lib/status';
 import { formatDateET } from '@/lib/timezone';
 import { CountdownTimer } from '@/components/CountdownTimer';
+import { useClockOffset } from '@/hooks/useClockOffset';
 
 // ─── Types ──────────────────────────────────────────────────────
 
@@ -349,7 +350,7 @@ function StatNum({ children }: { children: React.ReactNode }) {
 
 // ─── Splash State: Pre-Tournament ───────────────────────────────
 
-function PreTournamentSplash({ data }: { data: SplashData }) {
+function PreTournamentSplash({ data, clockOffset }: { data: SplashData; clockOffset: number }) {
   return (
     <>
       <AnimateIn delay={0}>
@@ -365,7 +366,7 @@ function PreTournamentSplash({ data }: { data: SplashData }) {
       </AnimateIn>
       {data.countdownTarget && data.countdownLabel && (
         <AnimateIn delay={500} className="mb-6">
-          <CountdownTimer target={data.countdownTarget} label={data.countdownLabel} />
+          <CountdownTimer target={data.countdownTarget} label={data.countdownLabel} clockOffset={clockOffset} />
         </AnimateIn>
       )}
       <AnimateIn delay={800}>
@@ -383,7 +384,7 @@ function PreTournamentSplash({ data }: { data: SplashData }) {
 
 // ─── Splash State: Pre-Round (Game Day) ─────────────────────────
 
-function PreRoundSplash({ data }: { data: SplashData }) {
+function PreRoundSplash({ data, clockOffset }: { data: SplashData; clockOffset: number }) {
   const allEliminated = data.userEntriesAlive === 0 && data.userEntriesTotal > 0;
   const allPicked = data.userEntriesAlive > 0 && data.userEntriesNeedPick === 0;
   const nonePicked = data.userEntriesAlive > 0 && data.userEntriesPicked === 0;
@@ -418,7 +419,7 @@ function PreRoundSplash({ data }: { data: SplashData }) {
       </AnimateIn>
       {data.countdownTarget && data.countdownLabel && (
         <AnimateIn delay={300} className="mb-6">
-          <CountdownTimer target={data.countdownTarget} label={data.countdownLabel} />
+          <CountdownTimer target={data.countdownTarget} label={data.countdownLabel} clockOffset={clockOffset} />
         </AnimateIn>
       )}
       <AnimateIn delay={500}>
@@ -663,6 +664,7 @@ export function SplashOverlay({ userId }: { userId: string | undefined }) {
   const [fading, setFading] = useState(false);
   const [data, setData] = useState<SplashData | null>(null);
   const dismissedRef = useRef(false);
+  const clockOffset = useClockOffset();
 
   const dismiss = useCallback(() => {
     if (dismissedRef.current) return;
@@ -721,11 +723,11 @@ export function SplashOverlay({ userId }: { userId: string | undefined }) {
         ) : data.roundStatus === 'round_live' ? (
           <GamesLiveSplash data={data} />
         ) : data.tournamentStatus === 'pre_tournament' ? (
-          <PreTournamentSplash data={data} />
+          <PreTournamentSplash data={data} clockOffset={clockOffset} />
         ) : data.roundStatus === 'round_complete' ? (
           <RoundCompleteSplash data={data} />
         ) : (
-          <PreRoundSplash data={data} />
+          <PreRoundSplash data={data} clockOffset={clockOffset} />
         )}
       </div>
 

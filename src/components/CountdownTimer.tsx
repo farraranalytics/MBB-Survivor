@@ -13,6 +13,7 @@ interface CountdownTimerProps {
   urgent?: boolean;            // manual override: red border + pulsing numbers
   urgentLabel?: string;        // label to show when urgent (e.g. "⚠ DEADLINE APPROACHING")
   urgentThresholdMs?: number;  // auto-urgent when remaining time drops below this (e.g. 1800000 = 30 min)
+  clockOffset?: number;        // offset in ms: simulated_time - real_time (0 = no offset)
 }
 
 // ─── Size Config ────────────────────────────────────────────────
@@ -120,6 +121,7 @@ export function CountdownTimer({
   urgent = false,
   urgentLabel,
   urgentThresholdMs,
+  clockOffset = 0,
 }: CountdownTimerProps) {
   const [now, setNow] = useState(Date.now());
 
@@ -128,7 +130,9 @@ export function CountdownTimer({
     return () => clearInterval(interval);
   }, []);
 
-  const diff = Math.max(0, new Date(target).getTime() - now);
+  // Apply clock offset: simulated "now" = real now + offset
+  const simulatedNow = now + clockOffset;
+  const diff = Math.max(0, new Date(target).getTime() - simulatedNow);
   const days = Math.floor(diff / 86400000);
   const hours = Math.floor((diff % 86400000) / 3600000);
   const minutes = Math.floor((diff % 3600000) / 60000);
