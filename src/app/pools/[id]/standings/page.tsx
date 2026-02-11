@@ -3,8 +3,8 @@
 import { useEffect, useState, useRef, useMemo } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useAuth } from '@/components/auth/AuthProvider';
-import { useActivePool } from '@/hooks/useActivePool';
 import { TeamLogo } from '@/components/TeamLogo';
+import { PageHeader, PoolSelectorBar } from '@/components/pool';
 import { mapRoundNameToCode, inferHalf } from '@/lib/bracket';
 import { formatDateET } from '@/lib/timezone';
 import {
@@ -111,7 +111,6 @@ export default function StandingsPage() {
   const params = useParams();
   const router = useRouter();
   const { user } = useAuth();
-  const { pools } = useActivePool();
   const poolId = params.id as string;
 
   const [leaderboard, setLeaderboard] = useState<PoolLeaderboard | null>(null);
@@ -226,40 +225,21 @@ export default function StandingsPage() {
 
   return (
     <div className="min-h-screen bg-[#0D1B2A] pb-24">
+      {/* ─── Page Header ──────────────────────────────────────── */}
+      <div className="bg-[#080810] border-b border-[rgba(255,255,255,0.08)]">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 py-3 sm:py-4">
+          <PageHeader
+            tabLabel="THE FIELD"
+            heading="Standings"
+            roundInfo={leaderboard.current_round ? {
+              roundName: leaderboard.current_round.name,
+            } : undefined}
+          />
+          <PoolSelectorBar currentPoolId={poolId} />
+        </div>
+      </div>
+
       <div className="max-w-5xl mx-auto px-4 py-4 sm:py-6">
-
-        {/* ─── Pool Tabs ──────────────────────────────────────── */}
-        {pools.length > 1 && (
-          <div className="flex gap-2 mb-4 overflow-x-auto pb-1 scrollbar-hide">
-            {pools.map((pool) => {
-              const isActive = pool.pool_id === poolId;
-              return (
-                <button
-                  key={pool.pool_id}
-                  onClick={() => {
-                    if (!isActive) router.push(`/pools/${pool.pool_id}/standings`);
-                  }}
-                  className={`flex-shrink-0 px-4 py-2 rounded-[8px] border transition-colors ${
-                    isActive
-                      ? 'bg-[rgba(255,87,34,0.1)] border-[rgba(255,87,34,0.3)] text-[#FF5722]'
-                      : 'bg-[#111827] border-[rgba(255,255,255,0.05)] text-[#9BA3AE] hover:text-[#E8E6E1]'
-                  }`}
-                >
-                  <span className="text-xs font-bold" style={{ fontFamily: "'Oswald', sans-serif", textTransform: 'uppercase' }}>
-                    {pool.pool_name}
-                  </span>
-                  <span
-                    className={`ml-2 text-[10px] font-bold ${isActive ? 'text-[rgba(255,87,34,0.6)]' : 'text-[#5F6B7A]'}`}
-                    style={{ fontFamily: "'Space Mono', monospace" }}
-                  >
-                    {pool.alive_players}/{pool.total_players}
-                  </span>
-                </button>
-              );
-            })}
-          </div>
-        )}
-
         {/* ─── Summary Stats Bar ─────────────────────────────── */}
         <div className="grid grid-cols-3 gap-3 mb-4">
           <div className="bg-[rgba(76,175,80,0.1)] rounded-[10px] p-3 text-center">

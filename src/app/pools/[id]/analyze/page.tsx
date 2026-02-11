@@ -8,6 +8,7 @@ import { supabase } from '@/lib/supabase/client';
 import { TeamInfo, Round } from '@/types/picks';
 import { BracketGame } from '@/types/bracket';
 import BracketPlanner from '@/components/analyze/BracketPlanner';
+import { PageHeader, PoolSelectorBar, EntryTabs } from '@/components/pool';
 
 export default function PoolAnalyzePage() {
   const params = useParams();
@@ -167,33 +168,20 @@ export default function PoolAnalyzePage() {
 
   return (
     <div className="min-h-screen bg-[var(--surface-1)] pb-24">
-      <div className="max-w-4xl mx-auto px-5 pt-4">
-        {/* Entry switcher */}
-        {entries.length > 1 && (
-          <div className="flex gap-2 mb-4 overflow-x-auto pb-1">
-            {entries.map(entry => (
-              <button
-                key={entry.id}
-                onClick={() => switchEntry(entry.id)}
-                className="shrink-0 px-4 py-2 rounded-[var(--radius-sm)] text-sm font-semibold transition-all duration-150"
-                style={{
-                  fontFamily: 'var(--font-display)',
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.05em',
-                  background: activeEntryId === entry.id ? 'var(--color-orange-subtle)' : 'var(--surface-2)',
-                  border: activeEntryId === entry.id ? '1.5px solid var(--color-orange)' : '1px solid var(--border-subtle)',
-                  color: activeEntryId === entry.id ? 'var(--color-orange)' : 'var(--text-secondary)',
-                }}
-              >
-                {entry.entry_label || `Entry ${entry.entry_number}`}
-                {entry.is_eliminated && (
-                  <span className="ml-2 text-[0.6rem] text-[var(--color-eliminated)]">OUT</span>
-                )}
-              </button>
-            ))}
-          </div>
-        )}
+      {/* ─── Page Header ─── */}
+      <div className="bg-[#080810] border-b border-[rgba(255,255,255,0.08)]">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 py-3 sm:py-4">
+          <PageHeader tabLabel="ANALYZE" heading="Plan Your Path" />
+          <PoolSelectorBar currentPoolId={poolId} />
+          <EntryTabs
+            entries={entries.map(e => ({ ...e, has_picked: undefined }))}
+            activeEntryId={activeEntryId}
+            onEntrySwitch={switchEntry}
+          />
+        </div>
+      </div>
 
+      <div className="max-w-4xl mx-auto px-5 pt-4">
         <BracketPlanner
           bracket={bracket}
           rounds={rounds}

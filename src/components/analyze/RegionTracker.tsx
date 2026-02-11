@@ -7,16 +7,12 @@ interface RegionTrackerProps {
   regionCounts: Record<string, number>;
   bracket: Record<string, TeamInfo[]>;
   usedTeamIds: Set<string>;
-  regionFlipped: Record<string, boolean>;
-  onFlipRegion: (region: string) => void;
 }
 
 export default function RegionTracker({
   regionCounts,
   bracket,
   usedTeamIds,
-  regionFlipped,
-  onFlipRegion,
 }: RegionTrackerProps) {
   return (
     <div className="grid grid-cols-2 md:grid-cols-4 gap-2.5 mb-5">
@@ -80,21 +76,10 @@ export default function RegionTracker({
             </div>
 
             {/* Footer */}
-            <div className="flex justify-between items-center mt-1.5">
+            <div className="mt-1.5">
               <span className="font-[family-name:var(--font-mono)] text-[0.6rem] text-[var(--text-secondary)]">
                 {avail}/{total} LEFT
               </span>
-              <button
-                onClick={() => onFlipRegion(region)}
-                className="font-[family-name:var(--font-mono)] text-[0.55rem] tracking-[0.1em] px-1.5 py-px rounded-sm cursor-pointer"
-                style={{
-                  background: 'none',
-                  border: '1px solid var(--border-default)',
-                  color: regionFlipped[region] ? 'var(--color-orange)' : 'var(--text-secondary)',
-                }}
-              >
-                {regionFlipped[region] ? '⇄ FLIPPED' : '⇄ FLIP'}
-              </button>
             </div>
           </div>
         );

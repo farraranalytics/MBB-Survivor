@@ -27,7 +27,7 @@ interface DayCardProps {
   onToggleE8Swap: () => void;
   onToggleAdvancer: (region: string, round: string, gameIdx: number, team: TeamInfo) => void;
   onHandlePick: (dayId: string, team: TeamInfo, region: string, round: string, gameIdx: number) => void;
-  gameStatuses?: Record<string, { status: string; team1Score: number | null; team2Score: number | null; winnerId: string | null }>;
+  gameStatuses?: Record<string, { status: string; team1Score: number | null; team2Score: number | null; winnerId: string | null; gameDateTime: string | null }>;
   isHighlighted?: boolean;
 }
 
@@ -84,41 +84,21 @@ export default function DayCard({
             </div>
             <div className="font-[family-name:var(--font-mono)] text-[0.6rem] tracking-[0.12em] mt-0.5" style={{ color: rc }}>
               {day.label}
-              {day.half && (
-                <span className="text-[var(--text-secondary)]"> · {day.half === 'A' ? 'TOP' : 'BTM'} HALF</span>
-              )}
             </div>
           </div>
-          <div className="flex gap-1 items-center ml-auto">
-            {regions.map(r => (
-              <span
-                key={r}
-                className="badge"
-                style={{
-                  background: 'var(--surface-3)',
-                  color: 'var(--text-primary)',
-                  border: '1px solid var(--border-default)',
-                  fontSize: '0.55rem',
-                  padding: '3px 7px',
-                }}
-              >
-                {r.slice(0, 2)}
-              </span>
-            ))}
-            {day.roundCode === 'E8' && (
-              <button
-                onClick={(e) => { e.stopPropagation(); onToggleE8Swap(); }}
-                className="font-[family-name:var(--font-mono)] text-[0.6rem] cursor-pointer px-1.5 py-0.5 rounded-[4px]"
-                style={{
-                  background: 'none',
-                  border: '1px solid var(--border-default)',
-                  color: 'var(--text-secondary)',
-                }}
-              >
-                ⇄
-              </button>
-            )}
-          </div>
+          {day.roundCode === 'E8' && (
+            <button
+              onClick={(e) => { e.stopPropagation(); onToggleE8Swap(); }}
+              className="font-[family-name:var(--font-mono)] text-[0.6rem] cursor-pointer px-1.5 py-0.5 rounded-[4px] ml-auto"
+              style={{
+                background: 'none',
+                border: '1px solid var(--border-default)',
+                color: 'var(--text-secondary)',
+              }}
+            >
+              ⇄
+            </button>
+          )}
         </div>
 
         {/* Row 2: Pick display + chevron */}
@@ -201,6 +181,7 @@ export default function DayCard({
                     onHandlePick={onHandlePick}
                     gameStatus={gameStatuses?.[`${region}_${mu.round}_${mu.gameIdx}`]?.status as 'scheduled' | 'in_progress' | 'final' | undefined}
                     gameScore={gameStatuses?.[`${region}_${mu.round}_${mu.gameIdx}`]}
+                    gameDateTime={gameStatuses?.[`${region}_${mu.round}_${mu.gameIdx}`]?.gameDateTime}
                   />
                 ))}
               </div>

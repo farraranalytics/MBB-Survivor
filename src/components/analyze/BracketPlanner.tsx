@@ -62,7 +62,7 @@ export default function BracketPlanner({
 
   // Build game status lookup for completed/in-progress games
   const gameStatuses = useMemo(() => {
-    const statuses: Record<string, { status: string; team1Score: number | null; team2Score: number | null; winnerId: string | null }> = {};
+    const statuses: Record<string, { status: string; team1Score: number | null; team2Score: number | null; winnerId: string | null; gameDateTime: string | null }> = {};
     const roundIdToCode = new Map<string, string>();
     for (const round of rounds) {
       roundIdToCode.set(round.id, mapRoundNameToCode(round.name));
@@ -79,6 +79,7 @@ export default function BracketPlanner({
         team1Score: game.team1_score,
         team2Score: game.team2_score,
         winnerId: game.winner_id,
+        gameDateTime: game.game_datetime || null,
       };
     }
     return statuses;
@@ -407,8 +408,6 @@ export default function BracketPlanner({
           regionCounts={regionCounts}
           bracket={bracket}
           usedTeamIds={usedTeamIds}
-          regionFlipped={regionFlipped}
-          onFlipRegion={(region) => setRegionFlipped(p => ({ ...p, [region]: !p[region] }))}
         />
       </div>
 

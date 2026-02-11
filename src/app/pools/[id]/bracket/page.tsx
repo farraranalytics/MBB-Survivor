@@ -8,6 +8,7 @@ import { getAllRounds, getAllGamesWithTeams, buildRegionBracket, buildFinalFour 
 import type { Round } from '@/types/picks';
 import type { BracketGame, RegionBracket, BracketRound } from '@/types/bracket';
 import { formatET, formatDateET } from '@/lib/timezone';
+import { PageHeader, PoolSelectorBar } from '@/components/pool';
 
 const REGIONS = ['South', 'East', 'West', 'Midwest'];
 const REGION_TABS = [...REGIONS, 'Final Four'];
@@ -31,8 +32,6 @@ export default function PoolBracketPage() {
   const [selectedRound, setSelectedRound] = useState<string>('');
   const [selectedRegion, setSelectedRegion] = useState('South');
   const loadedRef = useRef(false);
-
-  void poolId;
 
   const loadData = useCallback(async () => {
     try {
@@ -116,18 +115,14 @@ export default function PoolBracketPage() {
       {/* ── Tournament Header ── */}
       <div className="bg-[#080810] border-b border-[rgba(255,255,255,0.05)]">
         <div className="max-w-7xl mx-auto px-5 pt-5 pb-4">
-          {/* Title block */}
+          {/* Page header + pool selector + view toggle */}
           <div className="flex items-center justify-between mb-4">
-            <div>
-              <p className="text-[10px] font-bold tracking-[0.25em] text-[#9BA3AE] mb-1" style={{ fontFamily: "'Space Mono', monospace" }}>
-                2026 NCAA TOURNAMENT
-              </p>
-              <h1 className="text-2xl font-bold text-[#E8E6E1] leading-none" style={{ fontFamily: "'Oswald', sans-serif", textTransform: 'uppercase', letterSpacing: '-0.01em' }}>
-                March Madness
-              </h1>
+            <div className="flex-1 min-w-0">
+              <PageHeader tabLabel="BRACKET" heading="Tournament" />
+              <PoolSelectorBar currentPoolId={poolId} />
             </div>
             {/* Toggle pill */}
-            <div className="flex bg-[#111827] rounded-full p-[3px] border border-[rgba(255,255,255,0.06)]">
+            <div className="flex bg-[#111827] rounded-full p-[3px] border border-[rgba(255,255,255,0.06)] ml-3 flex-shrink-0">
               <button
                 onClick={() => setViewMode('bracket')}
                 className={`px-4 py-1.5 text-[11px] font-bold rounded-full transition-all ${

@@ -24,6 +24,7 @@ interface MatchupCardProps {
   onHandlePick: (dayId: string, team: TeamInfo, region: string, round: string, gameIdx: number) => void;
   gameStatus?: 'scheduled' | 'in_progress' | 'final';
   gameScore?: { team1Score: number | null; team2Score: number | null; winnerId: string | null };
+  gameDateTime?: string | null;
 }
 
 export default function MatchupCard({
@@ -40,12 +41,25 @@ export default function MatchupCard({
   onHandlePick,
   gameStatus,
   gameScore,
+  gameDateTime,
 }: MatchupCardProps) {
   const { gameIdx, teams, label, round } = matchup;
   const isSingle = teams.length === 1 || round === 'F4' || round === 'CHIP';
   const isLocked = lockedAdvancerKeys.has(advancerKey);
   const isDayLocked = lockedDayIds.has(dayId);
   const isFinal = gameStatus === 'final';
+
+  // Format game time in ET
+  const timeLabel = (() => {
+    if (isSingle) return label;
+    if (!gameDateTime) return `GAME ${gameIdx + 1}`;
+    try {
+      const d = new Date(gameDateTime);
+      return d.toLocaleTimeString('en-US', { timeZone: 'America/New_York', hour: 'numeric', minute: '2-digit' }) + ' ET';
+    } catch {
+      return `GAME ${gameIdx + 1}`;
+    }
+  })();
 
   // Detect upset
   const chalkSeed = teams.filter(Boolean).reduce((min, t) => Math.min(min, t!.seed), 99);
@@ -64,7 +78,7 @@ export default function MatchupCard({
       {/* Header row */}
       <div className="flex justify-between mb-1.5">
         <span className="font-[family-name:var(--font-mono)] text-[0.55rem] tracking-[0.1em] font-semibold text-[var(--text-secondary)]">
-          {isSingle ? label : `GAME ${gameIdx + 1}`}
+          {timeLabel}
         </span>
         <div className="flex items-center gap-1.5">
           {hasUpset && (

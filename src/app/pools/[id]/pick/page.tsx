@@ -21,6 +21,8 @@ import { PickableTeam, PickDeadline, Round, Pick, Game } from '@/types/picks';
 import { formatET, formatDateET } from '@/lib/timezone';
 import { mapRoundNameToCode, ROUND_COLORS } from '@/lib/bracket';
 import { TeamLogo, getESPNStatsUrl } from '@/components/TeamLogo';
+import { PageHeader, PoolSelectorBar, EntryTabs } from '@/components/pool';
+import type { EntryTabItem } from '@/components/pool';
 
 const REGION_ORDER = ['South', 'East', 'West', 'Midwest'];
 
@@ -448,7 +450,7 @@ export default function PickPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { user } = useAuth();
-  const { refreshPools, pools, setActivePool } = useActivePool();
+  const { refreshPools } = useActivePool();
   const poolId = params.id as string;
   const entryId = searchParams.get('entry') || undefined;
 
@@ -483,7 +485,6 @@ export default function PickPage() {
 
   // New state
   const [allRounds, setAllRounds] = useState<Round[]>([]);
-  const [poolDropdownOpen, setPoolDropdownOpen] = useState(false);
   const [expandedRegion, setExpandedRegion] = useState<string | null>(null);
   const [isMobile, setIsMobile] = useState(false);
   const [now, setNow] = useState(Date.now());
@@ -789,7 +790,6 @@ export default function PickPage() {
     && entries.length < poolMaxEntries
     && poolStatus === 'open';
 
-  const currentPoolData = pools.find(p => p.pool_id === poolId);
   const gameCount = teams.length > 0 ? Math.floor(teams.length / 2) : 0;
 
   const currentDayIdx = allRounds.findIndex(r => r.id === round?.id);
@@ -825,171 +825,43 @@ export default function PickPage() {
       <div className="bg-[#080810] border-b border-[rgba(255,255,255,0.08)]">
         <div className="max-w-[740px] mx-auto px-4 sm:px-6 py-3 sm:py-4">
 
-          {/* Header row: label/title + round info */}
-          <div className="flex items-center justify-between mb-2.5">
-            <div>
-              <div className="text-[10px] font-bold text-[#FF5722] tracking-[0.2em] mb-0.5"
-                style={{ fontFamily: "'Space Mono', monospace" }}>
-                PICK TAB
-              </div>
-              <div className="text-lg sm:text-xl font-bold text-[#E8E6E1] uppercase"
-                style={{ fontFamily: "'Oswald', sans-serif" }}>
-                Make Your Pick
-              </div>
-            </div>
-            {round && (
-              <div className="text-right px-3 sm:px-3.5 py-2 sm:py-2.5 bg-[#0D1B2A] rounded-[10px] border-[1.5px] border-[rgba(255,255,255,0.12)]">
-                <div className="text-[10px] font-bold text-[#9BA3AE] tracking-[0.15em] mb-[3px]"
-                  style={{ fontFamily: "'Space Mono', monospace" }}>
-                  ROUND
-                </div>
-                <div className="text-base sm:text-lg font-bold text-[#E8E6E1] leading-tight"
-                  style={{ fontFamily: "'Oswald', sans-serif" }}>
-                  {round.name}
-                </div>
-                <div className="flex items-center justify-end gap-1.5 mt-1">
-                  <span className="text-[10px] font-bold text-[#E8E6E1] tracking-[0.06em]"
-                    style={{ fontFamily: "'Space Mono', monospace" }}>
-                    {gameCount} GAMES
-                  </span>
-                  <span className="text-[10px] font-bold text-[#FF5722] bg-[rgba(255,87,34,0.08)] px-1.5 py-[2px] rounded-[3px] border border-[rgba(255,87,34,0.3)] tracking-[0.06em]"
-                    style={{ fontFamily: "'Space Mono', monospace" }}>
-                    {formatDateET(round.date)}
-                  </span>
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* Pool Selector */}
-          <div className="relative mb-2">
-            <button
-              onClick={() => setPoolDropdownOpen(!poolDropdownOpen)}
-              className={`w-full flex items-center justify-between px-3 sm:px-3.5 py-2 sm:py-2.5 bg-[#111827] rounded-[10px] transition-colors ${
-                poolDropdownOpen ? 'border border-[#FF5722]' : 'border border-[rgba(255,255,255,0.08)]'
-              }`}
-            >
-              <div className="flex items-center gap-2 min-w-0">
-                <span className="text-[9px] font-bold text-[#5F6B7A] bg-[#243447] px-1.5 py-[2px] rounded-[3px] tracking-[0.12em] flex-shrink-0"
-                  style={{ fontFamily: "'Space Mono', monospace" }}>
-                  POOL
-                </span>
-                <span className="text-sm sm:text-[0.9rem] font-semibold text-[#E8E6E1] truncate"
-                  style={{ fontFamily: "'Oswald', sans-serif", textTransform: 'uppercase' }}>
-                  {currentPoolData?.pool_name || 'Loading...'}
-                </span>
-              </div>
-              <div className="flex items-center gap-1.5">
-                <span className="text-[9px] text-[#4CAF50] tracking-[0.06em]"
-                  style={{ fontFamily: "'Space Mono', monospace" }}>
-                  {currentPoolData?.alive_players ?? '-'}/{currentPoolData?.total_players ?? '-'}
-                </span>
-                <span className={`text-[10px] text-[#5F6B7A] transition-transform ${
-                  poolDropdownOpen ? 'rotate-180' : ''
-                }`}>▼</span>
-              </div>
-            </button>
-
-            {/* Pool dropdown */}
-            {poolDropdownOpen && (
-              <>
-                <div className="fixed inset-0 z-[99]" onClick={() => setPoolDropdownOpen(false)} />
-                {pools.length > 1 && (
-                  <div className="absolute top-full left-0 right-0 z-[100] mt-[3px] bg-[#1B2A3D] border border-[rgba(255,255,255,0.12)] rounded-[10px] overflow-hidden shadow-[0_8px_30px_rgba(0,0,0,0.4)]">
-                    {pools.map(p => (
-                      <button
-                        key={p.pool_id}
-                        onClick={() => {
-                          setPoolDropdownOpen(false);
-                          setActivePool(p.pool_id, p.pool_name);
-                          router.push(`/pools/${p.pool_id}/pick`);
-                        }}
-                        className={`w-full flex items-center justify-between px-3.5 py-2.5 transition-colors ${
-                          p.pool_id === poolId
-                            ? 'bg-[rgba(255,87,34,0.08)] border-l-[3px] border-l-[#FF5722]'
-                            : 'border-l-[3px] border-l-transparent hover:bg-[rgba(255,255,255,0.03)]'
-                        }`}
-                      >
-                        <div className="text-left">
-                          <div className={`text-sm font-semibold uppercase ${
-                            p.pool_id === poolId ? 'text-[#FF5722]' : 'text-[#E8E6E1]'
-                          }`} style={{ fontFamily: "'Oswald', sans-serif" }}>
-                            {p.pool_name}
-                          </div>
-                          <div className="text-[9px] text-[#5F6B7A] tracking-[0.06em] mt-0.5"
-                            style={{ fontFamily: "'Space Mono', monospace" }}>
-                            {p.your_entry_count} {p.your_entry_count === 1 ? 'ENTRY' : 'ENTRIES'}
-                          </div>
-                        </div>
-                        <span className="text-[10px] text-[#4CAF50] tracking-[0.06em]"
-                          style={{ fontFamily: "'Space Mono', monospace" }}>
-                          {p.alive_players}/{p.total_players}
-                        </span>
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </>
-            )}
-          </div>
-
-          {/* Entry Tabs */}
-          {(entries.length > 1 || canAddEntry) && (
-            <div className="flex gap-1.5 overflow-x-auto scrollbar-hide">
-              {entries.map(entry => {
-                const isActiveEntry = (activeEntryId || poolPlayerId) === entry.id;
-                return (
-                  <button
-                    key={entry.id}
-                    onClick={() => {
-                      setActiveEntryId(entry.id);
-                      loadedRef.current = false;
-                      setLoading(true);
-                      setExistingPick(null);
-                      setSelectedTeam(null);
-                      setIsEliminated(false);
-                      setPickHistory([]);
-                      setEliminationInfo(null);
-                      setSpectatorGames([]);
-                      setShowAddEntry(false);
-                      setExpandedRegion(null);
-                      router.replace(`/pools/${poolId}/pick?entry=${entry.id}`);
-                    }}
-                    className={`flex-shrink-0 flex items-center gap-1.5 px-2.5 sm:px-3.5 py-1.5 sm:py-[7px] rounded-[6px] whitespace-nowrap transition-all ${
-                      isActiveEntry
-                        ? 'bg-[#1B2A3D] border-[1.5px] border-[#FF5722]'
-                        : 'border border-[rgba(255,255,255,0.08)]'
-                    }`}
-                  >
-                    <div className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${
-                      entry.is_eliminated ? 'bg-[#EF5350]' : entry.has_picked ? 'bg-[#4CAF50]' : 'bg-[#FFB300]'
-                    }`} style={{
-                      boxShadow: entry.is_eliminated
-                        ? '0 0 4px rgba(239,83,80,0.27)'
-                        : entry.has_picked
-                        ? '0 0 4px rgba(76,175,80,0.27)'
-                        : '0 0 4px rgba(255,179,0,0.27)'
-                    }} />
-                    <span className={`text-xs uppercase ${
-                      isActiveEntry ? 'text-[#E8E6E1] font-bold' : 'text-[#9BA3AE] font-medium'
-                    }`} style={{ fontFamily: "'Oswald', sans-serif" }}>
-                      {entry.entry_label || `Entry ${entry.entry_number}`}
-                      {entry.is_eliminated && ' ☠️'}
-                    </span>
-                  </button>
-                );
-              })}
-              {canAddEntry && (
-                <button
-                  onClick={() => { setShowAddEntry(!showAddEntry); setAddEntryError(''); }}
-                  className="flex-shrink-0 px-2.5 py-1.5 rounded-[6px] text-xs font-semibold text-[#FF5722] transition-colors hover:bg-[rgba(255,87,34,0.05)]"
-                  style={{ fontFamily: "'DM Sans', sans-serif", border: '1px dashed rgba(255,87,34,0.3)' }}
-                >
-                  + Entry
-                </button>
-              )}
-            </div>
-          )}
+          <PageHeader
+            tabLabel="PICK TAB"
+            heading="Make Your Pick"
+            roundInfo={round ? {
+              roundName: round.name,
+              gameCount,
+              dateLabel: formatDateET(round.date),
+            } : undefined}
+          />
+          <PoolSelectorBar currentPoolId={poolId} />
+          <EntryTabs
+            entries={entries.map(e => ({ ...e, has_picked: e.has_picked } as EntryTabItem))}
+            activeEntryId={activeEntryId || poolPlayerId || undefined}
+            onEntrySwitch={(id) => {
+              setActiveEntryId(id);
+              loadedRef.current = false;
+              setLoading(true);
+              setExistingPick(null);
+              setSelectedTeam(null);
+              setIsEliminated(false);
+              setPickHistory([]);
+              setEliminationInfo(null);
+              setSpectatorGames([]);
+              setShowAddEntry(false);
+              setExpandedRegion(null);
+              router.replace(`/pools/${poolId}/pick?entry=${id}`);
+            }}
+            addEntrySlot={canAddEntry ? (
+              <button
+                onClick={() => { setShowAddEntry(!showAddEntry); setAddEntryError(''); }}
+                className="min-w-0 px-2 py-1.5 rounded-[6px] text-[0.7rem] font-semibold text-[#FF5722] transition-colors hover:bg-[rgba(255,87,34,0.05)]"
+                style={{ fontFamily: "'DM Sans', sans-serif", border: '1px dashed rgba(255,87,34,0.3)' }}
+              >
+                + Entry
+              </button>
+            ) : undefined}
+          />
 
           {/* Add Entry Form */}
           {showAddEntry && (
