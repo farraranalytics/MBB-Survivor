@@ -168,6 +168,14 @@ export default function CreatePool() {
     }
 
     try {
+      // Re-check tournament status at submit time (not just mount time)
+      const tournamentState = await getTournamentState();
+      if (!canJoinOrCreate(tournamentState)) {
+        setTournamentStarted(true);
+        setLoading(false);
+        return;
+      }
+
       const { data: { user: authUser } } = await supabase.auth.getUser();
       if (!authUser) {
         setError('Session expired. Please log in again.');

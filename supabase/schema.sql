@@ -158,6 +158,14 @@ CREATE POLICY "Pool players visible to pool members" ON pool_players
 CREATE POLICY "Users can join pools" ON pool_players
     FOR INSERT WITH CHECK (auth.uid() = user_id);
 
+CREATE POLICY "Users can leave pools" ON pool_players
+    FOR DELETE USING (auth.uid() = user_id);
+
+CREATE POLICY "Pool creators can remove members" ON pool_players
+    FOR DELETE USING (
+        auth.uid() IN (SELECT creator_id FROM pools WHERE id = pool_players.pool_id)
+    );
+
 -- Policies for picks
 CREATE POLICY "Picks visible to pool members after deadline" ON picks
     FOR SELECT USING (

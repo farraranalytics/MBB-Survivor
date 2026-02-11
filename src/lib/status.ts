@@ -136,21 +136,22 @@ export function arePicksVisible(roundInfo: RoundInfo): boolean {
   return roundInfo.status === 'round_live' || roundInfo.status === 'round_complete';
 }
 
-/** Get deadline display info */
-export async function getDeadlineDisplay(state: TournamentState): Promise<{
+/** Get deadline display info — uses already-computed state (sync, no DB call) */
+export function getDeadlineDisplay(state: TournamentState): {
   deadline: string;
   isExpired: boolean;
   minutesRemaining: number;
-} | null> {
+} | null {
   if (!state.currentRound?.deadline) return null;
 
+  // state.currentRound.isDeadlinePassed is already computed with getEffectiveNow()
+  // inside getTournamentState(), so we don't need another async call here.
   const deadlineTime = new Date(state.currentRound.deadline);
-  const now = await getEffectiveNow();
-  const diff = deadlineTime.getTime() - now.getTime();
+  const diff = deadlineTime.getTime() - Date.now();
 
   return {
     deadline: state.currentRound.deadline,
-    isExpired: diff <= 0,
+    isExpired: state.currentRound.isDeadlinePassed,
     minutesRemaining: Math.max(0, Math.ceil(diff / 60000)),
   };
 }

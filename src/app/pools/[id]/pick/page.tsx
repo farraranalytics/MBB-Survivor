@@ -689,7 +689,18 @@ export default function PickPage() {
         entry_number: entryNumber,
         entry_label: entryLabel,
       });
+
+      // Handle duplicate key (ghost row from failed delete)
+      if (insertError && insertError.code === '23505') {
+        // Entry already exists — just reload data
+        setShowAddEntry(false);
+        setAddEntryName('');
+        loadedRef.current = false;
+        loadData();
+        return;
+      }
       if (insertError) throw insertError;
+
       setShowAddEntry(false);
       setAddEntryName('');
       loadedRef.current = false;

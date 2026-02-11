@@ -112,13 +112,15 @@ export async function removePoolMember(poolPlayerId: string): Promise<void> {
 
 // Leave a pool (remove all of user's entries)
 export async function leavePool(poolId: string, userId: string): Promise<void> {
-  const { error } = await supabase
+  const { error, data } = await supabase
     .from('pool_players')
     .delete()
     .eq('pool_id', poolId)
-    .eq('user_id', userId);
+    .eq('user_id', userId)
+    .select('id');
 
   if (error) throw new Error(error.message);
+  if (!data || data.length === 0) throw new Error('Failed to leave pool — no entries were removed. Please try again or contact the pool admin.');
 }
 
 // Update entry label

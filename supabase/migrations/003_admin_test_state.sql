@@ -62,7 +62,7 @@ BEGIN
     END IF;
     RETURN NOW();
 END;
-$$ LANGUAGE plpgsql STABLE;
+$$ LANGUAGE plpgsql STABLE SECURITY DEFINER;
 
 -- ═══════════════════════════════════════════════════════════════
 -- 3. Update enforce_pick_deadline() trigger to use effective_now()
@@ -110,3 +110,66 @@ CREATE POLICY "Users can submit their own picks" ON picks
         auth.uid() IN (SELECT user_id FROM pool_players WHERE id = picks.pool_player_id)
         AND EXISTS (SELECT 1 FROM rounds WHERE id = picks.round_id AND deadline_datetime > effective_now())
     );
+
+-- ═══════════════════════════════════════════════════════════════
+-- 5. Add missing DELETE policies on pool_players
+-- ═══════════════════════════════════════════════════════════════
+-- Without these, leavePool() and removePoolMember() silently fail
+-- because RLS blocks all deletes by default.
+
+DROP POLICY IF EXISTS "Users can leave pools" ON pool_players;
+CREATE POLICY "Users can leave pools" ON pool_players
+    FOR DELETE USING (auth.uid() = user_id);
+
+DROP POLICY IF EXISTS "Pool creators can remove members" ON pool_players;
+CREATE POLICY "Pool creators can remove members" ON pool_players
+    FOR DELETE USING (
+        auth.uid() IN (SELECT creator_id FROM pools WHERE id = pool_players.pool_id)
+    );
+
+-- ═══════════════════════════════════════════════════════════════
+-- 6. Server-side enforcement: block pool creation & joining after
+--    tournament starts. Client-side checks alone are insufficient.
+-- ═══════════════════════════════════════════════════════════════
+
+-- Helper: returns true if any game is no longer 'scheduled'
+CREATE OR REPLACE FUNCTION tournament_has_started()
+RETURNS BOOLEAN AS $$
+BEGIN
+    RETURN EXISTS (SELECT 1 FROM games WHERE status != 'scheduled');
+END;
+$$ LANGUAGE plpgsql STABLE SECURITY DEFINER;
+
+-- Block pool creation after tournament starts
+CREATE OR REPLACE FUNCTION enforce_pre_tournament_pool_creation()
+RETURNS TRIGGER AS $$
+BEGIN
+    IF tournament_has_started() THEN
+        RAISE EXCEPTION 'Cannot create pools after the tournament has started';
+    END IF;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS check_pool_creation_timing ON pools;
+CREATE TRIGGER check_pool_creation_timing
+    BEFORE INSERT ON pools
+    FOR EACH ROW
+    EXECUTE FUNCTION enforce_pre_tournament_pool_creation();
+
+-- Block joining pools after tournament starts
+CREATE OR REPLACE FUNCTION enforce_pre_tournament_join()
+RETURNS TRIGGER AS $$
+BEGIN
+    IF tournament_has_started() THEN
+        RAISE EXCEPTION 'Cannot join pools after the tournament has started';
+    END IF;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS check_pool_join_timing ON pool_players;
+CREATE TRIGGER check_pool_join_timing
+    BEFORE INSERT ON pool_players
+    FOR EACH ROW
+    EXECUTE FUNCTION enforce_pre_tournament_join();

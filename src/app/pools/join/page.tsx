@@ -107,6 +107,14 @@ function JoinPoolContent() {
     setError('');
 
     try {
+      // Re-check tournament status at submit time (not just lookup time)
+      const tournamentState = await getTournamentState();
+      if (!canJoinOrCreate(tournamentState)) {
+        setTournamentStarted(true);
+        setLoading(false);
+        return;
+      }
+
       const entryNumber = existingEntryCount + 1;
       const baseName = user.user_metadata?.display_name || user.email?.split('@')[0] || 'Player';
       const entryLabel = entryName.trim() || `${baseName}'s Entry${entryNumber > 1 ? ` ${entryNumber}` : ''}`;
@@ -119,6 +127,28 @@ function JoinPoolContent() {
           entry_number: entryNumber,
           entry_label: entryLabel,
         });
+
+      // Handle duplicate key (ghost row from failed delete)
+      if (joinError && joinError.code === '23505') {
+        // Row already exists — check if user already has an entry
+        const { data: existing } = await supabase
+          .from('pool_players')
+          .select('id')
+          .eq('pool_id', poolInfo.id)
+          .eq('user_id', user.id)
+          .limit(1);
+
+        if (existing && existing.length > 0) {
+          // Existing membership found — treat as successful join
+          await refreshPools();
+          setActivePool(poolInfo.id, poolInfo.name);
+          addToast('success', 'Rejoined pool!');
+          router.push('/dashboard');
+          return;
+        }
+        // If we still can't find the row, surface the original error
+        throw joinError;
+      }
 
       if (joinError) throw joinError;
 
