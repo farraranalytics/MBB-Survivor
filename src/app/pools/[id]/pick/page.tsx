@@ -823,7 +823,7 @@ export default function PickPage() {
 
       {/* ═══ TOP BAR (Header) ═══ */}
       <div className="bg-[#080810] border-b border-[rgba(255,255,255,0.08)]">
-        <div className="max-w-[740px] mx-auto px-4 sm:px-6 py-3 sm:py-4">
+        <div className="max-w-[740px] mx-auto px-3 sm:px-6 py-2 sm:py-4">
 
           <PageHeader
             tabLabel="PICK TAB"
@@ -901,11 +901,11 @@ export default function PickPage() {
       </div>
 
       {/* ═══ CONTENT ═══ */}
-      <div className="max-w-[740px] mx-auto px-4 sm:px-6 py-3 sm:py-5">
+      <div className="max-w-[740px] mx-auto px-3 sm:px-6 py-2 sm:py-4">
 
         {/* Status Bar */}
         {!isEliminated && deadline && !deadline.is_expired && (
-          <div className="flex items-center gap-2 px-3 sm:px-4 py-2 sm:py-2.5 bg-[rgba(76,175,80,0.12)] border border-[rgba(76,175,80,0.15)] rounded-[10px] mb-3 sm:mb-4">
+          <div className="flex items-center gap-2 px-2.5 sm:px-4 py-1.5 sm:py-2.5 bg-[rgba(76,175,80,0.12)] border border-[rgba(76,175,80,0.15)] rounded-[10px] mb-2 sm:mb-4">
             <div className="w-2 h-2 rounded-full bg-[#4CAF50] flex-shrink-0 animate-pulse" />
             <div className="text-xs font-bold text-[#4CAF50] uppercase"
               style={{ fontFamily: "'Oswald', sans-serif" }}>
@@ -929,7 +929,7 @@ export default function PickPage() {
         )}
 
         {isEliminated && (
-          <div className="flex items-center gap-2 px-3 sm:px-4 py-2 sm:py-2.5 bg-[rgba(239,83,80,0.12)] border border-[rgba(239,83,80,0.15)] rounded-[10px] mb-3 sm:mb-4">
+          <div className="flex items-center gap-2 px-2.5 sm:px-4 py-1.5 sm:py-2.5 bg-[rgba(239,83,80,0.12)] border border-[rgba(239,83,80,0.15)] rounded-[10px] mb-2 sm:mb-4">
             <div className="w-2 h-2 rounded-full bg-[#EF5350] flex-shrink-0" />
             <div className="text-xs font-bold text-[#EF5350] uppercase"
               style={{ fontFamily: "'Oswald', sans-serif" }}>
@@ -990,7 +990,7 @@ export default function PickPage() {
                       {/* Region Header */}
                       <div
                         onClick={() => isMobile && setExpandedRegion(isMobExpanded ? null : region)}
-                        className={`flex items-center justify-between px-3 sm:px-4 py-2.5 bg-[#111827] ${
+                        className={`flex items-center justify-between px-2.5 sm:px-4 py-2 sm:py-2.5 bg-[#111827] ${
                           showGames ? 'border-b border-[rgba(255,255,255,0.05)]' : ''
                         } ${isMobile ? 'cursor-pointer' : ''}`}
                       >
@@ -1022,7 +1022,7 @@ export default function PickPage() {
 
                       {/* Games Grid */}
                       {showGames && (
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-[5px] sm:gap-1.5 p-2 sm:p-3.5">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-[4px] sm:gap-1.5 p-1.5 sm:p-3">
                           {games.map(({ gameId, teams: matchupTeams }) => (
                             <CompactGameCard
                               key={gameId}
@@ -1044,12 +1044,12 @@ export default function PickPage() {
 
         {/* ═══ PICK TIMELINE ═══ */}
         {allRounds.length > 0 && (
-          <div className="mt-5 sm:mt-7">
+          <div className="mt-3 sm:mt-7">
             <div className="text-[10px] font-bold text-[#FF5722] tracking-[0.18em] mb-[3px]"
               style={{ fontFamily: "'Space Mono', monospace" }}>
               PICK HISTORY
             </div>
-            <div className="text-base sm:text-lg font-bold text-[#E8E6E1] uppercase mb-2.5 sm:mb-3.5"
+            <div className="text-sm sm:text-lg font-bold text-[#E8E6E1] uppercase mb-2 sm:mb-3.5"
               style={{ fontFamily: "'Oswald', sans-serif" }}>
               Your Run
             </div>
@@ -1066,12 +1066,12 @@ export default function PickPage() {
 
       {/* ═══ FIXED BOTTOM BAR ═══ */}
       {!isEliminated && (
-        <div className="fixed inset-x-0 z-20 bg-[#111827] border-t border-[rgba(255,255,255,0.05)] tab-bar-shadow" style={{ bottom: 'calc(4rem + env(safe-area-inset-bottom, 0px))' }}>
-          <div className="max-w-[740px] mx-auto px-4 sm:px-5 py-3">
+        <div className="fixed inset-x-0 z-20 bg-[#111827] border-t border-[rgba(255,255,255,0.05)] tab-bar-shadow" style={{ bottom: 'calc(3.5rem + env(safe-area-inset-bottom, 0px))' }}>
+          <div className="max-w-[740px] mx-auto px-3 sm:px-5 py-2 sm:py-3">
             <button
               onClick={() => selectedTeam && !isSameAsExisting && setShowConfirm(true)}
               disabled={!selectedTeam || isSameAsExisting}
-              className={`w-full py-3 rounded-[10px] text-sm font-bold uppercase tracking-[0.05em] transition-all ${
+              className={`w-full py-2.5 sm:py-3 rounded-[10px] text-sm font-bold uppercase tracking-[0.05em] transition-all ${
                 !selectedTeam
                   ? 'bg-[#243447] text-[#3D4654] cursor-default'
                   : isSameAsExisting

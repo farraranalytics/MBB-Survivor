@@ -42,7 +42,7 @@ function formatDeadline(deadlineDatetime: string): { text: string; color: string
 function LoadingSkeleton() {
   return (
     <div className="min-h-screen bg-[#0D1B2A] pb-24">
-      <div className="max-w-lg mx-auto px-5 py-4 space-y-5">
+      <div className="max-w-lg mx-auto px-4 sm:px-5 py-2.5 sm:py-4 space-y-3 sm:space-y-5">
         {/* Hero skeleton */}
         <div className="bg-[#111827] border border-[rgba(255,255,255,0.05)] rounded-[14px] p-5 animate-pulse">
           <div className="h-4 w-48 bg-[#1B2A3D] rounded mb-3" />
@@ -133,7 +133,7 @@ function HeroBanner({ state, totalPlayers, totalPools }: {
       className="rounded-[14px] border border-[rgba(255,255,255,0.05)] overflow-hidden"
       style={{ background: 'radial-gradient(ellipse at center, rgba(255,87,34,0.03) 0%, transparent 70%), #111827' }}
     >
-      <div className="px-5 py-4">
+      <div className="px-4 sm:px-5 py-3 sm:py-4">
         {state.status === 'pre_tournament' && (
           <>
             <p className="text-[10px] text-[#FF5722] tracking-[0.2em] uppercase mb-1" style={{ fontFamily: "'Space Mono', monospace" }}>
@@ -281,14 +281,14 @@ function SurvivalSummary({ pools, rounds, onEntryClick }: { pools: MyPool[]; rou
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-2.5">
+      <div className="flex items-center justify-between mb-2 sm:mb-2.5">
         <p className="label">Your Entries</p>
         <p className="text-xs text-[#9BA3AE]" style={{ fontFamily: "'DM Sans', sans-serif" }}>
           <span className="text-[#4CAF50]">{aliveCount} alive</span>
           {elimCount > 0 && <> &middot; <span className="text-[#EF5350]">{elimCount} out</span></>}
         </p>
       </div>
-      <div className="space-y-2">
+      <div className="space-y-1.5 sm:space-y-2">
         {allEntries.map(entry => {
           const elimRoundIdx = entry.elimination_round_name
             ? roundIndexMap.get(entry.elimination_round_name) ?? null
@@ -301,9 +301,9 @@ function SurvivalSummary({ pools, rounds, onEntryClick }: { pools: MyPool[]; rou
             <div
               key={entry.pool_player_id}
               onClick={() => onEntryClick(entry.poolId, entry.poolName, entry.pool_player_id)}
-              className={`bg-[#111827] border border-[rgba(255,255,255,0.05)] rounded-[10px] px-3 py-2.5 cursor-pointer hover:border-[rgba(255,255,255,0.12)] transition-colors ${entry.is_eliminated ? 'opacity-45' : ''}`}
+              className={`bg-[#111827] border border-[rgba(255,255,255,0.05)] rounded-[10px] px-2.5 sm:px-3 py-2 sm:py-2.5 cursor-pointer hover:border-[rgba(255,255,255,0.12)] transition-colors ${entry.is_eliminated ? 'opacity-45' : ''}`}
             >
-              <div className="flex items-center justify-between mb-1.5">
+              <div className="flex items-center justify-between mb-1 sm:mb-1.5">
                 <p className="text-xs text-[#E8E6E1] font-medium truncate" style={{ fontFamily: "'DM Sans', sans-serif" }}>
                   <span className="text-[#9BA3AE]">{entry.poolName}</span>
                   <span className="text-[#5F6B7A] mx-1">&mdash;</span>
@@ -359,21 +359,21 @@ function PickCTA({ pools, activePoolId }: { pools: MyPool[]; activePoolId: strin
   const roundName = pools.find(p => p.pool_id === firstPoolId)?.current_round_name;
 
   return (
-    <div className="bg-[rgba(255,87,34,0.04)] border border-[rgba(255,87,34,0.2)] rounded-[14px] p-4">
-      <div className="flex items-center gap-2 mb-2">
+    <div className="bg-[rgba(255,87,34,0.04)] border border-[rgba(255,87,34,0.2)] rounded-[14px] p-3 sm:p-4">
+      <div className="flex items-center gap-2 mb-1.5 sm:mb-2">
         <span className="text-[#FF5722] text-sm">⚠</span>
         <p className="text-sm font-bold text-[#FF5722]" style={{ fontFamily: "'Oswald', sans-serif", textTransform: 'uppercase' }}>
           {entriesNeedingPicks.length} {entriesNeedingPicks.length === 1 ? 'Entry Needs' : 'Entries Need'} a Pick
         </p>
       </div>
       {deadline && roundName && (
-        <p className="text-xs text-[#9BA3AE] mb-3" style={{ fontFamily: "'DM Sans', sans-serif" }}>
+        <p className="text-xs text-[#9BA3AE] mb-2 sm:mb-3" style={{ fontFamily: "'DM Sans', sans-serif" }}>
           {formatDeadline(deadline).text} &middot; {roundName}
         </p>
       )}
       <Link
         href={`/pools/${activePoolId || firstPoolId}/pick`}
-        className="block w-full py-3 rounded-[10px] btn-orange font-bold text-sm text-center"
+        className="block w-full py-2.5 sm:py-3 rounded-[10px] btn-orange font-bold text-sm text-center"
       >
         Make Your Picks
       </Link>
@@ -436,7 +436,7 @@ function SimplePoolCard({ pool, isActive, isCreator, onActivate }: {
         onActivate();
         router.push(`/pools/${pool.pool_id}/standings`);
       }}
-      className={`border rounded-[14px] p-4 cursor-pointer transition-colors ${
+      className={`border rounded-[14px] p-3 sm:p-4 cursor-pointer transition-colors ${
         isActive
           ? 'bg-[rgba(255,87,34,0.04)] border-[#FF5722]'
           : 'bg-[#111827] border-[rgba(255,255,255,0.05)] hover:border-[rgba(255,87,34,0.2)]'
@@ -459,7 +459,7 @@ function SimplePoolCard({ pool, isActive, isCreator, onActivate }: {
         </p>
       </div>
 
-      <div className="flex items-center justify-between mb-3">
+      <div className="flex items-center justify-between mb-2 sm:mb-3">
         <p className="text-xs text-[#9BA3AE]" style={{ fontFamily: "'DM Sans', sans-serif" }}>
           {roundContext}
         </p>
@@ -474,7 +474,7 @@ function SimplePoolCard({ pool, isActive, isCreator, onActivate }: {
       {pool.pool_status !== 'complete' && (
         <div
           onClick={(e) => e.stopPropagation()}
-          className="flex items-center justify-between bg-[#1B2A3D] border border-[rgba(255,255,255,0.05)] rounded-[8px] px-3 py-2"
+          className="flex items-center justify-between bg-[#1B2A3D] border border-[rgba(255,255,255,0.05)] rounded-[8px] px-2.5 sm:px-3 py-1.5 sm:py-2"
         >
           <div className="flex items-center gap-2">
             <span className="text-[10px] uppercase tracking-widest text-[#9BA3AE]" style={{ fontFamily: "'Space Mono', monospace", letterSpacing: '0.15em' }}>Code</span>
@@ -517,7 +517,7 @@ function ActivityFeed({ items, loading }: { items: ActivityItem[]; loading: bool
   if (loading) {
     return (
       <div>
-        <p className="label mb-2.5">Activity</p>
+        <p className="label mb-2 sm:mb-2.5">Activity</p>
         <div className="space-y-1">
           {[1, 2, 3].map(i => (
             <div key={i} className="h-9 bg-[#111827] border border-[rgba(255,255,255,0.05)] rounded-[8px] animate-pulse" />
@@ -530,7 +530,7 @@ function ActivityFeed({ items, loading }: { items: ActivityItem[]; loading: bool
   if (items.length === 0) {
     return (
       <div>
-        <p className="label mb-2.5">Activity</p>
+        <p className="label mb-2 sm:mb-2.5">Activity</p>
         <div className="bg-[#111827] border border-[rgba(255,255,255,0.05)] rounded-[10px] px-4 py-6 text-center">
           <p className="text-xs text-[#5F6B7A]" style={{ fontFamily: "'DM Sans', sans-serif" }}>
             No activity yet &mdash; waiting for tip-off
@@ -554,7 +554,7 @@ function ActivityFeed({ items, loading }: { items: ActivityItem[]; loading: bool
         {displayed.map(item => (
           <div
             key={item.id}
-            className={`flex items-start gap-2.5 px-3 py-2 rounded-[8px] ${
+            className={`flex items-start gap-2 sm:gap-2.5 px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-[8px] ${
               item.type === 'elimination'
                 ? 'bg-[rgba(239,83,80,0.04)]'
                 : 'bg-[#111827]'
@@ -643,15 +643,15 @@ export default function Dashboard() {
         <EmptyState />
       ) : (
         <div className="min-h-screen bg-[#0D1B2A] pb-24">
-          <div className="max-w-lg mx-auto px-5 py-4 space-y-5">
+          <div className="max-w-lg mx-auto px-4 sm:px-5 py-2.5 sm:py-4 space-y-3 sm:space-y-5">
             {/* Section 1: Hero Banner */}
             <HeroBanner state={tournamentState} totalPlayers={totalPlayers} totalPools={totalPools} />
 
             {/* Create / Join Buttons — always visible */}
-            <div className="flex gap-3">
+            <div className="flex gap-2.5 sm:gap-3">
               <Link
                 href="/pools/create"
-                className={`flex-1 py-2.5 text-center text-sm font-semibold rounded-[10px] border transition-colors ${
+                className={`flex-1 py-2 sm:py-2.5 text-center text-sm font-semibold rounded-[10px] border transition-colors ${
                   preTournament
                     ? 'border-[rgba(255,87,34,0.3)] text-[#FF5722] hover:bg-[rgba(255,87,34,0.05)]'
                     : 'border-[rgba(255,255,255,0.05)] text-[#5F6B7A] hover:text-[#9BA3AE]'
@@ -662,7 +662,7 @@ export default function Dashboard() {
               </Link>
               <Link
                 href="/pools/join"
-                className={`flex-1 py-2.5 text-center text-sm font-semibold rounded-[10px] border transition-colors ${
+                className={`flex-1 py-2 sm:py-2.5 text-center text-sm font-semibold rounded-[10px] border transition-colors ${
                   preTournament
                     ? 'border-[rgba(255,87,34,0.3)] text-[#FF5722] hover:bg-[rgba(255,87,34,0.05)]'
                     : 'border-[rgba(255,255,255,0.05)] text-[#5F6B7A] hover:text-[#9BA3AE]'
@@ -686,8 +686,8 @@ export default function Dashboard() {
 
             {/* Section 4: Pool Cards */}
             <div>
-              <p className="label mb-2.5">Your Pools</p>
-              <div className="space-y-3">
+              <p className="label mb-2 sm:mb-2.5">Your Pools</p>
+              <div className="space-y-2.5 sm:space-y-3">
                 {pools.map(pool => (
                   <SimplePoolCard
                     key={pool.pool_id}

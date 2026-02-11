@@ -47,14 +47,14 @@ export default function PoolSelectorBar({ currentPoolId }: PoolSelectorBarProps)
   };
 
   return (
-    <div className="relative mb-2" ref={ref}>
+    <div className="relative mb-1.5 sm:mb-2" ref={ref}>
       <button
         onClick={() => setDropdownOpen(!dropdownOpen)}
-        className={`w-full flex items-center justify-between px-3 sm:px-3.5 py-2 sm:py-2.5 bg-[#111827] rounded-[10px] transition-colors ${
+        className={`w-full flex items-center justify-between px-2.5 sm:px-3.5 py-1.5 sm:py-2.5 bg-[#111827] rounded-[10px] transition-colors ${
           dropdownOpen ? 'border border-[#FF5722]' : 'border border-[rgba(255,255,255,0.08)]'
         }`}
       >
-        <div className="flex items-center gap-2 min-w-0">
+        <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
           <span className="text-[9px] font-bold text-[#5F6B7A] bg-[#243447] px-1.5 py-[2px] rounded-[3px] tracking-[0.12em] flex-shrink-0"
             style={{ fontFamily: "'Space Mono', monospace" }}>
             POOL
@@ -85,7 +85,7 @@ export default function PoolSelectorBar({ currentPoolId }: PoolSelectorBarProps)
               <button
                 key={p.pool_id}
                 onClick={() => handlePoolSelect(p.pool_id, p.pool_name)}
-                className={`w-full flex items-center justify-between px-3.5 py-2.5 transition-colors ${
+                className={`w-full flex items-center justify-between px-3 py-2 sm:py-2.5 transition-colors ${
                   p.pool_id === currentPoolId
                     ? 'bg-[rgba(255,87,34,0.08)] border-l-[3px] border-l-[#FF5722]'
                     : 'border-l-[3px] border-l-transparent hover:bg-[rgba(255,255,255,0.03)]'

@@ -8,7 +8,6 @@ import { getAllRounds, getAllGamesWithTeams, buildRegionBracket, buildFinalFour 
 import type { Round } from '@/types/picks';
 import type { BracketGame, RegionBracket, BracketRound } from '@/types/bracket';
 import { formatET, formatDateET } from '@/lib/timezone';
-import { PageHeader, PoolSelectorBar } from '@/components/pool';
 
 const REGIONS = ['South', 'East', 'West', 'Midwest'];
 const REGION_TABS = [...REGIONS, 'Final Four'];
@@ -23,7 +22,7 @@ const REGION_VENUES: Record<string, string> = {
 };
 
 export default function PoolBracketPage() {
-  const { id: poolId } = useParams<{ id: string }>();
+  useParams<{ id: string }>();
   const [rounds, setRounds] = useState<Round[]>([]);
   const [games, setGames] = useState<BracketGame[]>([]);
   const [loading, setLoading] = useState(true);
@@ -114,18 +113,22 @@ export default function PoolBracketPage() {
     <div className="min-h-screen bg-[#0D1B2A] pb-24">
       {/* ── Tournament Header ── */}
       <div className="bg-[#080810] border-b border-[rgba(255,255,255,0.05)]">
-        <div className="max-w-7xl mx-auto px-5 pt-5 pb-4">
-          {/* Page header + pool selector + view toggle */}
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex-1 min-w-0">
-              <PageHeader tabLabel="BRACKET" heading="Tournament" />
-              <PoolSelectorBar currentPoolId={poolId} />
+        <div className="max-w-7xl mx-auto px-4 sm:px-5 pt-3 sm:pt-5 pb-2.5 sm:pb-4">
+          {/* Title block */}
+          <div className="flex items-center justify-between mb-2 sm:mb-4">
+            <div>
+              <p className="text-[10px] font-bold tracking-[0.25em] text-[#9BA3AE] mb-0.5" style={{ fontFamily: "'Space Mono', monospace" }}>
+                2026 NCAA TOURNAMENT
+              </p>
+              <h1 className="text-xl sm:text-2xl font-bold text-[#E8E6E1] leading-none" style={{ fontFamily: "'Oswald', sans-serif", textTransform: 'uppercase', letterSpacing: '-0.01em' }}>
+                March Madness
+              </h1>
             </div>
             {/* Toggle pill */}
-            <div className="flex bg-[#111827] rounded-full p-[3px] border border-[rgba(255,255,255,0.06)] ml-3 flex-shrink-0">
+            <div className="flex bg-[#111827] rounded-full p-[3px] border border-[rgba(255,255,255,0.06)]">
               <button
                 onClick={() => setViewMode('bracket')}
-                className={`px-4 py-1.5 text-[11px] font-bold rounded-full transition-all ${
+                className={`px-3 sm:px-4 py-1 sm:py-1.5 text-[11px] font-bold rounded-full transition-all ${
                   viewMode === 'bracket'
                     ? 'bg-[#FF5722] text-white shadow-sm'
                     : 'text-[#9BA3AE] hover:text-[#E8E6E1]'
@@ -136,7 +139,7 @@ export default function PoolBracketPage() {
               </button>
               <button
                 onClick={() => setViewMode('schedule')}
-                className={`px-4 py-1.5 text-[11px] font-bold rounded-full transition-all ${
+                className={`px-3 sm:px-4 py-1 sm:py-1.5 text-[11px] font-bold rounded-full transition-all ${
                   viewMode === 'schedule'
                     ? 'bg-[#FF5722] text-white shadow-sm'
                     : 'text-[#9BA3AE] hover:text-[#E8E6E1]'
@@ -155,7 +158,7 @@ export default function PoolBracketPage() {
                 <button
                   key={tab}
                   onClick={() => setSelectedRegion(tab)}
-                  className={`relative flex-shrink-0 px-4 py-2.5 text-[11px] font-bold tracking-[0.1em] transition-colors ${
+                  className={`relative flex-shrink-0 px-3 sm:px-4 py-2 sm:py-2.5 text-[11px] font-bold tracking-[0.1em] transition-colors ${
                     selectedRegion === tab
                       ? 'text-[#FF5722]'
                       : 'text-[#5F6B7A] hover:text-[#9BA3AE]'
@@ -174,7 +177,7 @@ export default function PoolBracketPage() {
       </div>
 
       {/* ── Content ── */}
-      <div className="max-w-7xl mx-auto px-5 pt-4">
+      <div className="max-w-7xl mx-auto px-4 sm:px-5 pt-3 sm:pt-4">
         {viewMode === 'schedule' ? (
           <ScheduleView
             rounds={rounds}

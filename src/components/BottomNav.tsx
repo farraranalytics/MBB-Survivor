@@ -80,12 +80,12 @@ export default function BottomNav() {
 
   return (
     <nav className="fixed bottom-0 inset-x-0 z-30 bg-[#080810] border-t border-[rgba(255,255,255,0.05)] tab-bar-shadow safe-area-bottom">
-      <div className="max-w-lg mx-auto flex justify-around items-center h-16">
+      <div className="max-w-lg mx-auto flex justify-around items-center h-14 sm:h-16">
         {tabs.map((tab) => (
           <Link
             key={tab.label}
             href={tab.href}
-            className={`relative flex flex-col items-center justify-center gap-[3px] px-3 py-1.5 rounded-[8px] transition-colors min-w-[60px] ${
+            className={`relative flex flex-col items-center justify-center gap-[2px] px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-[8px] transition-colors min-w-[52px] sm:min-w-[60px] ${
               tab.match ? 'text-[#FF5722]' : 'text-[#5F6B7A] hover:text-[#E8E6E1]'
             }`}
           >

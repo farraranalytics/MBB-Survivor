@@ -17,7 +17,7 @@ export default function PoolAnalyzePage() {
   const entryId = searchParams.get('entry') || undefined;
 
   const { user } = useAuth();
-  const { setActivePool } = useActivePool();
+  const { pools, setActivePool } = useActivePool();
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -170,18 +170,21 @@ export default function PoolAnalyzePage() {
     <div className="min-h-screen bg-[var(--surface-1)] pb-24">
       {/* ─── Page Header ─── */}
       <div className="bg-[#080810] border-b border-[rgba(255,255,255,0.08)]">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 py-3 sm:py-4">
+        <div className="max-w-4xl mx-auto px-3 sm:px-6 py-2 sm:py-4">
           <PageHeader tabLabel="ANALYZE" heading="Plan Your Path" />
           <PoolSelectorBar currentPoolId={poolId} />
           <EntryTabs
-            entries={entries.map(e => ({ ...e, has_picked: undefined }))}
+            entries={entries.map(e => {
+              const poolEntry = pools.find(p => p.pool_id === poolId)?.your_entries?.find(pe => pe.pool_player_id === e.id);
+              return { ...e, has_picked: poolEntry?.has_picked_today };
+            })}
             activeEntryId={activeEntryId}
             onEntrySwitch={switchEntry}
           />
         </div>
       </div>
 
-      <div className="max-w-4xl mx-auto px-5 pt-4">
+      <div className="max-w-4xl mx-auto px-3 sm:px-5 pt-2.5 sm:pt-4">
         <BracketPlanner
           bracket={bracket}
           rounds={rounds}

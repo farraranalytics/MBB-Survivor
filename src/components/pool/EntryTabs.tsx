@@ -23,7 +23,7 @@ export default function EntryTabs({ entries, activeEntryId, onEntrySwitch, addEn
 
   return (
     <div
-      className="grid gap-1.5"
+      className="grid gap-1 sm:gap-1.5"
       style={{
         gridTemplateColumns: `repeat(${Math.min(totalSlots, 4)}, 1fr)`,
         overflowX: totalSlots > 4 ? 'auto' : undefined,

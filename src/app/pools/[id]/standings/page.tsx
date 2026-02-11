@@ -227,7 +227,7 @@ export default function StandingsPage() {
     <div className="min-h-screen bg-[#0D1B2A] pb-24">
       {/* ─── Page Header ──────────────────────────────────────── */}
       <div className="bg-[#080810] border-b border-[rgba(255,255,255,0.08)]">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 py-3 sm:py-4">
+        <div className="max-w-5xl mx-auto px-3 sm:px-6 py-2 sm:py-4">
           <PageHeader
             tabLabel="THE FIELD"
             heading="Standings"
@@ -239,19 +239,19 @@ export default function StandingsPage() {
         </div>
       </div>
 
-      <div className="max-w-5xl mx-auto px-4 py-4 sm:py-6">
+      <div className="max-w-5xl mx-auto px-3 sm:px-4 py-2.5 sm:py-6">
         {/* ─── Summary Stats Bar ─────────────────────────────── */}
-        <div className="grid grid-cols-3 gap-3 mb-4">
-          <div className="bg-[rgba(76,175,80,0.1)] rounded-[10px] p-3 text-center">
-            <p className="text-xl font-bold text-[#4CAF50]" style={{ fontFamily: "'Space Mono', monospace" }}>{leaderboard.alive_players}</p>
+        <div className="grid grid-cols-3 gap-2 sm:gap-3 mb-3 sm:mb-4">
+          <div className="bg-[rgba(76,175,80,0.1)] rounded-[10px] p-2.5 sm:p-3 text-center">
+            <p className="text-lg sm:text-xl font-bold text-[#4CAF50]" style={{ fontFamily: "'Space Mono', monospace" }}>{leaderboard.alive_players}</p>
             <p className="label" style={{ color: 'rgba(76,175,80,0.7)' }}>Alive</p>
           </div>
-          <div className="bg-[rgba(239,83,80,0.1)] rounded-[10px] p-3 text-center">
-            <p className="text-xl font-bold text-[#EF5350]" style={{ fontFamily: "'Space Mono', monospace" }}>{leaderboard.eliminated_players}</p>
+          <div className="bg-[rgba(239,83,80,0.1)] rounded-[10px] p-2.5 sm:p-3 text-center">
+            <p className="text-lg sm:text-xl font-bold text-[#EF5350]" style={{ fontFamily: "'Space Mono', monospace" }}>{leaderboard.eliminated_players}</p>
             <p className="label" style={{ color: 'rgba(239,83,80,0.7)' }}>Out</p>
           </div>
-          <div className="bg-[#1B2A3D] rounded-[10px] p-3 text-center">
-            <p className="text-xl font-bold text-[#E8E6E1]" style={{ fontFamily: "'Space Mono', monospace" }}>
+          <div className="bg-[#1B2A3D] rounded-[10px] p-2.5 sm:p-3 text-center">
+            <p className="text-lg sm:text-xl font-bold text-[#E8E6E1]" style={{ fontFamily: "'Space Mono', monospace" }}>
               {leaderboard.prize_pool > 0 ? `$${leaderboard.prize_pool.toLocaleString()}` : leaderboard.total_players}
             </p>
             <p className="label" style={{ color: '#9BA3AE' }}>
@@ -261,13 +261,13 @@ export default function StandingsPage() {
         </div>
 
         {/* ─── Filter Tabs + Sort Dropdown ────────────────────── */}
-        <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center justify-between mb-3 sm:mb-4">
           <div className="flex space-x-1 bg-[#111827] rounded-[10px] p-1">
             {(['all', 'alive', 'eliminated'] as StandingsFilter[]).map((f) => (
               <button
                 key={f}
                 onClick={() => setFilter(f)}
-                className={`px-3 py-1.5 rounded-[8px] text-xs font-semibold transition-colors ${
+                className={`px-2.5 py-1 sm:py-1.5 rounded-[8px] text-xs font-semibold transition-colors ${
                   filter === f
                     ? 'bg-[#1B2A3D] text-[#E8E6E1] shadow-sm'
                     : 'text-[#9BA3AE] hover:text-[#E8E6E1]'
