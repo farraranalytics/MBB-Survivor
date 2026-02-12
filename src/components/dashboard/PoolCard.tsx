@@ -228,18 +228,6 @@ function EntryRow({ entry }: { entry: MyPoolEntry }) {
         {badge.text}
       </span>
 
-      {/* Streak */}
-      {alive && entry.picks_count > 0 && (
-        <span className="flex items-center gap-0.5 flex-shrink-0">
-          <span className="text-[10px]">&#128293;</span>
-          <span
-            className="text-[10px] font-bold text-[#E8E6E1]"
-            style={{ fontFamily: "'Space Mono', monospace" }}
-          >
-            {entry.picks_count}
-          </span>
-        </span>
-      )}
     </div>
   );
 }

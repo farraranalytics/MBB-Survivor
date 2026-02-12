@@ -169,6 +169,26 @@ export default function Dashboard() {
             {/* Section 1: Welcome + Avatar */}
             <WelcomeHeader displayName={displayName} />
 
+            {/* Create / Join Buttons */}
+            {preTournament && (
+              <div className="flex gap-2.5">
+                <Link
+                  href="/pools/create"
+                  className="flex-1 py-2 text-center text-sm font-semibold rounded-[10px] border border-[rgba(255,87,34,0.3)] text-[#FF5722] hover:bg-[rgba(255,87,34,0.05)] transition-colors"
+                  style={{ fontFamily: "'DM Sans', sans-serif" }}
+                >
+                  + Create Pool
+                </Link>
+                <Link
+                  href="/pools/join"
+                  className="flex-1 py-2 text-center text-sm font-semibold rounded-[10px] border border-[rgba(255,87,34,0.3)] text-[#FF5722] hover:bg-[rgba(255,87,34,0.05)] transition-colors"
+                  style={{ fontFamily: "'DM Sans', sans-serif" }}
+                >
+                  + Join Pool
+                </Link>
+              </div>
+            )}
+
             {/* Section 2: Pick Alert Banner */}
             <PickAlertBanner pools={pools} activePoolId={activePoolId} />
 
@@ -199,27 +219,6 @@ export default function Dashboard() {
                 ))}
               </div>
             </div>
-
-            {/* Create/Join links (subtle) */}
-            {preTournament && (
-              <div className="flex justify-center gap-4 pt-1">
-                <Link
-                  href="/pools/create"
-                  className="text-xs text-[#5F6B7A] hover:text-[#FF5722] transition-colors"
-                  style={{ fontFamily: "'DM Sans', sans-serif" }}
-                >
-                  + Create Pool
-                </Link>
-                <span className="text-[#3D4654]">&middot;</span>
-                <Link
-                  href="/pools/join"
-                  className="text-xs text-[#5F6B7A] hover:text-[#FF5722] transition-colors"
-                  style={{ fontFamily: "'DM Sans', sans-serif" }}
-                >
-                  + Join Pool
-                </Link>
-              </div>
-            )}
 
             {/* Footer */}
             <footer className="pt-4 pb-2 text-center text-sm" style={{ fontFamily: "'DM Sans', sans-serif" }}>
