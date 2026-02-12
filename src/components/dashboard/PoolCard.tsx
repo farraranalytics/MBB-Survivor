@@ -9,9 +9,11 @@ interface PoolCardProps {
   pool: MyPool;
   isActive: boolean;
   onActivate: () => void;
+  /** Where to navigate when the card is clicked: 'pick' (pre-round) or 'standings' (round live/complete) */
+  clickTarget: 'pick' | 'standings';
 }
 
-export default function PoolCard({ pool, isActive, onActivate }: PoolCardProps) {
+export default function PoolCard({ pool, isActive, onActivate, clickTarget }: PoolCardProps) {
   const router = useRouter();
   const { addToast } = useToast();
   const [showCode, setShowCode] = useState(false);
@@ -40,7 +42,7 @@ export default function PoolCard({ pool, isActive, onActivate }: PoolCardProps) 
     <div
       onClick={() => {
         onActivate();
-        router.push(`/pools/${pool.pool_id}/standings`);
+        router.push(`/pools/${pool.pool_id}/${clickTarget}`);
       }}
       className={`rounded-[14px] p-4 cursor-pointer transition-all ${
         isActive

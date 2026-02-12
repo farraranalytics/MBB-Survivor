@@ -200,6 +200,151 @@ export function buildLockedPicks(
   return { picks: plannerPicks, lockedDayIds };
 }
 
+/**
+ * Determine which games belong on a given day using bracket logic.
+ * Mirrors BracketPlanner's actualGameIndices + r32DayMapping + region
+ * filtering so the pick page shows the exact same matchups as Analyze.
+ */
+export function getGamesForDay(
+  allGames: BracketGame[],
+  allRounds: Round[],
+  targetRoundId: string,
+): BracketGame[] {
+  const targetRound = allRounds.find(r => r.id === targetRoundId);
+  if (!targetRound) return [];
+
+  const targetCode = mapRoundNameToCode(targetRound.name);
+  const targetHalf = inferHalf(targetRound.name);
+
+  // Build round_id → roundCode lookup
+  const roundIdToCode = new Map<string, string>();
+  for (const r of allRounds) roundIdToCode.set(r.id, mapRoundNameToCode(r.name));
+
+  // ── actualGameIndices: round_id → region → gameIndex[] ──
+  const actualGI: Record<string, Record<string, number[]>> = {};
+  for (const game of allGames) {
+    if (!game.team1) continue;
+    const region = (game.team1 as TeamInfo).region;
+    const rc = roundIdToCode.get(game.round_id);
+    if (!rc) continue;
+    const gi = getGameIndexForRound((game.team1 as TeamInfo).seed, rc);
+    if (!actualGI[game.round_id]) actualGI[game.round_id] = {};
+    if (!actualGI[game.round_id][region]) actualGI[game.round_id][region] = [];
+    if (!actualGI[game.round_id][region].includes(gi)) {
+      actualGI[game.round_id][region].push(gi);
+    }
+  }
+  for (const rid of Object.keys(actualGI)) {
+    for (const reg of Object.keys(actualGI[rid])) {
+      actualGI[rid][reg].sort((a, b) => a - b);
+    }
+  }
+
+  // ── r32DayMapping: R32 round_id → region → gameIndex[] ──
+  const r32Map: Record<string, Record<string, number[]>> = {};
+  const R64D1 = allRounds.find(r => r.name === 'Round 1 Day 1')?.id;
+  const R64D2 = allRounds.find(r => r.name === 'Round 1 Day 2')?.id;
+  const R32D1 = allRounds.find(r => r.name === 'Round 2 Day 1')?.id;
+  const R32D2 = allRounds.find(r => r.name === 'Round 2 Day 2')?.id;
+
+  if (R64D1 && R64D2 && R32D1 && R32D2) {
+    const r64Day: Record<string, Record<number, string>> = {};
+    for (const game of allGames) {
+      if (!game.team1) continue;
+      const region = (game.team1 as TeamInfo).region;
+      const gi = seedToR64Index((game.team1 as TeamInfo).seed);
+      if (gi < 0) continue;
+      if (!r64Day[region]) r64Day[region] = {};
+      if (game.round_id === R64D1) r64Day[region][gi] = 'Day1';
+      else if (game.round_id === R64D2) r64Day[region][gi] = 'Day2';
+    }
+
+    r32Map[R32D1] = {};
+    r32Map[R32D2] = {};
+    for (const region of PLANNER_REGIONS) {
+      r32Map[R32D1][region] = [];
+      r32Map[R32D2][region] = [];
+      for (let i = 0; i < R32_FEEDERS.length; i++) {
+        const [f0, f1] = R32_FEEDERS[i];
+        if (r64Day[region]?.[f0] === 'Day1' || r64Day[region]?.[f1] === 'Day1') {
+          r32Map[R32D1][region].push(i);
+        } else {
+          r32Map[R32D2][region].push(i);
+        }
+      }
+    }
+  }
+
+  // ── fixedRegions for S16 / E8 ──
+  let fixedRegions: string[] | undefined;
+  if (targetCode === 'S16') {
+    fixedRegions = targetHalf === 'A' ? S16_DAY1_REGIONS
+      : targetHalf === 'B' ? S16_DAY2_REGIONS
+      : undefined;
+  }
+  if (targetCode === 'E8') {
+    fixedRegions = targetHalf === 'A' ? E8_DAY1_REGIONS
+      : targetHalf === 'B' ? E8_DAY2_REGIONS
+      : undefined;
+  }
+
+  // ── Determine which regions appear on this day ──
+  let regions: string[];
+  const dbRegs = actualGI[targetRoundId];
+  if (dbRegs && Object.keys(dbRegs).length > 0) {
+    regions = PLANNER_REGIONS.filter(r => dbRegs[r]?.length > 0);
+  } else {
+    const r32Regs = r32Map[targetRoundId];
+    if (r32Regs && Object.keys(r32Regs).length > 0) {
+      regions = PLANNER_REGIONS.filter(r => r32Regs[r]?.length > 0);
+    } else if (fixedRegions) {
+      regions = [...fixedRegions];
+    } else {
+      regions = [...PLANNER_REGIONS];
+    }
+  }
+
+  // ── Build set of valid (region, roundCode, gameIdx) keys ──
+  const validKeys = new Set<string>();
+  for (const region of regions) {
+    const dbIdx = actualGI[targetRoundId]?.[region];
+    const r32Idx = r32Map[targetRoundId]?.[region];
+    let indices: number[];
+
+    if (dbIdx && dbIdx.length > 0) {
+      indices = dbIdx;
+    } else if (r32Idx && r32Idx.length > 0) {
+      indices = r32Idx;
+    } else if (targetCode === 'E8') {
+      indices = [0];
+    } else if (targetCode === 'S16') {
+      indices = [0, 1];
+    } else if (targetCode === 'F4' || targetCode === 'CHIP') {
+      indices = [0];
+    } else {
+      indices = targetHalf === 'A'
+        ? (HALF_A[targetCode] || [])
+        : targetHalf === 'B'
+        ? (HALF_B[targetCode] || [])
+        : [...(HALF_A[targetCode] || []), ...(HALF_B[targetCode] || [])];
+    }
+
+    for (const gi of indices) {
+      validKeys.add(`${region}_${targetCode}_${gi}`);
+    }
+  }
+
+  // ── Filter: return games matching the valid keys for this round code ──
+  return allGames.filter(game => {
+    if (!game.team1) return false;
+    const region = (game.team1 as TeamInfo).region;
+    const rc = roundIdToCode.get(game.round_id);
+    if (!rc || rc !== targetCode) return false;
+    const gi = getGameIndexForRound((game.team1 as TeamInfo).seed, rc);
+    return validKeys.has(`${region}_${rc}_${gi}`);
+  });
+}
+
 // Backward compat alias
 const BRACKET_SEED_ORDER = R64_SEED_PAIRINGS;
 

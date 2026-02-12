@@ -150,6 +150,12 @@ export default function Dashboard() {
 
   const preTournament = !tournamentState || canJoinOrCreate(tournamentState);
 
+  // Pre-round (picks open) → click pool goes to Pick; otherwise → Standings (The Field)
+  const poolClickTarget =
+    tournamentState?.currentRound?.status === 'pre_round' && !tournamentState?.currentRound?.isDeadlinePassed
+      ? 'pick'
+      : 'standings';
+
   // User display name
   const displayName = user?.user_metadata?.display_name
     || user?.email?.split('@')[0]
@@ -215,6 +221,7 @@ export default function Dashboard() {
                     pool={pool}
                     isActive={pool.pool_id === activePoolId}
                     onActivate={() => setActivePool(pool.pool_id, pool.pool_name)}
+                    clickTarget={poolClickTarget}
                   />
                 ))}
               </div>

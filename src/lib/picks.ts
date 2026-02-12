@@ -2,11 +2,14 @@
 import { supabase } from '@/lib/supabase/client';
 import { getTournamentState } from '@/lib/status';
 import { getEffectiveNow } from '@/lib/clock';
+import { getAllGamesWithTeams, getAllRounds, getGamesForDay } from '@/lib/bracket';
+import { BracketGame } from '@/types/bracket';
 import {
   PoolPlayer,
   Round,
   Pick,
   Game,
+  TeamInfo,
   PickableTeam,
   PlayerStatus,
   PickDeadline,
@@ -44,7 +47,9 @@ export async function getActiveRound(): Promise<Round | null> {
 // ─── Game Queries ─────────────────────────────────────────────────
 
 /**
- * Get today's games for a specific round, with joined team data
+ * Get games for a round by querying the games table by round_id only.
+ * @deprecated Use getPickableTeams() or getGamesForDay() (from bracket.ts) for the pick page
+ * so matchups use the same bracket logic as the analyze page (actualGameIndices, r32DayMapping, etc.).
  */
 export async function getTodaysGames(roundId: string): Promise<Game[]> {
   const { data, error } = await supabase
@@ -184,64 +189,66 @@ function calculateRiskLevel(teamSeed: number, opponentSeed: number): 'low' | 'me
 }
 
 /**
- * Build the list of pickable teams for the current round.
- * Marks teams already used by this player.
+ * Build PickableTeam[] from pre-filtered BracketGame[].
+ * Exported so the pick page can reuse it for spectator views.
  */
-export async function getPickableTeams(poolPlayerId: string, roundId: string): Promise<PickableTeam[]> {
-  const [games, usedTeamIds] = await Promise.all([
-    getTodaysGames(roundId),
-    getUsedTeams(poolPlayerId, roundId)
-  ]);
-
+export function buildPickableTeamsFromGames(
+  games: BracketGame[],
+  usedTeamIds: string[],
+): PickableTeam[] {
   const pickableTeams: PickableTeam[] = [];
 
   for (const game of games) {
     if (!game.team1 || !game.team2) continue;
+    const t1 = game.team1 as TeamInfo;
+    const t2 = game.team2 as TeamInfo;
 
     // Team 1
     pickableTeams.push({
-      id: game.team1.id,
-      name: game.team1.name,
-      mascot: game.team1.mascot,
-      abbreviation: game.team1.abbreviation,
-      seed: game.team1.seed,
-      region: game.team1.region,
-      logo_url: game.team1.logo_url,
-      espn_team_id: (game.team1 as any).espn_team_id ?? null,
-      is_eliminated: game.team1.is_eliminated,
+      id: t1.id,
+      name: t1.name,
+      mascot: t1.mascot,
+      abbreviation: t1.abbreviation,
+      seed: t1.seed,
+      region: t1.region,
+      logo_url: t1.logo_url,
+      espn_team_id: (t1 as any).espn_team_id ?? null,
+      is_eliminated: t1.is_eliminated,
       game_id: game.id,
       game_datetime: game.game_datetime,
+      round_id: game.round_id,
       opponent: {
-        id: game.team2.id,
-        name: game.team2.name,
-        seed: game.team2.seed,
-        abbreviation: game.team2.abbreviation
+        id: t2.id,
+        name: t2.name,
+        seed: t2.seed,
+        abbreviation: t2.abbreviation
       },
-      already_used: usedTeamIds.includes(game.team1.id),
-      risk_level: calculateRiskLevel(game.team1.seed, game.team2.seed)
+      already_used: usedTeamIds.includes(t1.id),
+      risk_level: calculateRiskLevel(t1.seed, t2.seed)
     });
 
     // Team 2
     pickableTeams.push({
-      id: game.team2.id,
-      name: game.team2.name,
-      mascot: game.team2.mascot,
-      abbreviation: game.team2.abbreviation,
-      seed: game.team2.seed,
-      region: game.team2.region,
-      logo_url: game.team2.logo_url,
-      espn_team_id: (game.team2 as any).espn_team_id ?? null,
-      is_eliminated: game.team2.is_eliminated,
+      id: t2.id,
+      name: t2.name,
+      mascot: t2.mascot,
+      abbreviation: t2.abbreviation,
+      seed: t2.seed,
+      region: t2.region,
+      logo_url: t2.logo_url,
+      espn_team_id: (t2 as any).espn_team_id ?? null,
+      is_eliminated: t2.is_eliminated,
       game_id: game.id,
       game_datetime: game.game_datetime,
+      round_id: game.round_id,
       opponent: {
-        id: game.team1.id,
-        name: game.team1.name,
-        seed: game.team1.seed,
-        abbreviation: game.team1.abbreviation
+        id: t1.id,
+        name: t1.name,
+        seed: t1.seed,
+        abbreviation: t1.abbreviation
       },
-      already_used: usedTeamIds.includes(game.team2.id),
-      risk_level: calculateRiskLevel(game.team2.seed, game.team1.seed)
+      already_used: usedTeamIds.includes(t2.id),
+      risk_level: calculateRiskLevel(t2.seed, t1.seed)
     });
   }
 
@@ -253,33 +260,53 @@ export async function getPickableTeams(poolPlayerId: string, roundId: string): P
   });
 }
 
+/**
+ * Build the list of pickable teams for the current round/day.
+ * Uses the same round/day/matchup structure as the analyze page (BracketPlanner):
+ * getGamesForDay() applies actualGameIndices, r32DayMapping, and fixedRegions (S16/E8)
+ * so the games shown here match exactly what the analyze page shows for this day.
+ * Do not use getTodaysGames(roundId) here — that queries by round_id only and can
+ * disagree with bracket logic for R32+ when cascade-created games have wrong round_id.
+ */
+export async function getPickableTeams(poolPlayerId: string, roundId: string): Promise<PickableTeam[]> {
+  const [allGames, allRounds, usedTeamIds] = await Promise.all([
+    getAllGamesWithTeams(),
+    getAllRounds(),
+    getUsedTeams(poolPlayerId, roundId)
+  ]);
+
+  const dayGames = getGamesForDay(allGames, allRounds, roundId);
+  return buildPickableTeamsFromGames(dayGames, usedTeamIds);
+}
+
 // ─── Deadline ─────────────────────────────────────────────────────
 
 /**
- * Check pick deadline status for a round
+ * Check pick deadline status for a round.
+ * Uses bracket-aware game filtering so the deadline is based on the
+ * actual games that will be shown on this day (matching analyze page logic).
  */
 export async function getPickDeadline(roundId: string): Promise<PickDeadline> {
-  // Get round name
-  const { data: round, error: roundError } = await supabase
-    .from('rounds')
-    .select('id, name')
-    .eq('id', roundId)
-    .single();
+  const [allGames, allRounds] = await Promise.all([
+    getAllGamesWithTeams(),
+    getAllRounds(),
+  ]);
 
-  if (roundError || !round) {
-    throw new PickError(`Failed to fetch round: ${roundError?.message || 'Not found'}`, 'FETCH_ERROR');
+  const round = allRounds.find(r => r.id === roundId);
+  if (!round) {
+    throw new PickError('Round not found', 'FETCH_ERROR');
   }
 
-  // Get earliest game time for this round
-  const { data: firstGame } = await supabase
-    .from('games')
-    .select('game_datetime')
-    .eq('round_id', roundId)
-    .order('game_datetime', { ascending: true })
-    .limit(1)
-    .single();
+  // Get bracket-aware games for this day
+  const dayGames = getGamesForDay(allGames, allRounds, roundId);
 
-  const firstGameTime = firstGame?.game_datetime || null;
+  // Earliest game time across all games on this day
+  const firstGameTime = dayGames.length > 0
+    ? dayGames.reduce((earliest, g) =>
+        g.game_datetime < earliest ? g.game_datetime : earliest,
+        dayGames[0].game_datetime
+      )
+    : null;
 
   // Deadline = first game - 5 minutes
   let deadlineDatetime: string;
@@ -307,7 +334,9 @@ export async function getPickDeadline(roundId: string): Promise<PickDeadline> {
 // ─── Validation ───────────────────────────────────────────────────
 
 /**
- * Full validation of a pick submission
+ * Full validation of a pick submission.
+ * Uses bracket-aware game filtering so validation matches what
+ * the pick page actually shows.
  */
 export async function validatePick(submission: PickSubmission): Promise<PickValidation> {
   const errors: string[] = [];
@@ -331,13 +360,32 @@ export async function validatePick(submission: PickSubmission): Promise<PickVali
       return { valid: false, errors, warnings };
     }
 
-    // 2. Deadline must not have passed
-    const deadline = await getPickDeadline(submission.round_id);
-    if (deadline.is_expired) {
+    // Load bracket data once for deadline + team validation
+    const [allGames, allRounds] = await Promise.all([
+      getAllGamesWithTeams(),
+      getAllRounds(),
+    ]);
+    const dayGames = getGamesForDay(allGames, allRounds, submission.round_id);
+
+    // 2. Deadline must not have passed (from bracket-aware games)
+    const firstGameTime = dayGames.length > 0
+      ? dayGames.reduce((e, g) => g.game_datetime < e ? g.game_datetime : e, dayGames[0].game_datetime)
+      : null;
+    let deadlineDatetime: string;
+    if (firstGameTime) {
+      deadlineDatetime = new Date(new Date(firstGameTime).getTime() - 5 * 60 * 1000).toISOString();
+    } else {
+      deadlineDatetime = new Date('2099-01-01').toISOString();
+    }
+    const now = await getEffectiveNow();
+    const diff = new Date(deadlineDatetime).getTime() - now.getTime();
+    const minutesRemaining = Math.max(0, Math.floor(diff / 60000));
+
+    if (diff <= 0) {
       errors.push('Pick deadline has passed');
       return { valid: false, errors, warnings };
     }
-    if (deadline.minutes_remaining < 5) {
+    if (minutesRemaining < 5) {
       warnings.push('Less than 5 minutes remaining!');
     }
 
@@ -355,9 +403,8 @@ export async function validatePick(submission: PickSubmission): Promise<PickVali
 
     // 4. (Picks can be changed before deadline — no block on existing pick)
 
-    // 5. Team must be playing in today's games
-    const games = await getTodaysGames(submission.round_id);
-    const teamPlaying = games.some(
+    // 5. Team must be playing in today's games (bracket-aware)
+    const teamPlaying = dayGames.some(
       g => g.team1?.id === submission.team_id || g.team2?.id === submission.team_id
     );
     if (!teamPlaying) {

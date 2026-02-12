@@ -94,6 +94,7 @@ export interface PickableTeam {
   // Pick context
   game_id: string;
   game_datetime: string;
+  round_id: string;
   opponent: {
     id: string;
     name: string;

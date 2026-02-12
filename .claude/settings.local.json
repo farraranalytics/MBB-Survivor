@@ -1,0 +1,29 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npx next build:*)",
+      "Bash(git commit:*)",
+      "Bash(git push:*)",
+      "Bash(powershell -Command:*)",
+      "Bash(powershell:*)",
+      "Bash(npm run build:*)",
+      "Bash(git add:*)",
+      "Bash(git -C \"c:/Users/dillo/clawd/projects/MBB_Survivor\" status)",
+      "Bash(git -C \"c:/Users/dillo/clawd/projects/MBB_Survivor\" diff --stat)",
+      "Bash(git -C \"c:/Users/dillo/clawd/projects/MBB_Survivor\" log --oneline -5)",
+      "Bash(git -C \"c:/Users/dillo/clawd/projects/MBB_Survivor\" add src/components/CountdownTimer.tsx src/components/SplashOverlay.tsx src/app/globals.css \"src/app/pools/[id]/pick/page.tsx\")",
+      "Bash(git -C \"c:/Users/dillo/clawd/projects/MBB_Survivor\" commit -m \"$\\(cat <<''EOF''\nAdd shared countdown timer, splash visual enhancements, remove auto-dismiss\n\n- Extract reusable CountdownTimer component \\(lg/md sizes, glow, urgent state\\)\n- Replace inline countdown in pick page with shared CountdownTimer\n- Splash overlay: court lines SVG, staggered animations, scale-in wordmark\n- Desktop: bracket arms, floating basketballs, responsive sizing\n- Timer boxes get orange/red glow shadows\n- Stats numbers larger and orange across all states\n- Tap-to-enter anchored at bottom with pulse animation\n- Remove auto-dismiss: splash stays until user taps to enter\n\nCo-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>\nEOF\n\\)\")",
+      "Bash(git -C \"c:/Users/dillo/clawd/projects/MBB_Survivor\" push)",
+      "Bash(git -C \"c:/Users/dillo/clawd/projects/MBB_Survivor\" add src/app/dashboard/page.tsx \"src/app/pools/[id]/settings/page.tsx\" src/components/SplashOverlay.tsx src/components/auth/AuthProvider.tsx src/app/icon.svg src/app/apple-icon.tsx)",
+      "Bash(git -C \"c:/Users/dillo/clawd/projects/MBB_Survivor\" commit -m \"$\\(cat <<''EOF''\nSign out redirect, needs-pick warnings, tap-to-enter inline, brand favicon\n\n- AuthProvider: redirect to / on SIGNED_OUT when on protected route\n- Settings: explicit router.push\\(''/''\\) after signOut\n- Dashboard: show ⚠️ Needs Pick for alive unpicked entries when picks open\n- Make Pick CTA visible during pre-tournament \\(open pools\\), not just active\n- Splash: move tap-to-enter inline under content with stagger animation\n- Add SVG favicon and apple-icon.tsx \\(basketball on navy\\)\n\nCo-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>\nEOF\n\\)\")",
+      "Bash(git status:*)",
+      "Bash(git rm:*)",
+      "Bash(cd:*)",
+      "Bash(git diff:*)",
+      "Bash(copy:*)",
+      "Bash(npx tsx:*)",
+      "Bash(curl:*)",
+      "Bash(python:*)"
+    ]
+  }
+}

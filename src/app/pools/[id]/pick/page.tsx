@@ -10,7 +10,6 @@ import {
   getPickableTeams,
   getPlayerPick,
   getPlayerPicks,
-  getTodaysGames,
   submitPick,
   PickError
 } from '@/lib/picks';
@@ -19,7 +18,7 @@ import { useToast } from '@/hooks/useToast';
 import { supabase } from '@/lib/supabase/client';
 import { PickableTeam, PickDeadline, Round, Pick, Game } from '@/types/picks';
 import { formatET, formatDateET } from '@/lib/timezone';
-import { mapRoundNameToCode, ROUND_COLORS } from '@/lib/bracket';
+import { mapRoundNameToCode, ROUND_COLORS, getAllGamesWithTeams, getAllRounds, getGamesForDay } from '@/lib/bracket';
 import { TeamLogo, getESPNStatsUrl } from '@/components/TeamLogo';
 import { PageHeader, PoolSelectorBar, EntryTabs } from '@/components/pool';
 import type { EntryTabItem } from '@/components/pool';
@@ -548,12 +547,9 @@ export default function PickPage() {
         setPoolStatus(poolData.status);
       }
 
-      // Fetch all rounds for timeline + day counting
-      const { data: allRoundsData } = await supabase
-        .from('rounds')
-        .select('*')
-        .order('date', { ascending: true });
-      if (allRoundsData) setAllRounds(allRoundsData);
+      // Fetch all rounds for timeline + day counting (uses bracket.ts)
+      const allRoundsData = await getAllRounds();
+      setAllRounds(allRoundsData);
 
       const poolPlayer = await getPoolPlayer(poolId, user.id, activeEntryId);
       if (!poolPlayer) { setError('You are not a member of this pool.'); setLoading(false); return; }
@@ -613,7 +609,9 @@ export default function PickPage() {
       setDeadline(dl);
 
       if (poolPlayer.is_eliminated) {
-        const gamesData = await getTodaysGames(activeRound.id);
+        // Use bracket-aware game filtering (matches analyze page logic)
+        const allGamesData = await getAllGamesWithTeams();
+        const gamesData = getGamesForDay(allGamesData, allRoundsData, activeRound.id);
         setSpectatorGames(gamesData);
       } else {
         const existing = await getPlayerPick(poolPlayer.id, activeRound.id);
@@ -621,6 +619,7 @@ export default function PickPage() {
           setExistingPick(existing);
         }
 
+        // Same bracket logic as analyze page (getGamesForDay: actualGameIndices, r32DayMapping, etc.)
         const pickable = await getPickableTeams(poolPlayer.id, activeRound.id);
         setTeams(pickable);
 
@@ -653,6 +652,7 @@ export default function PickPage() {
       const pick = await submitPick({ pool_player_id: poolPlayerId, round_id: round.id, team_id: selectedTeam.id });
       setExistingPick(pick);
       setShowConfirm(false);
+      setEntries(prev => prev.map(e => e.id === poolPlayerId ? { ...e, has_picked: true } : e));
       addToast('success', `Pick locked in — (${selectedTeam.seed}) ${selectedTeam.name}`);
       refreshPools();
     } catch (err) {
@@ -661,6 +661,7 @@ export default function PickPage() {
         try {
           const pick = await submitPick({ pool_player_id: poolPlayerId, round_id: round.id, team_id: teamForRetry.id });
           setExistingPick(pick);
+          setEntries(prev => prev.map(e => e.id === poolPlayerId ? { ...e, has_picked: true } : e));
           addToast('success', `Pick locked in — (${teamForRetry.seed}) ${teamForRetry.name}`);
           refreshPools();
         } catch (retryErr) {
@@ -692,7 +693,6 @@ export default function PickPage() {
 
       // Handle duplicate key (ghost row from failed delete)
       if (insertError && insertError.code === '23505') {
-        // Entry already exists — just reload data
         setShowAddEntry(false);
         setAddEntryName('');
         loadedRef.current = false;
