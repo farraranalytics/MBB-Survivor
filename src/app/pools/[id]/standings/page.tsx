@@ -5,6 +5,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { useAuth } from '@/components/auth/AuthProvider';
 import { TeamLogo } from '@/components/TeamLogo';
 import { PageHeader, PoolSelectorBar } from '@/components/pool';
+import { useClockOffset } from '@/hooks/useClockOffset';
 import { mapRoundNameToCode, inferHalf } from '@/lib/bracket';
 import { formatDateET } from '@/lib/timezone';
 import {
@@ -32,8 +33,10 @@ function buildRoundLabel(roundName: string): string {
 function isPickVisible(
   round: { deadline_datetime: string; is_complete: boolean },
   isOwnEntry: boolean,
+  clockOffset: number = 0,
 ): boolean {
-  return isOwnEntry || new Date(round.deadline_datetime) < new Date() || round.is_complete;
+  const effectiveNow = new Date(Date.now() + clockOffset);
+  return isOwnEntry || new Date(round.deadline_datetime) < effectiveNow || round.is_complete;
 }
 
 // ─── Pick Cell — Logo-based grid cell ───────────────────────────
@@ -120,6 +123,7 @@ export default function StandingsPage() {
   const [sort, setSort] = useState<StandingsSort>('streak');
   const [sortDropdownOpen, setSortDropdownOpen] = useState(false);
   const loadedRef = useRef(false);
+  const clockOffset = useClockOffset();
 
   useEffect(() => {
     if (!user || !poolId) return;
@@ -383,7 +387,7 @@ export default function StandingsPage() {
                         </td>
                         {leaderboard.rounds_played.map((round) => {
                           const result = player.round_results.find((r) => r.round_id === round.id);
-                          const deadlinePassed = isPickVisible(round, isYou);
+                          const deadlinePassed = isPickVisible(round, isYou, clockOffset);
                           return (
                             <td key={round.id} className="px-1 py-1.5 text-center">
                               <PickCell result={result} deadlinePassed={deadlinePassed} />
@@ -429,7 +433,7 @@ export default function StandingsPage() {
                         </td>
                         {leaderboard.rounds_played.map((round) => {
                           const result = player.round_results.find((r) => r.round_id === round.id);
-                          const deadlinePassed = isPickVisible(round, isYou);
+                          const deadlinePassed = isPickVisible(round, isYou, clockOffset);
                           return (
                             <td key={round.id} className="px-1 py-1.5 text-center">
                               <PickCell result={result} deadlinePassed={deadlinePassed} />

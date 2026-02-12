@@ -93,11 +93,12 @@ export async function getTournamentState(): Promise<TournamentState> {
 
   // Derive tournament status
   const allPreRound = roundInfos.every(r => r.status === 'pre_round');
+  const anyDeadlinePassed = roundInfos.some(r => r.isDeadlinePassed);
   const lastRound = roundInfos[roundInfos.length - 1];
   const lastRoundComplete = lastRound?.status === 'round_complete';
 
   let tournamentStatus: TournamentStatus;
-  if (allPreRound) {
+  if (allPreRound && !anyDeadlinePassed) {
     tournamentStatus = 'pre_tournament';
   } else if (lastRoundComplete) {
     tournamentStatus = 'tournament_complete';

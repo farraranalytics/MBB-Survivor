@@ -132,11 +132,15 @@ CREATE POLICY "Pool creators can remove members" ON pool_players
 --    tournament starts. Client-side checks alone are insufficient.
 -- ═══════════════════════════════════════════════════════════════
 
--- Helper: returns true if any game is no longer 'scheduled'
+-- Helper: returns true if any game is no longer 'scheduled' OR any deadline has passed
 CREATE OR REPLACE FUNCTION tournament_has_started()
 RETURNS BOOLEAN AS $$
 BEGIN
-    RETURN EXISTS (SELECT 1 FROM games WHERE status != 'scheduled');
+    RETURN EXISTS (SELECT 1 FROM games WHERE status != 'scheduled')
+        OR EXISTS (
+            SELECT 1 FROM rounds
+            WHERE deadline_datetime < effective_now()
+        );
 END;
 $$ LANGUAGE plpgsql STABLE SECURITY DEFINER;
 
