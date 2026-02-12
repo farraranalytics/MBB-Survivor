@@ -4,6 +4,12 @@ import { TeamInfo } from '@/types/picks';
 import { PlannerDay, PlannerPick, ROUND_COLORS } from '@/lib/bracket';
 import MatchupCard from './MatchupCard';
 
+// F4 bracket pairings: West vs South, Midwest vs East
+const F4_PAIRINGS: [string, string][] = [
+  ['West', 'South'],
+  ['Midwest', 'East'],
+];
+
 export interface MatchupInfo {
   gameIdx: number;
   teams: (TeamInfo | null)[];
@@ -136,8 +142,120 @@ export default function DayCard({
         </div>
       </div>
 
-      {/* Expanded content — matchups by region */}
-      {isExpanded && (
+      {/* Expanded content — matchups by region (or cross-region for F4/CHIP) */}
+      {isExpanded && (day.roundCode === 'F4' || day.roundCode === 'CHIP') && (
+        <div className="px-5 pb-5 pt-1 grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+          {day.roundCode === 'F4' ? (
+            // Final Four: 2 semifinal game cards
+            F4_PAIRINGS.map(([regionA, regionB], gameIdx) => {
+              const muA = getMatchupsForRegion(regionA);
+              const muB = getMatchupsForRegion(regionB);
+              const teamA = muA[0]?.teams[0] || null;
+              const teamB = muB[0]?.teams[0] || null;
+              return (
+                <div
+                  key={gameIdx}
+                  className="rounded-[var(--radius-md)] p-3"
+                  style={{
+                    background: 'var(--surface-0)',
+                    border: '1px solid var(--border-subtle)',
+                    borderTop: '3px solid var(--color-orange)',
+                  }}
+                >
+                  <div className="flex justify-between mb-2.5">
+                    <span className="font-[family-name:var(--font-display)] font-semibold text-[0.85rem] uppercase text-[var(--text-primary)]">
+                      Semifinal {gameIdx + 1}
+                    </span>
+                    <span className="font-[family-name:var(--font-mono)] text-[0.55rem] tracking-[0.1em] text-[var(--text-secondary)]">
+                      {regionA} vs {regionB}
+                    </span>
+                  </div>
+                  {teamA && (
+                    <MatchupCard
+                      matchup={muA[0]}
+                      region={regionA}
+                      dayId={day.id}
+                      dayPick={pick}
+                      advancerKey={`${regionA}_F4_0`}
+                      advancer={advancers[`${regionA}_F4_0`]}
+                      usedTeamIds={usedTeamIds}
+                      lockedAdvancerKeys={lockedAdvancerKeys}
+                      lockedDayIds={lockedDayIds}
+                      onToggleAdvancer={onToggleAdvancer}
+                      onHandlePick={onHandlePick}
+                      gameStatus={gameStatuses?.[`${regionA}_F4_0`]?.status as 'scheduled' | 'in_progress' | 'final' | undefined}
+                      gameScore={gameStatuses?.[`${regionA}_F4_0`]}
+                      gameDateTime={gameStatuses?.[`${regionA}_F4_0`]?.gameDateTime}
+                    />
+                  )}
+                  {teamB && (
+                    <MatchupCard
+                      matchup={muB[0]}
+                      region={regionB}
+                      dayId={day.id}
+                      dayPick={pick}
+                      advancerKey={`${regionB}_F4_0`}
+                      advancer={advancers[`${regionB}_F4_0`]}
+                      usedTeamIds={usedTeamIds}
+                      lockedAdvancerKeys={lockedAdvancerKeys}
+                      lockedDayIds={lockedDayIds}
+                      onToggleAdvancer={onToggleAdvancer}
+                      onHandlePick={onHandlePick}
+                      gameStatus={gameStatuses?.[`${regionB}_F4_0`]?.status as 'scheduled' | 'in_progress' | 'final' | undefined}
+                      gameScore={gameStatuses?.[`${regionB}_F4_0`]}
+                      gameDateTime={gameStatuses?.[`${regionB}_F4_0`]?.gameDateTime}
+                    />
+                  )}
+                  {!teamA && !teamB && (
+                    <p className="font-[family-name:var(--font-body)] text-[0.8rem] text-[var(--text-tertiary)] text-center py-3">TBD</p>
+                  )}
+                </div>
+              );
+            })
+          ) : (
+            // Championship: 1 game card
+            <div
+              className="sm:col-span-2 rounded-[var(--radius-md)] p-3"
+              style={{
+                background: 'var(--surface-0)',
+                border: '1px solid var(--border-subtle)',
+                borderTop: '3px solid var(--color-orange)',
+              }}
+            >
+              <div className="flex justify-between mb-2.5">
+                <span className="font-[family-name:var(--font-display)] font-semibold text-[0.85rem] uppercase text-[var(--text-primary)]">
+                  Championship Game
+                </span>
+              </div>
+              {regions.map(region => {
+                const matchups = getMatchupsForRegion(region);
+                return matchups.map((mu, i) => (
+                  <MatchupCard
+                    key={`${region}-${i}`}
+                    matchup={mu}
+                    region={region}
+                    dayId={day.id}
+                    dayPick={pick}
+                    advancerKey={`${region}_${mu.round}_${mu.gameIdx}`}
+                    advancer={advancers[`${region}_${mu.round}_${mu.gameIdx}`]}
+                    usedTeamIds={usedTeamIds}
+                    lockedAdvancerKeys={lockedAdvancerKeys}
+                    lockedDayIds={lockedDayIds}
+                    onToggleAdvancer={onToggleAdvancer}
+                    onHandlePick={onHandlePick}
+                    gameStatus={gameStatuses?.[`${region}_${mu.round}_${mu.gameIdx}`]?.status as 'scheduled' | 'in_progress' | 'final' | undefined}
+                    gameScore={gameStatuses?.[`${region}_${mu.round}_${mu.gameIdx}`]}
+                    gameDateTime={gameStatuses?.[`${region}_${mu.round}_${mu.gameIdx}`]?.gameDateTime}
+                  />
+                ));
+              })}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Expanded content — matchups by region (standard rounds) */}
+      {isExpanded && day.roundCode !== 'F4' && day.roundCode !== 'CHIP' && (
         <div
           className={`px-5 pb-5 pt-1 gap-2.5 grid ${
             regions.length <= 2
