@@ -18,6 +18,7 @@ import {
   PoolAdminUpdate,
   PoolMember,
 } from '@/lib/admin';
+import { PageHeader, PoolSelectorBar } from '@/components/pool';
 
 // ─── Section Header ──────────────────────────────────────────────
 
@@ -669,35 +670,20 @@ export default function PoolSettingsPage() {
     );
   }
 
-  // Status badge
-  const statusConfig = {
-    open: { label: 'PRE-TOURNAMENT', cls: 'bg-[rgba(255,87,34,0.15)] text-[#FF5722]' },
-    active: { label: 'ACTIVE', cls: 'bg-[rgba(76,175,80,0.12)] text-[#4CAF50]' },
-    complete: { label: 'COMPLETE', cls: 'bg-[rgba(138,134,148,0.15)] text-[#9BA3AE]' },
-  };
-  const status = statusConfig[pool.status];
-
   return (
     <div className="min-h-screen bg-[#0D1B2A] pb-24">
-      <main className="max-w-lg mx-auto px-5 py-6 space-y-4">
-        {/* Page Header */}
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-xl font-bold text-[#E8E6E1]" style={{ fontFamily: "'Oswald', sans-serif", textTransform: 'uppercase' }}>
-              Pool Settings
-            </h1>
-            <p className="text-sm text-[#9BA3AE]" style={{ fontFamily: "'DM Sans', sans-serif" }}>
-              {pool.name}
-            </p>
-          </div>
-          <span
-            className={`inline-flex items-center px-2 py-0.5 rounded-full font-bold ${status.cls}`}
-            style={{ fontFamily: "'Space Mono', monospace", fontSize: '0.6rem', letterSpacing: '0.2em', textTransform: 'uppercase' }}
-          >
-            {status.label}
-          </span>
+      {/* ─── Page Header ──────────────────────────────────────── */}
+      <div className="bg-[#080810] border-b border-[rgba(255,255,255,0.08)]">
+        <div className="max-w-lg mx-auto px-5 py-2 sm:py-4">
+          <PageHeader
+            tabLabel="SETTINGS"
+            heading="Pool Settings"
+          />
+          <PoolSelectorBar currentPoolId={poolId} />
         </div>
+      </div>
 
+      <main className="max-w-lg mx-auto px-5 py-6 space-y-4">
         {/* Error */}
         {error && (
           <div className="bg-[rgba(239,83,80,0.1)] border border-[rgba(239,83,80,0.3)] text-[#EF5350] px-4 py-3 rounded-[8px] text-sm" style={{ fontFamily: "'DM Sans', sans-serif" }}>
