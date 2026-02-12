@@ -213,43 +213,71 @@ export default function DayCard({
               );
             })
           ) : (
-            // Championship: 1 game card
-            <div
-              className="sm:col-span-2 rounded-[var(--radius-md)] p-3"
-              style={{
-                background: 'var(--surface-0)',
-                border: '1px solid var(--border-subtle)',
-                borderTop: '3px solid var(--color-orange)',
-              }}
-            >
-              <div className="flex justify-between mb-2.5">
-                <span className="font-[family-name:var(--font-display)] font-semibold text-[0.85rem] uppercase text-[var(--text-primary)]">
-                  Championship Game
-                </span>
-              </div>
-              {regions.map(region => {
-                const matchups = getMatchupsForRegion(region);
-                return matchups.map((mu, i) => (
-                  <MatchupCard
-                    key={`${region}-${i}`}
-                    matchup={mu}
-                    region={region}
-                    dayId={day.id}
-                    dayPick={pick}
-                    advancerKey={`${region}_${mu.round}_${mu.gameIdx}`}
-                    advancer={advancers[`${region}_${mu.round}_${mu.gameIdx}`]}
-                    usedTeamIds={usedTeamIds}
-                    lockedAdvancerKeys={lockedAdvancerKeys}
-                    lockedDayIds={lockedDayIds}
-                    onToggleAdvancer={onToggleAdvancer}
-                    onHandlePick={onHandlePick}
-                    gameStatus={gameStatuses?.[`${region}_${mu.round}_${mu.gameIdx}`]?.status as 'scheduled' | 'in_progress' | 'final' | undefined}
-                    gameScore={gameStatuses?.[`${region}_${mu.round}_${mu.gameIdx}`]}
-                    gameDateTime={gameStatuses?.[`${region}_${mu.round}_${mu.gameIdx}`]?.gameDateTime}
-                  />
-                ));
-              })}
-            </div>
+            // Championship: 1 game card with 2 teams (F4 semifinal winners)
+            (() => {
+              // Determine the 2 championship participants from F4 semifinal results
+              const chipTeams = F4_PAIRINGS.map(([regionA, regionB]) => {
+                const muA = getMatchupsForRegion(regionA);
+                const muB = getMatchupsForRegion(regionB);
+                const teamA = muA[0]?.teams[0] || null;
+                const teamB = muB[0]?.teams[0] || null;
+                if (!teamA && !teamB) return null;
+                if (!teamA) return { team: teamB!, region: regionB, mu: muB[0] };
+                if (!teamB) return { team: teamA!, region: regionA, mu: muA[0] };
+                // Chalk: lower seed wins the semifinal, unless user advanced the other
+                const advA = advancers[`${regionA}_F4_0`];
+                const advB = advancers[`${regionB}_F4_0`];
+                // If user explicitly advanced one team (non-chalk), that team wins
+                if (advB && advB.id === teamB.id && teamB.seed > teamA.seed) {
+                  return { team: teamB, region: regionB, mu: muB[0] };
+                }
+                if (advA && advA.id === teamA.id && teamA.seed > teamB.seed) {
+                  return { team: teamA, region: regionA, mu: muA[0] };
+                }
+                // Default: chalk (lower seed wins)
+                return teamA.seed <= teamB.seed
+                  ? { team: teamA, region: regionA, mu: muA[0] }
+                  : { team: teamB, region: regionB, mu: muB[0] };
+              }).filter(Boolean) as { team: TeamInfo; region: string; mu: MatchupInfo }[];
+
+              return (
+                <div
+                  className="sm:col-span-2 rounded-[var(--radius-md)] p-3"
+                  style={{
+                    background: 'var(--surface-0)',
+                    border: '1px solid var(--border-subtle)',
+                    borderTop: '3px solid var(--color-orange)',
+                  }}
+                >
+                  <div className="flex justify-between mb-2.5">
+                    <span className="font-[family-name:var(--font-display)] font-semibold text-[0.85rem] uppercase text-[var(--text-primary)]">
+                      Championship Game
+                    </span>
+                  </div>
+                  {chipTeams.length > 0 ? chipTeams.map(({ team, region, mu }) => (
+                    <MatchupCard
+                      key={region}
+                      matchup={{ ...mu, teams: [team], label: `${region} — (${team.seed}) ${team.abbreviation || team.name}`, round: 'CHIP' }}
+                      region={region}
+                      dayId={day.id}
+                      dayPick={pick}
+                      advancerKey={`${region}_CHIP_0`}
+                      advancer={advancers[`${region}_CHIP_0`]}
+                      usedTeamIds={usedTeamIds}
+                      lockedAdvancerKeys={lockedAdvancerKeys}
+                      lockedDayIds={lockedDayIds}
+                      onToggleAdvancer={onToggleAdvancer}
+                      onHandlePick={onHandlePick}
+                      gameStatus={gameStatuses?.[`${region}_CHIP_0`]?.status as 'scheduled' | 'in_progress' | 'final' | undefined}
+                      gameScore={gameStatuses?.[`${region}_CHIP_0`]}
+                      gameDateTime={gameStatuses?.[`${region}_CHIP_0`]?.gameDateTime}
+                    />
+                  )) : (
+                    <p className="font-[family-name:var(--font-body)] text-[0.8rem] text-[var(--text-tertiary)] text-center py-3">TBD</p>
+                  )}
+                </div>
+              );
+            })()
           )}
         </div>
       )}
