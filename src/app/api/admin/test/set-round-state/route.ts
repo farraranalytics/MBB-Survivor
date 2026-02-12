@@ -182,6 +182,7 @@ async function handlePreRound(roundId: string, roundName: string, simulatedDatet
     .from('pool_players')
     .update({ is_eliminated: false, elimination_round_id: null, elimination_reason: null })
     .eq('elimination_round_id', roundId)
+    .eq('entry_deleted', false)
     .select('id');
 
   // Revert pools

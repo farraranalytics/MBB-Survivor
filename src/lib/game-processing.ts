@@ -106,7 +106,8 @@ export async function processMissedPicks(
   const { data: alivePlayers } = await supabaseAdmin
     .from('pool_players')
     .select('id, pool_id')
-    .eq('is_eliminated', false);
+    .eq('is_eliminated', false)
+    .eq('entry_deleted', false);
 
   if (!alivePlayers || alivePlayers.length === 0) return;
 
@@ -601,6 +602,7 @@ export async function checkRoundCompletion(
         .select('user_id')
         .eq('pool_id', pool.id)
         .eq('is_eliminated', false)
+        .eq('entry_deleted', false)
         .limit(1);
 
       const winnerId = alivePlayers?.[0]?.user_id || null;

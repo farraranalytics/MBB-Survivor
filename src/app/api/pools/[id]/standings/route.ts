@@ -27,6 +27,7 @@ export async function GET(
     .select('id')
     .eq('pool_id', poolId)
     .eq('user_id', user.id)
+    .eq('entry_deleted', false)
     .limit(1);
 
   if (!membership || membership.length === 0) {
@@ -72,7 +73,8 @@ async function buildLeaderboard(poolId: string): Promise<PoolLeaderboard> {
   const { data: players, error: playersError } = await supabaseAdmin
     .from('pool_players')
     .select('id, user_id, display_name, entry_label, is_eliminated, elimination_round_id, elimination_reason, joined_at')
-    .eq('pool_id', poolId);
+    .eq('pool_id', poolId)
+    .eq('entry_deleted', false);
 
   if (playersError) {
     throw new Error(`Failed to fetch players: ${playersError.message}`);

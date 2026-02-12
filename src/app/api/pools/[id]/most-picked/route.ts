@@ -50,6 +50,7 @@ export async function GET(
     .select('id')
     .eq('pool_id', poolId)
     .eq('user_id', user.id)
+    .eq('entry_deleted', false)
     .limit(1);
 
   if (!membership || membership.length === 0) {
@@ -74,7 +75,8 @@ export async function GET(
     const { data: poolPlayers } = await supabaseAdmin
       .from('pool_players')
       .select('id, is_eliminated')
-      .eq('pool_id', poolId);
+      .eq('pool_id', poolId)
+      .eq('entry_deleted', false);
 
     const alivePlayerIds = (poolPlayers || []).filter(p => !p.is_eliminated).map(p => p.id);
 

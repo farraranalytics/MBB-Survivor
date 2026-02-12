@@ -74,6 +74,7 @@ export async function POST(request: NextRequest) {
         .from('pool_players')
         .update({ is_eliminated: false, elimination_round_id: null, elimination_reason: null })
         .eq('is_eliminated', true)
+        .eq('entry_deleted', false)
         .select('id');
 
       // Revert pools
@@ -181,6 +182,7 @@ export async function POST(request: NextRequest) {
         elimination_reason: null,
       })
       .eq('elimination_round_id', round.id)
+      .eq('entry_deleted', false)
       .select('id');
 
     // 7. Revert pools back to active

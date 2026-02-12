@@ -98,16 +98,16 @@ export async function getPoolMembers(poolId: string): Promise<PoolMember[]> {
   return data || [];
 }
 
-// Remove a player from pool
+// Remove a player from pool (soft-delete entry)
 export async function removePoolMember(poolPlayerId: string): Promise<void> {
   const { error, data } = await supabase
     .from('pool_players')
-    .delete()
+    .update({ entry_deleted: true, deleted_at: new Date().toISOString() })
     .eq('id', poolPlayerId)
     .select('id');
 
   if (error) throw new Error(error.message);
-  if (!data || data.length === 0) throw new Error('Delete failed — you may not have permission. Check RLS policies.');
+  if (!data || data.length === 0) throw new Error('Failed to remove entry. Please try again.');
 }
 
 // Leave a pool (remove all of user's entries)
