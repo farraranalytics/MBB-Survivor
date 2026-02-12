@@ -71,14 +71,24 @@ export function getRegionsForDay(day: PlannerDay, e8Swapped: boolean): string[] 
   return PLANNER_REGIONS;
 }
 
+// 2026 region-to-day mapping for S16 and E8 (update yearly after Selection Sunday)
+const S16_DAY1_REGIONS = ['South', 'West'];      // Thu Mar 26
+const S16_DAY2_REGIONS = ['East', 'Midwest'];     // Fri Mar 27
+const E8_DAY1_REGIONS  = ['South', 'West'];       // Sat Mar 28
+const E8_DAY2_REGIONS  = ['East', 'Midwest'];     // Sun Mar 29
+
 export function buildPlannerDays(rounds: Round[]): PlannerDay[] {
   return rounds.map(round => {
     const roundCode = mapRoundNameToCode(round.name);
     const half = inferHalf(round.name);
 
     let fixedRegions: string[] | undefined;
-    if (roundCode === 'E8' && half === 'A') fixedRegions = ['East', 'South'];
-    if (roundCode === 'E8' && half === 'B') fixedRegions = ['West', 'Midwest'];
+    if (roundCode === 'S16') {
+      fixedRegions = half === 'A' ? S16_DAY1_REGIONS : S16_DAY2_REGIONS;
+    }
+    if (roundCode === 'E8') {
+      fixedRegions = half === 'A' ? E8_DAY1_REGIONS : E8_DAY2_REGIONS;
+    }
 
     return {
       id: round.id,
@@ -86,7 +96,7 @@ export function buildPlannerDays(rounds: Round[]): PlannerDay[] {
       date: new Date(round.date + 'T12:00:00').toLocaleDateString('en-US', { timeZone: 'America/New_York', month: 'short', day: 'numeric' }),
       roundCode,
       half,
-      allRegions: roundCode !== 'E8' || !half,
+      allRegions: (roundCode !== 'E8' && roundCode !== 'S16') || !half,
       fixedRegions,
       deadline: round.deadline_datetime,
     };

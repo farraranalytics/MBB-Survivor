@@ -18,6 +18,7 @@ import {
   getRegionsForDay as getRegionsForDayUtil,
   mapRoundNameToCode,
   getGameIndexForRound,
+  seedToR64Index,
 } from '@/lib/bracket';
 import RegionTracker from './RegionTracker';
 import DayCard, { MatchupInfo } from './DayCard';
@@ -113,6 +114,64 @@ export default function BracketPlanner({
       }
     }
     return map;
+  }, [games, rounds]);
+
+  // Build R32 day mapping from R64 game data
+  // R32 day is determined by which R64 day the parent games were on
+  const r32DayMapping = useMemo(() => {
+    const R64_DAY1_ID = rounds.find(r => r.name === 'Round 1 Day 1')?.id;
+    const R64_DAY2_ID = rounds.find(r => r.name === 'Round 1 Day 2')?.id;
+    const R32_DAY1_ID = rounds.find(r => r.name === 'Round 2 Day 1')?.id;
+    const R32_DAY2_ID = rounds.find(r => r.name === 'Round 2 Day 2')?.id;
+
+    if (!R64_DAY1_ID || !R64_DAY2_ID || !R32_DAY1_ID || !R32_DAY2_ID) return {};
+
+    // For each region, figure out which R64 game indices are on Day 1 vs Day 2
+    const r64DayByRegionAndIndex: Record<string, Record<number, string>> = {};
+
+    for (const game of games) {
+      if (!game.team1) continue;
+      const region = (game.team1 as TeamInfo).region;
+      const seed = (game.team1 as TeamInfo).seed;
+      const gameIdx = seedToR64Index(seed);
+      if (gameIdx < 0) continue;
+
+      if (!r64DayByRegionAndIndex[region]) r64DayByRegionAndIndex[region] = {};
+
+      if (game.round_id === R64_DAY1_ID) {
+        r64DayByRegionAndIndex[region][gameIdx] = 'Day1';
+      } else if (game.round_id === R64_DAY2_ID) {
+        r64DayByRegionAndIndex[region][gameIdx] = 'Day2';
+      }
+    }
+
+    // R32 feeders: R32 game N is fed by R64 games [2N, 2N+1]
+    const R32_FEEDERS = [[0,1],[2,3],[4,5],[6,7]];
+
+    // For each region, determine which R32 games go on Day 1 vs Day 2
+    const mapping: Record<string, Record<string, number[]>> = {};
+    mapping[R32_DAY1_ID] = {};
+    mapping[R32_DAY2_ID] = {};
+
+    for (const region of PLANNER_REGIONS) {
+      mapping[R32_DAY1_ID][region] = [];
+      mapping[R32_DAY2_ID][region] = [];
+
+      for (let r32Idx = 0; r32Idx < R32_FEEDERS.length; r32Idx++) {
+        const [f0, f1] = R32_FEEDERS[r32Idx];
+        const f0Day = r64DayByRegionAndIndex[region]?.[f0];
+        const f1Day = r64DayByRegionAndIndex[region]?.[f1];
+
+        // Both parents should be on the same day (NCAA scheduling guarantees this)
+        if (f0Day === 'Day1' || f1Day === 'Day1') {
+          mapping[R32_DAY1_ID][region].push(r32Idx);
+        } else {
+          mapping[R32_DAY2_ID][region].push(r32Idx);
+        }
+      }
+    }
+
+    return mapping;
   }, [games, rounds]);
 
   // ── State ───────────────────────────────────────────────────
@@ -237,17 +296,25 @@ export default function BracketPlanner({
           : [];
       }
 
-      // Use actual DB game indices when available, fall back to HALF_A/HALF_B
+      // Use actual DB game indices when available, then r32DayMapping, then fallbacks
       const dbIndices = actualGameIndices[day.id]?.[region];
+      const r32Indices = r32DayMapping[day.id]?.[region];
       let gameIndices: number[];
 
       if (dbIndices && dbIndices.length > 0) {
         // Real data — use whatever games are actually on this day for this region
         gameIndices = dbIndices;
+      } else if (r32Indices && r32Indices.length > 0) {
+        // R32 day mapping derived from R64 game data
+        gameIndices = r32Indices;
       } else if (roundCode === 'E8') {
         gameIndices = [0];
+      } else if (roundCode === 'S16') {
+        gameIndices = [0, 1];
+      } else if (roundCode === 'F4' || roundCode === 'CHIP') {
+        gameIndices = [0];
       } else {
-        // Fallback for future rounds with no games yet
+        // Ultimate fallback for future rounds with no games yet
         let half = day.half;
         if (half && regionFlipped[region]) half = half === 'A' ? 'B' : 'A';
         gameIndices = half === 'A'
@@ -270,7 +337,7 @@ export default function BracketPlanner({
       }));
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [actualGameIndices, advancers, regionFlipped, bracket]
+    [actualGameIndices, r32DayMapping, advancers, regionFlipped, bracket]
   );
 
   // ── Actions ──────────────────────────────────────────────────
@@ -314,11 +381,19 @@ export default function BracketPlanner({
     // Use actual DB data if available to determine which regions have games
     const dbRegions = actualGameIndices[day.id];
     if (dbRegions && Object.keys(dbRegions).length > 0) {
-      // Return regions in standard order, filtered to those with games
       return PLANNER_REGIONS.filter(r => dbRegions[r] && dbRegions[r].length > 0);
     }
-    // Fallback for future rounds with no games yet
-    return getRegionsForDayUtil(day, e8Swapped);
+    // Use R32 day mapping for R32 days
+    const r32Regions = r32DayMapping[day.id];
+    if (r32Regions && Object.keys(r32Regions).length > 0) {
+      return PLANNER_REGIONS.filter(r => r32Regions[r] && r32Regions[r].length > 0);
+    }
+    // Use fixedRegions for S16/E8
+    if (day.fixedRegions) {
+      const base = [...day.fixedRegions];
+      return e8Swapped ? base.reverse() : base;
+    }
+    return PLANNER_REGIONS;
   };
 
   const resetAll = () => {
