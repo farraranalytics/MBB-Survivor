@@ -276,7 +276,9 @@ export async function getMyPools(userId: string): Promise<MyPool[]> {
         status,
         join_code,
         creator_id,
-        max_entries_per_user
+        max_entries_per_user,
+        entry_fee,
+        prize_pool
       )
     `)
     .eq('user_id', userId)
@@ -323,9 +325,27 @@ export async function getMyPools(userId: string): Promise<MyPool[]> {
       join_code: string;
       creator_id: string;
       max_entries_per_user: number | null;
+      entry_fee: string | number | null;
+      prize_pool: string | number | null;
     } | null;
 
     if (!pool) continue;
+
+    // Look up creator's display name from pool_players table
+    let creatorName = 'Unknown';
+    const { data: creatorEntry } = await supabase
+      .from('pool_players')
+      .select('display_name')
+      .eq('pool_id', pool.id)
+      .eq('user_id', pool.creator_id)
+      .limit(1)
+      .maybeSingle();
+    if (creatorEntry?.display_name) {
+      creatorName = creatorEntry.display_name;
+    }
+
+    const entryFee = parseFloat(String(pool.entry_fee ?? 0)) || 0;
+    const prizePot = parseFloat(String(pool.prize_pool ?? 0)) || 0;
 
     // Count players in this pool
     const { count: totalPlayers } = await supabase
@@ -414,7 +434,10 @@ export async function getMyPools(userId: string): Promise<MyPool[]> {
         : 'active',
       join_code: pool.join_code,
       creator_id: pool.creator_id,
+      creator_name: creatorName,
       max_entries_per_user: pool.max_entries_per_user ?? 1,
+      entry_fee: entryFee,
+      prize_pool: prizePot,
       total_players: totalPlayers || 0,
       alive_players: alivePlayers || 0,
       your_status: anyAlive ? 'active' : 'eliminated',
