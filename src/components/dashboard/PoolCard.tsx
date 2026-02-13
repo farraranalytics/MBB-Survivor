@@ -11,9 +11,10 @@ interface PoolCardProps {
   onActivate: () => void;
   /** Where to navigate when the card is clicked: 'pick' (pre-round) or 'standings' (round live/complete) */
   clickTarget: 'pick' | 'standings';
+  clockOffset?: number;
 }
 
-export default function PoolCard({ pool, isActive, onActivate, clickTarget }: PoolCardProps) {
+export default function PoolCard({ pool, isActive, onActivate, clickTarget, clockOffset = 0 }: PoolCardProps) {
   const router = useRouter();
   const { addToast } = useToast();
   const [showCode, setShowCode] = useState(false);
@@ -117,7 +118,15 @@ export default function PoolCard({ pool, isActive, onActivate, clickTarget }: Po
       {/* My entries list */}
       <div className="space-y-1.5">
         {pool.your_entries.map(entry => (
-          <EntryRow key={entry.pool_player_id} entry={entry} />
+          <EntryRow
+            key={entry.pool_player_id}
+            entry={entry}
+            deadlinePassed={
+              pool.deadline_datetime
+                ? new Date(pool.deadline_datetime).getTime() < (Date.now() + clockOffset)
+                : false
+            }
+          />
         ))}
       </div>
 
@@ -171,7 +180,7 @@ export default function PoolCard({ pool, isActive, onActivate, clickTarget }: Po
 
 // ─── Entry Row ──────────────────────────────────────────────────
 
-function EntryRow({ entry }: { entry: MyPoolEntry }) {
+function EntryRow({ entry, deadlinePassed = false }: { entry: MyPoolEntry; deadlinePassed?: boolean }) {
   const alive = !entry.is_eliminated;
 
   // Badge logic
@@ -182,6 +191,13 @@ function EntryRow({ entry }: { entry: MyPoolEntry }) {
       text: entry.elimination_round_name ? `\u2620 ${entry.elimination_round_name}` : `\u2620 ${reason}`,
       bgColor: 'rgba(239,83,80,0.1)',
       textColor: '#EF5350',
+    };
+  } else if (!entry.has_picked_today && deadlinePassed) {
+    // Deadline passed without a pick — this entry will be eliminated
+    badge = {
+      text: '\u26A0 NO PICK',
+      bgColor: 'rgba(255,179,0,0.12)',
+      textColor: '#FFB300',
     };
   } else if (!entry.has_picked_today) {
     badge = {

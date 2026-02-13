@@ -7,6 +7,7 @@ import { MyPool } from '@/types/standings';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { SplashOverlay } from '@/components/SplashOverlay';
+import { useClockOffset } from '@/hooks/useClockOffset';
 import { getTournamentState, canJoinOrCreate, TournamentState } from '@/lib/status';
 import PickAlertBanner from '@/components/dashboard/PickAlertBanner';
 import MostPickedToday from '@/components/dashboard/MostPickedToday';
@@ -130,6 +131,7 @@ export default function Dashboard() {
   const { user } = useAuth();
   const { activePoolId, setActivePool, pools, loadingPools } = useActivePool();
   const router = useRouter();
+  const clockOffset = useClockOffset();
   const [tournamentState, setTournamentState] = useState<TournamentState | null>(null);
 
   // Load tournament state when pools are ready
@@ -196,7 +198,7 @@ export default function Dashboard() {
             )}
 
             {/* Section 2: Pick Alert Banner */}
-            <PickAlertBanner pools={pools} activePoolId={activePoolId} />
+            <PickAlertBanner pools={pools} activePoolId={activePoolId} clockOffset={clockOffset} />
 
             {/* Section 3: Most Picked Today */}
             {tournamentState && tournamentState.status !== 'pre_tournament' && (
@@ -222,6 +224,7 @@ export default function Dashboard() {
                     isActive={pool.pool_id === activePoolId}
                     onActivate={() => setActivePool(pool.pool_id, pool.pool_name)}
                     clickTarget={poolClickTarget}
+                    clockOffset={clockOffset}
                   />
                 ))}
               </div>

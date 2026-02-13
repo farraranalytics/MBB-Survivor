@@ -4,8 +4,8 @@ import Link from 'next/link';
 import { MyPool } from '@/types/standings';
 import { formatET } from '@/lib/timezone';
 
-function formatDeadline(dt: string): { text: string; color: string } {
-  const diff = new Date(dt).getTime() - Date.now();
+function formatDeadline(dt: string, clockOffset: number = 0): { text: string; color: string } {
+  const diff = new Date(dt).getTime() - (Date.now() + clockOffset);
   if (diff <= 0) return { text: 'Picks locked', color: 'text-[#EF5350]' };
   const h = Math.floor(diff / 3600000);
   const m = Math.floor((diff % 3600000) / 60000);
@@ -17,10 +17,10 @@ function formatDeadline(dt: string): { text: string; color: string } {
   return { text: `${cd} until lock`, color };
 }
 
-export default function PickAlertBanner({ pools, activePoolId }: { pools: MyPool[]; activePoolId: string | null }) {
+export default function PickAlertBanner({ pools, activePoolId, clockOffset = 0 }: { pools: MyPool[]; activePoolId: string | null; clockOffset?: number }) {
   const needs = pools.flatMap(pool => {
     if (!pool.deadline_datetime || !pool.current_round_name) return [];
-    if (new Date(pool.deadline_datetime).getTime() <= Date.now()) return [];
+    if (new Date(pool.deadline_datetime).getTime() <= (Date.now() + clockOffset)) return [];
     if (pool.pool_status !== 'active' && pool.pool_status !== 'open') return [];
     return pool.your_entries
       .filter(e => !e.is_eliminated && !e.has_picked_today)
@@ -31,7 +31,7 @@ export default function PickAlertBanner({ pools, activePoolId }: { pools: MyPool
 
   const firstPoolId = needs[0].poolId;
   const deadline = needs[0].deadline;
-  const deadlineInfo = deadline ? formatDeadline(deadline) : null;
+  const deadlineInfo = deadline ? formatDeadline(deadline, clockOffset) : null;
 
   return (
     <Link
