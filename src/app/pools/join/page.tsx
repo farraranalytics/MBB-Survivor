@@ -23,6 +23,7 @@ function JoinPoolContent() {
   const [entryName, setEntryName] = useState('');
   const [poolInfo, setPoolInfo] = useState<any>(null);
   const [existingEntryCount, setExistingEntryCount] = useState(0);
+  const [existingEntries, setExistingEntries] = useState<{ id: string; entry_number: number }[]>([]);
   const [tournamentStarted, setTournamentStarted] = useState(false);
   const [checkingTournament, setCheckingTournament] = useState(true);
   const router = useRouter();
@@ -68,13 +69,13 @@ function JoinPoolContent() {
         throw new Error('The tournament has already started. You can no longer join pools.');
       }
 
-      const { data: existingEntries } = await supabase
+      const { data: existingEntriesData } = await supabase
         .from('pool_players')
-        .select('id')
+        .select('id, entry_number')
         .eq('pool_id', pool.id)
         .eq('user_id', user?.id);
 
-      const entryCount = existingEntries?.length || 0;
+      const entryCount = existingEntriesData?.length || 0;
       const maxEntries = pool.max_entries_per_user ?? 1;
 
       if (entryCount >= maxEntries) {
@@ -85,6 +86,7 @@ function JoinPoolContent() {
       if (pool.max_players && pool.pool_players?.[0]?.count >= pool.max_players) throw new Error('This pool is full.');
 
       setExistingEntryCount(entryCount);
+      setExistingEntries(existingEntriesData || []);
       setPoolInfo(pool);
     } catch (err: any) {
       addToast('error', err.message || 'Pool not found. Check the code and try again.');
@@ -115,7 +117,9 @@ function JoinPoolContent() {
         return;
       }
 
-      const entryNumber = existingEntryCount + 1;
+      const entryNumber = existingEntries.length > 0
+        ? Math.max(...existingEntries.map(e => e.entry_number ?? 0)) + 1
+        : 1;
       const baseName = user.user_metadata?.display_name || user.email?.split('@')[0] || 'Player';
       const entryLabel = entryName.trim() || `${baseName}'s Entry${entryNumber > 1 ? ` ${entryNumber}` : ''}`;
       const { error: joinError } = await supabase

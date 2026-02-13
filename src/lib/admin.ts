@@ -100,14 +100,12 @@ export async function getPoolMembers(poolId: string): Promise<PoolMember[]> {
 
 // Remove a player from pool (soft-delete entry)
 export async function removePoolMember(poolPlayerId: string): Promise<void> {
-  const { error, data } = await supabase
+  const { error } = await supabase
     .from('pool_players')
     .update({ entry_deleted: true, deleted_at: new Date().toISOString() })
-    .eq('id', poolPlayerId)
-    .select('id');
+    .eq('id', poolPlayerId);
 
   if (error) throw new Error(error.message);
-  if (!data || data.length === 0) throw new Error('Failed to remove entry. Please try again.');
 }
 
 // Leave a pool (remove all of user's entries)

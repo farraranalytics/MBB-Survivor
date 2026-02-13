@@ -681,7 +681,7 @@ export default function PickPage() {
     try {
       const { data: { user: authUser } } = await supabase.auth.getUser();
       const baseName = authUser?.user_metadata?.display_name || authUser?.email?.split('@')[0] || 'Player';
-      const entryNumber = entries.length + 1;
+      const entryNumber = Math.max(...entries.map(e => e.entry_number), 0) + 1;
       const entryLabel = addEntryName.trim() || `${baseName}'s Entry ${entryNumber}`;
       const { error: insertError } = await supabase.from('pool_players').insert({
         pool_id: poolId,
