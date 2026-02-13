@@ -27,10 +27,10 @@ export async function GET(request: NextRequest) {
       try {
         const dateFormatted = round.date.replace(/-/g, ''); // '2026-03-20' → '20260320'
         const url = `${ESPN_BASE_URL}/scoreboard?dates=${dateFormatted}&seasontype=3&division=50`;
-
+        
         const response = await fetch(url, {
           headers: { 'User-Agent': 'MBB-Survivor-Pool/1.0', 'Accept': 'application/json' },
-          next: { revalidate: 0 },
+          next: { revalidate: 0 }, // no cache
         });
 
         if (!response.ok) {
@@ -54,7 +54,7 @@ export async function GET(request: NextRequest) {
           const espnId = event.id;
           const espnDate = event.date; // ISO datetime
           const competitors = event.competitions?.[0]?.competitors || [];
-
+          
           if (competitors.length < 2) continue;
 
           const espnTeam1 = competitors[0]?.team?.displayName || competitors[0]?.team?.name || '';
@@ -62,7 +62,7 @@ export async function GET(request: NextRequest) {
 
           // Find matching game in our DB
           let matchedGame = ourGames.find(g => g.espn_game_id === espnId);
-
+          
           if (!matchedGame) {
             // Try matching by team names
             matchedGame = ourGames.find(g => {
