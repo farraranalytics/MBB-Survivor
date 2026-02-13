@@ -324,7 +324,7 @@ export async function cascadeGameResult(
       // Look for a game with bracket_position set
       nextGame = existingGames.find(g =>
         g.bracket_position === nextBracketPos &&
-        ((g as any).team1?.region === winnerRegion || (g as any).team2?.region === winnerRegion || !g.team1_id || !g.team2_id)
+        ((g as any).team1?.region === winnerRegion || (g as any).team2?.region === winnerRegion)
       );
 
       // Also try matching by parent game relationship — look for a game
