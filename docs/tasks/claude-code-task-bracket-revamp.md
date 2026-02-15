@@ -1,7 +1,7 @@
 # Task: Bracket Revamp — Pre-Generated 63-Game Structure
 
 **Created:** 2026-02-15
-**Status:** Code Complete — Awaiting DB Migration + Verification
+**Status:** DB Migration + Generation Complete — Verified on Live DB
 **Branch:** main
 
 ---
@@ -100,16 +100,21 @@ The current bracket system dynamically creates R32+ games during result processi
 - [x] Document workflow: run seed.sql → call `/api/admin/generate-bracket`
 
 ### Phase 9: Verification
-- [ ] Run migration in Supabase SQL Editor
-- [ ] Run seed.sql (if fresh environment)
-- [ ] Call POST /api/admin/generate-bracket
-- [ ] SQL integrity checks:
-  - [ ] `SELECT count(*) FROM games` → 63
-  - [ ] `SELECT count(*) FROM games WHERE matchup_code IS NOT NULL` → 63
-  - [ ] `SELECT count(*) FROM games WHERE advances_to_game_id IS NOT NULL` → 62
-  - [ ] `SELECT count(*) FROM games WHERE tournament_round = 'R64' AND team1_id IS NOT NULL` → 32
-  - [ ] `SELECT count(*) FROM games WHERE tournament_round != 'R64' AND team1_id IS NULL` → 31
-- [ ] Functional tests:
+- [x] Run migration (columns already existed from migration 003; ran via standalone script)
+- [x] Call bracket generator (ran `scripts/run-bracket-generator.mjs` against live DB)
+- [x] SQL integrity checks:
+  - [x] `SELECT count(*) FROM games` → 63 ✓
+  - [x] `SELECT count(*) FROM games WHERE matchup_code IS NOT NULL` → 63 ✓
+  - [x] `SELECT count(*) FROM games WHERE advances_to_game_id IS NOT NULL` → 62 ✓
+  - [x] `SELECT count(*) FROM games WHERE tournament_round = 'R64' AND team1_id IS NOT NULL` → 32 ✓
+  - [x] `SELECT count(*) FROM games WHERE tournament_round != 'R64' AND team1_id IS NULL` → 31 ✓
+- [x] Deep verification (ran `scripts/verify-bracket.mjs`):
+  - [x] All 62 non-CHIP games have valid advancement targets (no orphans)
+  - [x] No duplicate advancement slots (each slot filled by exactly one feeder)
+  - [x] All non-R64 games have parent_game_a_id and parent_game_b_id set
+  - [x] All 10 round_ids correctly assigned across 63 games
+  - [x] Region chains verified: EAST/WEST → F4_1, SOUTH/MIDWEST → F4_2 → CHIP_1
+- [ ] Functional tests (require deployed app):
   - [ ] Complete one R64 game → winner appears in correct R32 slot
   - [ ] Complete all R64 Day 1 → all Day 1 R32 games have both teams
   - [ ] Reset a round → R32+ games still exist but have NULL teams
