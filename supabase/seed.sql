@@ -107,177 +107,177 @@ INSERT INTO teams (name, mascot, abbreviation, seed, region, is_eliminated) VALU
 -- Game times staggered: 12pm, 2pm, 4:30pm, 7pm MT
 -- ============================================================
 
--- East region games
-INSERT INTO games (round_id, team1_id, team2_id, game_datetime, status) VALUES
+-- East region games (slot order: 1v16, 8v9, 5v12, 4v13, 6v11, 3v14, 7v10, 2v15)
+INSERT INTO games (round_id, team1_id, team2_id, game_datetime, status, tournament_round, matchup_code, bracket_position) VALUES
 ((SELECT id FROM rounds WHERE name = 'Round 1 Day 1'),
  (SELECT id FROM teams WHERE abbreviation = 'DUKE'),
  (SELECT id FROM teams WHERE abbreviation = 'NORF'),
- '2026-02-07 12:00:00-07', 'scheduled'),
-
-((SELECT id FROM rounds WHERE name = 'Round 1 Day 1'),
- (SELECT id FROM teams WHERE abbreviation = 'NOVA'),
- (SELECT id FROM teams WHERE abbreviation = 'SPU'),
- '2026-02-07 12:00:00-07', 'scheduled'),
-
-((SELECT id FROM rounds WHERE name = 'Round 1 Day 1'),
- (SELECT id FROM teams WHERE abbreviation = 'PUR'),
- (SELECT id FROM teams WHERE abbreviation = 'COLG'),
- '2026-02-07 14:00:00-07', 'scheduled'),
-
-((SELECT id FROM rounds WHERE name = 'Round 1 Day 1'),
- (SELECT id FROM teams WHERE abbreviation = 'MARQ'),
- (SELECT id FROM teams WHERE abbreviation = 'UVM'),
- '2026-02-07 14:00:00-07', 'scheduled'),
-
-((SELECT id FROM rounds WHERE name = 'Round 1 Day 1'),
- (SELECT id FROM teams WHERE abbreviation = 'SDSU'),
- (SELECT id FROM teams WHERE abbreviation = 'RICH'),
- '2026-02-07 16:30:00-07', 'scheduled'),
-
-((SELECT id FROM rounds WHERE name = 'Round 1 Day 1'),
- (SELECT id FROM teams WHERE abbreviation = 'CREI'),
- (SELECT id FROM teams WHERE abbreviation = 'DRKE'),
- '2026-02-07 16:30:00-07', 'scheduled'),
-
-((SELECT id FROM rounds WHERE name = 'Round 1 Day 1'),
- (SELECT id FROM teams WHERE abbreviation = 'MIZZ'),
- (SELECT id FROM teams WHERE abbreviation = 'DAV'),
- '2026-02-07 19:00:00-07', 'scheduled'),
+ '2026-02-07 12:00:00-07', 'scheduled', 'R64', 'EAST_R64_1', 0),
 
 ((SELECT id FROM rounds WHERE name = 'Round 1 Day 1'),
  (SELECT id FROM teams WHERE abbreviation = 'MEM'),
  (SELECT id FROM teams WHERE abbreviation = 'FAU'),
- '2026-02-07 19:00:00-07', 'scheduled');
+ '2026-02-07 12:00:00-07', 'scheduled', 'R64', 'EAST_R64_2', 1),
 
--- South region games
-INSERT INTO games (round_id, team1_id, team2_id, game_datetime, status) VALUES
+((SELECT id FROM rounds WHERE name = 'Round 1 Day 1'),
+ (SELECT id FROM teams WHERE abbreviation = 'SDSU'),
+ (SELECT id FROM teams WHERE abbreviation = 'RICH'),
+ '2026-02-07 14:00:00-07', 'scheduled', 'R64', 'EAST_R64_3', 2),
+
+((SELECT id FROM rounds WHERE name = 'Round 1 Day 1'),
+ (SELECT id FROM teams WHERE abbreviation = 'MARQ'),
+ (SELECT id FROM teams WHERE abbreviation = 'UVM'),
+ '2026-02-07 14:00:00-07', 'scheduled', 'R64', 'EAST_R64_4', 3),
+
+((SELECT id FROM rounds WHERE name = 'Round 1 Day 1'),
+ (SELECT id FROM teams WHERE abbreviation = 'CREI'),
+ (SELECT id FROM teams WHERE abbreviation = 'DRKE'),
+ '2026-02-07 16:30:00-07', 'scheduled', 'R64', 'EAST_R64_5', 4),
+
+((SELECT id FROM rounds WHERE name = 'Round 1 Day 1'),
+ (SELECT id FROM teams WHERE abbreviation = 'PUR'),
+ (SELECT id FROM teams WHERE abbreviation = 'COLG'),
+ '2026-02-07 16:30:00-07', 'scheduled', 'R64', 'EAST_R64_6', 5),
+
+((SELECT id FROM rounds WHERE name = 'Round 1 Day 1'),
+ (SELECT id FROM teams WHERE abbreviation = 'MIZZ'),
+ (SELECT id FROM teams WHERE abbreviation = 'DAV'),
+ '2026-02-07 19:00:00-07', 'scheduled', 'R64', 'EAST_R64_7', 6),
+
+((SELECT id FROM rounds WHERE name = 'Round 1 Day 1'),
+ (SELECT id FROM teams WHERE abbreviation = 'NOVA'),
+ (SELECT id FROM teams WHERE abbreviation = 'SPU'),
+ '2026-02-07 19:00:00-07', 'scheduled', 'R64', 'EAST_R64_8', 7);
+
+-- South region games (slot order: 1v16, 8v9, 5v12, 4v13, 6v11, 3v14, 7v10, 2v15)
+INSERT INTO games (round_id, team1_id, team2_id, game_datetime, status, tournament_round, matchup_code, bracket_position) VALUES
 ((SELECT id FROM rounds WHERE name = 'Round 1 Day 1'),
  (SELECT id FROM teams WHERE abbreviation = 'KU'),
  (SELECT id FROM teams WHERE abbreviation = 'NKU'),
- '2026-02-07 12:30:00-07', 'scheduled'),
-
-((SELECT id FROM rounds WHERE name = 'Round 1 Day 1'),
- (SELECT id FROM teams WHERE abbreviation = 'UK'),
- (SELECT id FROM teams WHERE abbreviation = 'KSU'),
- '2026-02-07 12:30:00-07', 'scheduled'),
-
-((SELECT id FROM rounds WHERE name = 'Round 1 Day 1'),
- (SELECT id FROM teams WHERE abbreviation = 'HOU'),
- (SELECT id FROM teams WHERE abbreviation = 'MTST'),
- '2026-02-07 14:30:00-07', 'scheduled'),
-
-((SELECT id FROM rounds WHERE name = 'Round 1 Day 1'),
- (SELECT id FROM teams WHERE abbreviation = 'TENN'),
- (SELECT id FROM teams WHERE abbreviation = 'FUR'),
- '2026-02-07 14:30:00-07', 'scheduled'),
-
-((SELECT id FROM rounds WHERE name = 'Round 1 Day 1'),
- (SELECT id FROM teams WHERE abbreviation = 'MIA'),
- (SELECT id FROM teams WHERE abbreviation = 'COFC'),
- '2026-02-07 17:00:00-07', 'scheduled'),
-
-((SELECT id FROM rounds WHERE name = 'Round 1 Day 1'),
- (SELECT id FROM teams WHERE abbreviation = 'IND'),
- (SELECT id FROM teams WHERE abbreviation = 'PITT'),
- '2026-02-07 17:00:00-07', 'scheduled'),
-
-((SELECT id FROM rounds WHERE name = 'Round 1 Day 1'),
- (SELECT id FROM teams WHERE abbreviation = 'TAMU'),
- (SELECT id FROM teams WHERE abbreviation = 'USU'),
- '2026-02-07 19:30:00-07', 'scheduled'),
+ '2026-02-07 12:30:00-07', 'scheduled', 'R64', 'SOUTH_R64_1', 0),
 
 ((SELECT id FROM rounds WHERE name = 'Round 1 Day 1'),
  (SELECT id FROM teams WHERE abbreviation = 'IOWA'),
  (SELECT id FROM teams WHERE abbreviation = 'WVU'),
- '2026-02-07 19:30:00-07', 'scheduled');
+ '2026-02-07 12:30:00-07', 'scheduled', 'R64', 'SOUTH_R64_2', 1),
+
+((SELECT id FROM rounds WHERE name = 'Round 1 Day 1'),
+ (SELECT id FROM teams WHERE abbreviation = 'MIA'),
+ (SELECT id FROM teams WHERE abbreviation = 'COFC'),
+ '2026-02-07 14:30:00-07', 'scheduled', 'R64', 'SOUTH_R64_3', 2),
+
+((SELECT id FROM rounds WHERE name = 'Round 1 Day 1'),
+ (SELECT id FROM teams WHERE abbreviation = 'TENN'),
+ (SELECT id FROM teams WHERE abbreviation = 'FUR'),
+ '2026-02-07 14:30:00-07', 'scheduled', 'R64', 'SOUTH_R64_4', 3),
+
+((SELECT id FROM rounds WHERE name = 'Round 1 Day 1'),
+ (SELECT id FROM teams WHERE abbreviation = 'IND'),
+ (SELECT id FROM teams WHERE abbreviation = 'PITT'),
+ '2026-02-07 17:00:00-07', 'scheduled', 'R64', 'SOUTH_R64_5', 4),
+
+((SELECT id FROM rounds WHERE name = 'Round 1 Day 1'),
+ (SELECT id FROM teams WHERE abbreviation = 'HOU'),
+ (SELECT id FROM teams WHERE abbreviation = 'MTST'),
+ '2026-02-07 17:00:00-07', 'scheduled', 'R64', 'SOUTH_R64_6', 5),
+
+((SELECT id FROM rounds WHERE name = 'Round 1 Day 1'),
+ (SELECT id FROM teams WHERE abbreviation = 'TAMU'),
+ (SELECT id FROM teams WHERE abbreviation = 'USU'),
+ '2026-02-07 19:30:00-07', 'scheduled', 'R64', 'SOUTH_R64_7', 6),
+
+((SELECT id FROM rounds WHERE name = 'Round 1 Day 1'),
+ (SELECT id FROM teams WHERE abbreviation = 'UK'),
+ (SELECT id FROM teams WHERE abbreviation = 'KSU'),
+ '2026-02-07 19:30:00-07', 'scheduled', 'R64', 'SOUTH_R64_8', 7);
 
 -- ============================================================
 -- ROUND 1 DAY 2 GAMES — West + Midwest (16 games)
 -- ============================================================
 
--- West region games
-INSERT INTO games (round_id, team1_id, team2_id, game_datetime, status) VALUES
+-- West region games (slot order: 1v16, 8v9, 5v12, 4v13, 6v11, 3v14, 7v10, 2v15)
+INSERT INTO games (round_id, team1_id, team2_id, game_datetime, status, tournament_round, matchup_code, bracket_position) VALUES
 ((SELECT id FROM rounds WHERE name = 'Round 1 Day 2'),
  (SELECT id FROM teams WHERE abbreviation = 'UNC'),
  (SELECT id FROM teams WHERE abbreviation = 'FDU'),
- '2026-02-08 12:00:00-07', 'scheduled'),
-
-((SELECT id FROM rounds WHERE name = 'Round 1 Day 2'),
- (SELECT id FROM teams WHERE abbreviation = 'ARIZ'),
- (SELECT id FROM teams WHERE abbreviation = 'PRIN'),
- '2026-02-08 12:00:00-07', 'scheduled'),
-
-((SELECT id FROM rounds WHERE name = 'Round 1 Day 2'),
- (SELECT id FROM teams WHERE abbreviation = 'BAY'),
- (SELECT id FROM teams WHERE abbreviation = 'UCSB'),
- '2026-02-08 14:00:00-07', 'scheduled'),
-
-((SELECT id FROM rounds WHERE name = 'Round 1 Day 2'),
- (SELECT id FROM teams WHERE abbreviation = 'AUB'),
- (SELECT id FROM teams WHERE abbreviation = 'IONA'),
- '2026-02-08 14:00:00-07', 'scheduled'),
-
-((SELECT id FROM rounds WHERE name = 'Round 1 Day 2'),
- (SELECT id FROM teams WHERE abbreviation = 'ISU'),
- (SELECT id FROM teams WHERE abbreviation = 'ORU'),
- '2026-02-08 16:30:00-07', 'scheduled'),
-
-((SELECT id FROM rounds WHERE name = 'Round 1 Day 2'),
- (SELECT id FROM teams WHERE abbreviation = 'TCU'),
- (SELECT id FROM teams WHERE abbreviation = 'PROV'),
- '2026-02-08 16:30:00-07', 'scheduled'),
-
-((SELECT id FROM rounds WHERE name = 'Round 1 Day 2'),
- (SELECT id FROM teams WHERE abbreviation = 'MSU'),
- (SELECT id FROM teams WHERE abbreviation = 'PSU'),
- '2026-02-08 19:00:00-07', 'scheduled'),
+ '2026-02-08 12:00:00-07', 'scheduled', 'R64', 'WEST_R64_1', 0),
 
 ((SELECT id FROM rounds WHERE name = 'Round 1 Day 2'),
  (SELECT id FROM teams WHERE abbreviation = 'ARK'),
  (SELECT id FROM teams WHERE abbreviation = 'VCU'),
- '2026-02-08 19:00:00-07', 'scheduled');
+ '2026-02-08 12:00:00-07', 'scheduled', 'R64', 'WEST_R64_2', 1),
 
--- Midwest region games
-INSERT INTO games (round_id, team1_id, team2_id, game_datetime, status) VALUES
+((SELECT id FROM rounds WHERE name = 'Round 1 Day 2'),
+ (SELECT id FROM teams WHERE abbreviation = 'ISU'),
+ (SELECT id FROM teams WHERE abbreviation = 'ORU'),
+ '2026-02-08 14:00:00-07', 'scheduled', 'R64', 'WEST_R64_3', 2),
+
+((SELECT id FROM rounds WHERE name = 'Round 1 Day 2'),
+ (SELECT id FROM teams WHERE abbreviation = 'AUB'),
+ (SELECT id FROM teams WHERE abbreviation = 'IONA'),
+ '2026-02-08 14:00:00-07', 'scheduled', 'R64', 'WEST_R64_4', 3),
+
+((SELECT id FROM rounds WHERE name = 'Round 1 Day 2'),
+ (SELECT id FROM teams WHERE abbreviation = 'TCU'),
+ (SELECT id FROM teams WHERE abbreviation = 'PROV'),
+ '2026-02-08 16:30:00-07', 'scheduled', 'R64', 'WEST_R64_5', 4),
+
+((SELECT id FROM rounds WHERE name = 'Round 1 Day 2'),
+ (SELECT id FROM teams WHERE abbreviation = 'BAY'),
+ (SELECT id FROM teams WHERE abbreviation = 'UCSB'),
+ '2026-02-08 16:30:00-07', 'scheduled', 'R64', 'WEST_R64_6', 5),
+
+((SELECT id FROM rounds WHERE name = 'Round 1 Day 2'),
+ (SELECT id FROM teams WHERE abbreviation = 'MSU'),
+ (SELECT id FROM teams WHERE abbreviation = 'PSU'),
+ '2026-02-08 19:00:00-07', 'scheduled', 'R64', 'WEST_R64_7', 6),
+
+((SELECT id FROM rounds WHERE name = 'Round 1 Day 2'),
+ (SELECT id FROM teams WHERE abbreviation = 'ARIZ'),
+ (SELECT id FROM teams WHERE abbreviation = 'PRIN'),
+ '2026-02-08 19:00:00-07', 'scheduled', 'R64', 'WEST_R64_8', 7);
+
+-- Midwest region games (slot order: 1v16, 8v9, 5v12, 4v13, 6v11, 3v14, 7v10, 2v15)
+INSERT INTO games (round_id, team1_id, team2_id, game_datetime, status, tournament_round, matchup_code, bracket_position) VALUES
 ((SELECT id FROM rounds WHERE name = 'Round 1 Day 2'),
  (SELECT id FROM teams WHERE abbreviation = 'GONZ'),
  (SELECT id FROM teams WHERE abbreviation = 'TXSO'),
- '2026-02-08 12:30:00-07', 'scheduled'),
-
-((SELECT id FROM rounds WHERE name = 'Round 1 Day 2'),
- (SELECT id FROM teams WHERE abbreviation = 'UCLA'),
- (SELECT id FROM teams WHERE abbreviation = 'GRAM'),
- '2026-02-08 12:30:00-07', 'scheduled'),
-
-((SELECT id FROM rounds WHERE name = 'Round 1 Day 2'),
- (SELECT id FROM teams WHERE abbreviation = 'XAV'),
- (SELECT id FROM teams WHERE abbreviation = 'WRST'),
- '2026-02-08 14:30:00-07', 'scheduled'),
-
-((SELECT id FROM rounds WHERE name = 'Round 1 Day 2'),
- (SELECT id FROM teams WHERE abbreviation = 'UCON'),
- (SELECT id FROM teams WHERE abbreviation = 'KENT'),
- '2026-02-08 14:30:00-07', 'scheduled'),
-
-((SELECT id FROM rounds WHERE name = 'Round 1 Day 2'),
- (SELECT id FROM teams WHERE abbreviation = 'SMC'),
- (SELECT id FROM teams WHERE abbreviation = 'ORE'),
- '2026-02-08 17:00:00-07', 'scheduled'),
-
-((SELECT id FROM rounds WHERE name = 'Round 1 Day 2'),
- (SELECT id FROM teams WHERE abbreviation = 'TTU'),
- (SELECT id FROM teams WHERE abbreviation = 'USC'),
- '2026-02-08 17:00:00-07', 'scheduled'),
-
-((SELECT id FROM rounds WHERE name = 'Round 1 Day 2'),
- (SELECT id FROM teams WHERE abbreviation = 'NW'),
- (SELECT id FROM teams WHERE abbreviation = 'NEV'),
- '2026-02-08 19:30:00-07', 'scheduled'),
+ '2026-02-08 12:30:00-07', 'scheduled', 'R64', 'MIDWEST_R64_1', 0),
 
 ((SELECT id FROM rounds WHERE name = 'Round 1 Day 2'),
  (SELECT id FROM teams WHERE abbreviation = 'UMD'),
  (SELECT id FROM teams WHERE abbreviation = 'FSU'),
- '2026-02-08 19:30:00-07', 'scheduled');
+ '2026-02-08 12:30:00-07', 'scheduled', 'R64', 'MIDWEST_R64_2', 1),
+
+((SELECT id FROM rounds WHERE name = 'Round 1 Day 2'),
+ (SELECT id FROM teams WHERE abbreviation = 'SMC'),
+ (SELECT id FROM teams WHERE abbreviation = 'ORE'),
+ '2026-02-08 14:30:00-07', 'scheduled', 'R64', 'MIDWEST_R64_3', 2),
+
+((SELECT id FROM rounds WHERE name = 'Round 1 Day 2'),
+ (SELECT id FROM teams WHERE abbreviation = 'UCON'),
+ (SELECT id FROM teams WHERE abbreviation = 'KENT'),
+ '2026-02-08 14:30:00-07', 'scheduled', 'R64', 'MIDWEST_R64_4', 3),
+
+((SELECT id FROM rounds WHERE name = 'Round 1 Day 2'),
+ (SELECT id FROM teams WHERE abbreviation = 'TTU'),
+ (SELECT id FROM teams WHERE abbreviation = 'USC'),
+ '2026-02-08 17:00:00-07', 'scheduled', 'R64', 'MIDWEST_R64_5', 4),
+
+((SELECT id FROM rounds WHERE name = 'Round 1 Day 2'),
+ (SELECT id FROM teams WHERE abbreviation = 'XAV'),
+ (SELECT id FROM teams WHERE abbreviation = 'WRST'),
+ '2026-02-08 17:00:00-07', 'scheduled', 'R64', 'MIDWEST_R64_6', 5),
+
+((SELECT id FROM rounds WHERE name = 'Round 1 Day 2'),
+ (SELECT id FROM teams WHERE abbreviation = 'NW'),
+ (SELECT id FROM teams WHERE abbreviation = 'NEV'),
+ '2026-02-08 19:30:00-07', 'scheduled', 'R64', 'MIDWEST_R64_7', 6),
+
+((SELECT id FROM rounds WHERE name = 'Round 1 Day 2'),
+ (SELECT id FROM teams WHERE abbreviation = 'UCLA'),
+ (SELECT id FROM teams WHERE abbreviation = 'GRAM'),
+ '2026-02-08 19:30:00-07', 'scheduled', 'R64', 'MIDWEST_R64_8', 7);
 
 -- ============================================================
 -- TEST POOL
@@ -308,10 +308,28 @@ BEGIN
 END $$;
 
 -- ============================================================
+-- GENERATE BRACKET (run after seed data is loaded)
+-- ============================================================
+-- After running this seed.sql, call the admin API to generate
+-- the remaining 31 shell games (R32 through Championship):
+--
+-- POST /api/admin/generate-bracket
+--
+-- This creates shell games with NULL teams and wires all
+-- advances_to_game_id + advances_to_slot FKs.
+
+-- ============================================================
 -- VERIFICATION QUERIES (run these to confirm data loaded)
 -- ============================================================
 -- SELECT count(*) as team_count FROM teams;          -- should be 64
--- SELECT count(*) as game_count FROM games;          -- should be 32
+-- SELECT count(*) as game_count FROM games;          -- should be 32 (before generate-bracket)
 -- SELECT count(*) as round_count FROM rounds;        -- should be 8
 -- SELECT * FROM rounds WHERE is_active = true;       -- Round 1 Day 1
 -- SELECT * FROM pools;                               -- Dillon's Test Pool
+--
+-- After generate-bracket:
+-- SELECT count(*) FROM games;                                          -- should be 63
+-- SELECT count(*) FROM games WHERE matchup_code IS NOT NULL;           -- should be 63
+-- SELECT count(*) FROM games WHERE advances_to_game_id IS NOT NULL;    -- should be 62
+-- SELECT count(*) FROM games WHERE tournament_round = 'R64' AND team1_id IS NOT NULL; -- 32
+-- SELECT count(*) FROM games WHERE tournament_round != 'R64' AND team1_id IS NULL;    -- 31

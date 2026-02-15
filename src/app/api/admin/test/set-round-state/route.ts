@@ -7,7 +7,7 @@ import {
   processCompletedGame,
   processMissedPicks,
   checkRoundCompletion,
-  cascadeGameResult,
+  propagateWinner,
   createEmptyResults,
 } from '@/lib/game-processing';
 
@@ -289,7 +289,7 @@ async function handleRoundComplete(roundId: string, roundName: string, simulated
       .eq('id', game.id);
 
     await processCompletedGame(roundId, winnerId, loserId, results);
-    await cascadeGameResult(game.id, winnerId, results);
+    await propagateWinner(game.id, winnerId);
 
     gameResults.push({
       gameId: game.id,

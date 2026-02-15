@@ -58,12 +58,12 @@ export async function GET(request: NextRequest) {
         // 4. Pool status: open → active (if this is the first round being activated)
         const isFirstRound = rounds[0]?.id === todayRound.id;
         if (isFirstRound || !rounds.some(r => r.date < todayStr)) {
-          const { count } = await supabaseAdmin
+          const { data: transitioned } = await supabaseAdmin
             .from('pools')
             .update({ status: 'active' })
             .eq('status', 'open')
-            .select('id', { count: 'exact', head: true });
-          results.poolsTransitioned = count || 0;
+            .select('id');
+          results.poolsTransitioned = transitioned?.length || 0;
         }
       }
     }

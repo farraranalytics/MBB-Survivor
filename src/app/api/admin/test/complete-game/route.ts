@@ -5,7 +5,7 @@ import {
   processCompletedGame,
   processMissedPicks,
   checkRoundCompletion,
-  cascadeGameResult,
+  propagateWinner,
   createEmptyResults,
 } from '@/lib/game-processing';
 import { lookupRealResult } from '@/lib/test-results';
@@ -123,8 +123,8 @@ export async function POST(request: NextRequest) {
     const results = createEmptyResults();
     await processCompletedGame(game.round_id, resolvedWinnerId, loserId, results);
 
-    // 3. Cascade: create/populate next-round game
-    await cascadeGameResult(gameId, resolvedWinnerId, results);
+    // 3. Propagate winner to next-round game slot
+    await propagateWinner(gameId, resolvedWinnerId);
 
     // 4. Check round completion (missed picks, pool advancement)
     await processMissedPicks(game.round_id, results);

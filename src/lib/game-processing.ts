@@ -138,7 +138,64 @@ export async function processMissedPicks(
   results.missedPickEliminations = missedEliminated?.length || 0;
 }
 
-// ─── Cascade: Auto-Create Next-Round Games ──────────────────────
+// ─── Pre-Generated Bracket: Winner Propagation ──────────────────
+
+/** Round ordering for clearBracketAdvancement */
+const ROUND_ORDER = ['R64', 'R32', 'S16', 'E8', 'F4', 'CHIP'];
+
+/**
+ * Propagate a game's winner into the next round's team slot.
+ * Uses advances_to_game_id + advances_to_slot from the pre-generated bracket.
+ */
+export async function propagateWinner(
+  gameId: string,
+  winnerId: string,
+): Promise<void> {
+  const { data: game } = await supabaseAdmin
+    .from('games')
+    .select('advances_to_game_id, advances_to_slot')
+    .eq('id', gameId)
+    .single();
+
+  if (!game?.advances_to_game_id || !game?.advances_to_slot) return;
+
+  const field = game.advances_to_slot === 1 ? 'team1_id' : 'team2_id';
+  await supabaseAdmin
+    .from('games')
+    .update({ [field]: winnerId })
+    .eq('id', game.advances_to_game_id);
+}
+
+/**
+ * Clear team slots in rounds AFTER the given round code.
+ * Replaces deleteCascadedGames() — keeps shell games intact, just NULLs team data.
+ */
+export async function clearBracketAdvancement(fromRoundCode: string): Promise<number> {
+  const startIdx = ROUND_ORDER.indexOf(fromRoundCode);
+  if (startIdx < 0) return 0;
+
+  // Clear rounds strictly after fromRoundCode
+  const roundsToClear = ROUND_ORDER.slice(startIdx + 1);
+  if (roundsToClear.length === 0) return 0;
+
+  const { data: cleared } = await supabaseAdmin
+    .from('games')
+    .update({
+      team1_id: null,
+      team2_id: null,
+      winner_id: null,
+      team1_score: null,
+      team2_score: null,
+      status: 'scheduled',
+    })
+    .in('tournament_round', roundsToClear)
+    .select('id');
+
+  return cleared?.length || 0;
+}
+
+// ─── Legacy Cascade (DEPRECATED — kept for reference) ───────────
+// These functions will be removed after the bracket revamp is verified.
 
 const NEXT_ROUND: Record<string, string> = {
   'R64': 'R32', 'R32': 'S16', 'S16': 'E8', 'E8': 'F4', 'F4': 'CHIP',
@@ -241,12 +298,8 @@ async function findNextRoundId(
 }
 
 /**
- * Cascade a game result to create/populate the next-round game.
- * Called after a game is completed with a winner.
- *
- * 1. Determines the next round and bracket position
- * 2. Finds or creates the next-round game shell
- * 3. Slots the winner into team1_id or team2_id
+ * @deprecated Use propagateWinner() instead. This function dynamically creates
+ * next-round games — the new approach uses pre-generated shell games.
  */
 export async function cascadeGameResult(
   gameId: string,
@@ -482,9 +535,8 @@ export async function cascadeGameResult(
 }
 
 /**
- * Delete auto-created games in the next round (cascade cleanup for reset).
- * Only deletes games that were cascade-created (have bracket_position set
- * or are in later rounds without both teams set from seed data).
+ * @deprecated Use clearBracketAdvancement() instead. This function deletes
+ * cascade-created games — the new approach clears team slots on pre-generated shells.
  */
 export async function deleteCascadedGames(roundId: string): Promise<number> {
   // Get the round code

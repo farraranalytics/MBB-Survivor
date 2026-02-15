@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase/admin';
 import { verifyCronAuth } from '@/lib/cron-auth';
+import { propagateWinner } from '@/lib/game-processing';
 
 const ESPN_BASE_URL = 'https://site.api.espn.com/apis/site/v2/sports/basketball/mens-college-basketball';
 
@@ -146,14 +147,14 @@ export async function GET(request: NextRequest) {
           results.gamesCompleted++;
 
           // Mark winning picks correct
-          const { count: correctCount } = await supabaseAdmin
+          const { data: correctPicks } = await supabaseAdmin
             .from('picks')
             .update({ is_correct: true })
             .eq('round_id', activeRound.id)
             .eq('team_id', winnerId)
             .is('is_correct', null)
-            .select('id', { count: 'exact', head: true });
-          results.picksMarkedCorrect += correctCount || 0;
+            .select('id');
+          results.picksMarkedCorrect += correctPicks?.length || 0;
 
           // Mark losing picks incorrect
           const { data: incorrectPicks } = await supabaseAdmin
@@ -174,8 +175,8 @@ export async function GET(request: NextRequest) {
           // 6. Eliminate players who picked the loser
           if (incorrectPicks && incorrectPicks.length > 0) {
             const poolPlayerIds = incorrectPicks.map(p => p.pool_player_id);
-            
-            const { count: elimCount } = await supabaseAdmin
+
+            const { data: eliminated } = await supabaseAdmin
               .from('pool_players')
               .update({
                 is_eliminated: true,
@@ -184,9 +185,12 @@ export async function GET(request: NextRequest) {
               })
               .in('id', poolPlayerIds)
               .eq('is_eliminated', false)
-              .select('id', { count: 'exact', head: true });
-            results.playersEliminated += elimCount || 0;
+              .select('id');
+            results.playersEliminated += eliminated?.length || 0;
           }
+
+          // 7. Propagate winner to next-round game slot
+          await propagateWinner(game.id, winnerId);
         }
 
       } catch (err: any) {
@@ -251,7 +255,7 @@ async function processMissedPicks(
 
   // Eliminate players who missed their pick
   const missedIds = playersWithoutPicks.map(p => p.id);
-  const { count } = await supabaseAdmin
+  const { data: missedElim } = await supabaseAdmin
     .from('pool_players')
     .update({
       is_eliminated: true,
@@ -260,9 +264,9 @@ async function processMissedPicks(
     })
     .in('id', missedIds)
     .eq('is_eliminated', false)
-    .select('id', { count: 'exact', head: true });
+    .select('id');
 
-  results.missedPickEliminations = count || 0;
+  results.missedPickEliminations = missedElim?.length || 0;
 }
 
 /**

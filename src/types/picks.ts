@@ -68,14 +68,22 @@ export interface Pick {
 export interface Game {
   id: string;
   round_id: string;
-  team1_id: string;
-  team2_id: string;
+  team1_id: string | null;
+  team2_id: string | null;
   game_datetime: string;
   winner_id: string | null;
   team1_score: number | null;
   team2_score: number | null;
   status: 'scheduled' | 'in_progress' | 'final';
   espn_game_id: string | null;
+  // Bracket structure fields
+  matchup_code: string | null;
+  bracket_position: number | null;
+  tournament_round: string | null;
+  advances_to_game_id: string | null;
+  advances_to_slot: number | null;
+  parent_game_a_id: string | null;
+  parent_game_b_id: string | null;
   // Joined team data
   team1?: TeamInfo;
   team2?: TeamInfo;

@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { supabaseAdmin } from '@/lib/supabase/admin';
 import { getTournamentStateServer } from '@/lib/status-server';
-import { deleteCascadedGames } from '@/lib/game-processing';
+import { clearBracketAdvancement } from '@/lib/game-processing';
+import { mapRoundNameToCode } from '@/lib/bracket';
 import { clearServerClockCache } from '@/lib/clock-server';
 
 export async function POST(request: NextRequest) {
@@ -31,30 +32,25 @@ export async function POST(request: NextRequest) {
 
     // ── Full tournament reset ─────────────────────────────────
     if (resetAll) {
-      // Delete all cascade-created games (games with bracket_position set)
-      const { data: cascadeGames } = await supabaseAdmin
+      // Clear team slots on all R32+ shell games (keep shells intact)
+      const { data: clearedShells } = await supabaseAdmin
         .from('games')
-        .delete()
-        .not('bracket_position', 'is', null)
+        .update({
+          team1_id: null,
+          team2_id: null,
+          winner_id: null,
+          team1_score: null,
+          team2_score: null,
+          status: 'scheduled',
+        })
+        .in('tournament_round', ['R32', 'S16', 'E8', 'F4', 'CHIP'])
         .select('id');
 
-      // Also delete any games with only one team (partial cascade)
-      const { data: allGames } = await supabaseAdmin
-        .from('games')
-        .select('id, team1_id, team2_id');
-
-      const partialIds = (allGames || [])
-        .filter(g => (!g.team1_id || !g.team2_id) && (g.team1_id || g.team2_id))
-        .map(g => g.id);
-
-      if (partialIds.length > 0) {
-        await supabaseAdmin.from('games').delete().in('id', partialIds);
-      }
-
-      // Reset remaining games (seed data R64 games)
+      // Reset R64 games (keep teams, clear results)
       await supabaseAdmin
         .from('games')
         .update({ status: 'scheduled', winner_id: null, team1_score: null, team2_score: null })
+        .eq('tournament_round', 'R64')
         .neq('status', 'scheduled');
 
       // Un-eliminate all teams
@@ -100,7 +96,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({
         success: true,
         mode: 'full_reset',
-        cascadeGamesDeleted: (cascadeGames?.length || 0) + partialIds.length,
+        shellGamesCleared: clearedShells?.length || 0,
         playersRevived: revivedPlayers?.length || 0,
       });
     }
@@ -131,8 +127,9 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Round not found' }, { status: 404 });
     }
 
-    // 1. Delete cascade-created games in NEXT rounds
-    const cascadeDeleted = await deleteCascadedGames(round.id);
+    // 1. Clear team slots in rounds AFTER this one (keep shell games)
+    const roundCode = mapRoundNameToCode(round.name);
+    const shellsCleared = await clearBracketAdvancement(roundCode);
 
     // 2. Get games in this round to find losers
     const { data: games } = await supabaseAdmin
@@ -197,7 +194,7 @@ export async function POST(request: NextRequest) {
       gamesReset: games?.length || 0,
       teamsRevived: loserIds.length,
       playersRevived: revivedPlayers?.length || 0,
-      cascadeGamesDeleted: cascadeDeleted,
+      shellGamesCleared: shellsCleared,
     });
 
   } catch (err: any) {
