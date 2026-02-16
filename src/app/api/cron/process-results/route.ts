@@ -20,8 +20,12 @@ export async function GET(request: NextRequest) {
       missedPickEliminations: 0,
       roundsCompleted: 0,
       poolsCompleted: 0,
+      roundActivated: null as string | null,
       errors: [] as string[],
     };
+
+    // 0. Activate today's round if needed (replaces separate activate-rounds cron)
+    await activateTodaysRound(results);
 
     // 1. Get active round and its games that aren't final yet
     const { data: activeRound } = await supabaseAdmin
@@ -326,5 +330,59 @@ async function checkRoundCompletion(
       results.poolsCompleted++;
     }
   }
-  // If there are future rounds, the activate-rounds cron will handle activating the next one
+  // If there are future rounds, activateTodaysRound() handles activation on next cron tick
+}
+
+/**
+ * Activate today's round if deadline is within 6 hours.
+ * Inlined from /api/cron/activate-rounds to stay within Vercel Hobby 2-cron limit.
+ */
+async function activateTodaysRound(results: { roundActivated: string | null; errors: string[] }) {
+  try {
+    const now = new Date();
+
+    const { data: rounds } = await supabaseAdmin
+      .from('rounds')
+      .select('id, name, date, deadline_datetime, is_active')
+      .order('date', { ascending: true });
+
+    if (!rounds) return;
+
+    const todayET = new Date(now.toLocaleString('en-US', { timeZone: 'America/New_York' }));
+    const todayStr = todayET.toISOString().split('T')[0];
+
+    const todayRound = rounds.find(r => r.date === todayStr);
+    const currentlyActive = rounds.find(r => r.is_active);
+
+    if (todayRound && !todayRound.is_active) {
+      const deadlineTime = new Date(todayRound.deadline_datetime);
+      const hoursUntilDeadline = (deadlineTime.getTime() - now.getTime()) / (1000 * 60 * 60);
+
+      if (hoursUntilDeadline <= 6 && hoursUntilDeadline >= -24) {
+        if (currentlyActive && currentlyActive.id !== todayRound.id) {
+          await supabaseAdmin
+            .from('rounds')
+            .update({ is_active: false })
+            .eq('id', currentlyActive.id);
+        }
+
+        await supabaseAdmin
+          .from('rounds')
+          .update({ is_active: true })
+          .eq('id', todayRound.id);
+        results.roundActivated = todayRound.name;
+
+        // Pool status: open → active on first round
+        const isFirstRound = rounds[0]?.id === todayRound.id;
+        if (isFirstRound || !rounds.some(r => r.date < todayStr)) {
+          await supabaseAdmin
+            .from('pools')
+            .update({ status: 'active' })
+            .eq('status', 'open');
+        }
+      }
+    }
+  } catch (err: any) {
+    results.errors.push(`activate-round: ${err.message}`);
+  }
 }
