@@ -317,6 +317,36 @@ Three issues found and fixed for pre-generated bracket compatibility:
 
 3. **Deprecated code removed** — Removed ~414 lines of dead code: `cascadeGameResult()`, `deleteCascadedGames()`, `findNextRoundId()`, `getBracketPosition()`, `NEXT_ROUND`, `F4_PAIRINGS` constants, and the `R64_SEED_PAIRINGS`/`mapRoundNameToCode` import. These functions dynamically created next-round games which is incompatible with the pre-generated bracket approach and could create orphaned games if accidentally invoked.
 
+### Security Remediation (2026-02-15)
+
+Found 4 standalone `.mjs` scripts with **hardcoded Supabase service role key** committed to the public GitHub repo. The service role key bypasses all RLS policies — full unrestricted DB access.
+
+**Affected files:**
+- `scripts/run-bracket-generator.mjs` (was git-tracked)
+- `scripts/verify-bracket.mjs` (was git-tracked)
+- `scripts/check-games.mjs` (untracked, but had hardcoded key)
+- `scripts/fix-bracket-propagation.mjs` (untracked, but had hardcoded key)
+
+**Root cause:** Scripts were written as standalone utilities to run against the live DB outside the Next.js build system (no path alias resolution). The quick path was to inline the credentials. The `.ts` scripts in the same directory already used `process.env` correctly.
+
+**Fix applied:**
+1. All 4 scripts now use `dotenv` to load from `.env.local` (same pattern as the `.ts` scripts)
+2. Added `scripts/*.mjs` to `.gitignore`
+3. Removed tracked `.mjs` files from git index via `git rm --cached`
+4. Pushed to origin — current HEAD no longer contains secrets
+
+**Still required:**
+- **Rotate the Supabase service role key** — the old key is still in git history (commits `a25eabd` and earlier). Anyone with repo access can recover it.
+- Update `.env.local` and Vercel environment variables with the new key after rotation.
+- Optionally scrub git history with `git filter-repo` to remove old commits containing the key.
+
+**Lesson learned:** Never hardcode credentials in scripts — always use `dotenv` + `.env.local`, even for standalone utilities. Add `scripts/*.mjs` to `.gitignore` by default for any ad-hoc scripts.
+
+### Cron Setup (2026-02-16)
+- Vercel Hobby plan limits crons to once per day — `*/5` expressions fail deployment
+- Solution: daily crons in `vercel.json` as fallback, external cron service (cron-job.org) for frequent polling during tournament
+- `activate-rounds` logic folded into `process-results` to reduce from 3 crons to 2
+- External cron jobs configured: `sync-games` (daily) + `process-results` (every 5 min, enable on game days)
+
 ### Remaining Steps
-- Deploy and run functional verification (Phase 9)
-- Full simulation R64→CHIP via admin panel to verify end-to-end
+- Functional verification (Phase 9): full simulation R64→CHIP via admin panel

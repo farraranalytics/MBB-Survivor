@@ -1,8 +1,13 @@
 # Task: Bracket Revamp — Pre-Generated 63-Game Structure
 
 **Created:** 2026-02-15
-**Status:** DB Migration + Generation Complete — Verified on Live DB
+**Status:** Code complete, admin hardened, dead code removed, secrets remediated, DB restored after cascade incident. Remaining: deploy + functional verification.
 **Branch:** main
+
+---
+
+## TODO — First Thing Next Session
+- [x] **Rotate Supabase API keys** — migrated to new publishable/secret keys, old JWT revoked (2026-02-16)
 
 ---
 
@@ -132,6 +137,23 @@ The current bracket system dynamically creates R32+ games during result processi
 ### Admin Test Mode Hardening
 - [x] Filter NULL-team games in `complete-round` and `set-round-state → handleRoundComplete` (prevent completing shell games without both teams)
 - [x] Add `clearBracketAdvancement()` to `set-round-state → handlePreRound` (clear downstream slots when resetting to pre_round)
+
+### Critical Fix: Picks DELETE → UPDATE (Cascade Incident)
+- [x] Reverted full-reset picks handling from `DELETE` to `UPDATE is_correct = null` — DELETE cascaded through FK constraints and wiped all 63 games from DB
+- [x] Restored 32 R64 games via `scripts/restore-r64-games.mjs`
+- [x] Restored 31 R32-CHIP shell games + 62 advancement FKs via `scripts/run-bracket-generator.mjs`
+- [x] All verification counts pass: 63 games, 62 advancements, 32 R64 with teams, 31 shells
+
+### Security Remediation
+- [x] Remove hardcoded Supabase service role key from `scripts/run-bracket-generator.mjs`
+- [x] Remove hardcoded Supabase service role key from `scripts/verify-bracket.mjs`
+- [x] Remove hardcoded Supabase service role key from `scripts/check-games.mjs`
+- [x] Remove hardcoded Supabase service role key from `scripts/fix-bracket-propagation.mjs`
+- [x] Update all 4 scripts to load credentials from `.env.local` via dotenv
+- [x] Add `scripts/*.mjs` to `.gitignore`
+- [x] Remove tracked `.mjs` scripts from git index (`git rm --cached`)
+- [x] **Rotate Supabase API keys** — migrated to new `sb_publishable_` / `sb_secret_` keys, old JWT revoked
+- [x] Update `.env.local` and Vercel env vars with new keys
 
 ---
 

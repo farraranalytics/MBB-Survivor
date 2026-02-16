@@ -59,11 +59,11 @@ export async function POST(request: NextRequest) {
         .update({ is_eliminated: false })
         .eq('is_eliminated', true);
 
-      // Delete all picks (full reset = clean slate for new test run)
+      // Clear all pick results (safe UPDATE — never DELETE picks to avoid FK cascade)
       await supabaseAdmin
         .from('picks')
-        .delete()
-        .not('id', 'is', null);
+        .update({ is_correct: null })
+        .not('is_correct', 'is', null);
 
       // Un-eliminate all players
       const { data: revivedPlayers } = await supabaseAdmin
