@@ -8,8 +8,10 @@ import {
   processMissedPicks,
   checkRoundCompletion,
   propagateWinner,
+  clearBracketAdvancement,
   createEmptyResults,
 } from '@/lib/game-processing';
+import { mapRoundNameToCode } from '@/lib/bracket';
 
 type RoundState = 'pre_round' | 'round_started' | 'round_complete';
 
@@ -163,6 +165,10 @@ async function handlePreRound(roundId: string, roundName: string, simulatedDatet
     })
     .eq('round_id', roundId);
 
+  // Clear downstream bracket slots (e.g. R64 reset → clear R32+ team slots)
+  const roundCode = mapRoundNameToCode(roundName);
+  const shellsCleared = await clearBracketAdvancement(roundCode);
+
   // Un-eliminate teams
   if (loserIds.length > 0) {
     await supabaseAdmin
@@ -200,6 +206,7 @@ async function handlePreRound(roundId: string, roundName: string, simulatedDatet
     gamesReset: games?.length || 0,
     teamsRevived: loserIds.length,
     playersRevived: revivedPlayers?.length || 0,
+    shellGamesCleared: shellsCleared,
   });
 }
 
@@ -230,7 +237,7 @@ async function handleRoundStarted(roundId: string, roundName: string, simulatedD
 
 // ── Round Complete: complete all games, process results ──────────────
 async function handleRoundComplete(roundId: string, roundName: string, simulatedDatetime: string) {
-  // Complete all non-final games (favorites mode: higher seed wins)
+  // Complete all non-final games that have both teams (skip shells missing teams)
   const { data: pendingGames } = await supabaseAdmin
     .from('games')
     .select(`
@@ -239,7 +246,9 @@ async function handleRoundComplete(roundId: string, roundName: string, simulated
       team2:team2_id(seed, abbreviation)
     `)
     .eq('round_id', roundId)
-    .in('status', ['scheduled', 'in_progress']);
+    .in('status', ['scheduled', 'in_progress'])
+    .not('team1_id', 'is', null)
+    .not('team2_id', 'is', null);
 
   const results = createEmptyResults();
   const gameResults: any[] = [];

@@ -123,11 +123,15 @@ The current bracket system dynamically creates R32+ games during result processi
   - [ ] Pick page only shows games with populated teams
 
 ### Cleanup (after verification)
-- [ ] Remove deprecated `cascadeGameResult()`
-- [ ] Remove deprecated `deleteCascadedGames()`
-- [ ] Remove `findNextRoundId()`
-- [ ] Remove seed-based `getBracketPosition()` from game-processing.ts
-- [ ] Remove unused constants (HALF_A, HALF_B, etc. if no longer referenced)
+- [x] Remove deprecated `cascadeGameResult()`
+- [x] Remove deprecated `deleteCascadedGames()`
+- [x] Remove `findNextRoundId()`
+- [x] Remove seed-based `getBracketPosition()` from game-processing.ts
+- [x] Remove unused constants (`NEXT_ROUND`, `F4_PAIRINGS`, `R64_SEED_PAIRINGS` import)
+
+### Admin Test Mode Hardening
+- [x] Filter NULL-team games in `complete-round` and `set-round-state → handleRoundComplete` (prevent completing shell games without both teams)
+- [x] Add `clearBracketAdvancement()` to `set-round-state → handlePreRound` (clear downstream slots when resetting to pre_round)
 
 ---
 

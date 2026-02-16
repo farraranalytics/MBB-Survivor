@@ -307,8 +307,16 @@ All code changes for Phases 1-8 are complete. Build passes clean.
 
 7. **Process-results cron now propagates winners** — fixed the existing bug where production cron never cascaded.
 
+### Admin Test Mode Hardening (2026-02-15)
+
+Three issues found and fixed for pre-generated bracket compatibility:
+
+1. **NULL-team game completion bug** — `complete-round` and `set-round-state → handleRoundComplete` could complete shell games that had NULL team1_id or team2_id (no teams propagated yet). The seed-fallback logic would treat NULL seeds as 8, pick a "winner", and propagate it downstream. Fix: added `.not('team1_id', 'is', null).not('team2_id', 'is', null)` to filter out shell games without both teams.
+
+2. **pre_round missing downstream clear** — `set-round-state → handlePreRound` resets game results for a round but didn't clear teams that had been propagated to downstream shells. `reset-round` already called `clearBracketAdvancement()`, so `handlePreRound` was inconsistent. Fix: added `clearBracketAdvancement(roundCode)` call to `handlePreRound`.
+
+3. **Deprecated code removed** — Removed ~414 lines of dead code: `cascadeGameResult()`, `deleteCascadedGames()`, `findNextRoundId()`, `getBracketPosition()`, `NEXT_ROUND`, `F4_PAIRINGS` constants, and the `R64_SEED_PAIRINGS`/`mapRoundNameToCode` import. These functions dynamically created next-round games which is incompatible with the pre-generated bracket approach and could create orphaned games if accidentally invoked.
+
 ### Remaining Steps
-- Run migration `005_bracket_structure.sql` in Supabase SQL Editor
-- If fresh environment: run seed.sql, then POST `/api/admin/generate-bracket`
-- If existing environment: POST `/api/admin/generate-bracket` (backfills R64 + creates R32-CHIP shells)
-- Run Phase 9 verification queries
+- Deploy and run functional verification (Phase 9)
+- Full simulation R64→CHIP via admin panel to verify end-to-end

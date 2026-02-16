@@ -53,7 +53,7 @@ export async function POST(request: NextRequest) {
       activeRound = { id: state.currentRound.id, name: state.currentRound.name, date: state.currentRound.date };
     }
 
-    // Get all non-final games for this round
+    // Get all non-final games for this round (skip shells missing teams)
     const { data: pendingGames } = await supabaseAdmin
       .from('games')
       .select(`
@@ -63,6 +63,8 @@ export async function POST(request: NextRequest) {
       `)
       .eq('round_id', activeRound.id)
       .in('status', ['scheduled', 'in_progress'])
+      .not('team1_id', 'is', null)
+      .not('team2_id', 'is', null)
       .order('game_datetime', { ascending: true });
 
     if (!pendingGames || pendingGames.length === 0) {
