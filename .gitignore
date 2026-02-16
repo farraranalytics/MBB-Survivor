@@ -5,3 +5,9 @@ dist/
 .env.local
 .env.production.local
 .env.development.local
+
+# Local-only scripts (use .env.local for credentials)
+scripts/*.mjs
+
+# Accidental files
+nul
