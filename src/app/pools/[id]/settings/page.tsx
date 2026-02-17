@@ -277,6 +277,9 @@ export default function PoolSettingsPage() {
   // Join code copy
   const [copiedCode, setCopiedCode] = useState(false);
 
+  // Sign out confirmation
+  const [showSignOutConfirm, setShowSignOutConfirm] = useState(false);
+
   // Tournament state for leave pool check
   const [canLeavePool, setCanLeavePool] = useState(false);
 
@@ -1238,13 +1241,44 @@ export default function PoolSettingsPage() {
         {/* ─── SECTION 7: SIGN OUT + VERSION ───────────────────────── */}
         <section className="pt-2">
           <button
-            onClick={async () => { await signOut(); router.push('/'); }}
+            onClick={() => setShowSignOutConfirm(true)}
             className="w-full py-3 rounded-[12px] text-sm font-semibold text-[#EF5350] bg-[rgba(239,83,80,0.1)] border border-[rgba(239,83,80,0.2)] hover:border-[rgba(239,83,80,0.4)] transition-colors"
             style={{ fontFamily: "'DM Sans', sans-serif" }}
           >
             Sign Out
           </button>
         </section>
+
+        {/* Sign Out Confirmation Modal */}
+        {showSignOutConfirm && (
+          <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center">
+            <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={() => setShowSignOutConfirm(false)} />
+            <div className="relative bg-[#111827] border border-[rgba(255,255,255,0.05)] rounded-t-[16px] sm:rounded-[16px] w-full max-w-sm mx-auto p-6 pb-8 sm:pb-6 shadow-2xl animate-slide-up">
+              <h3 className="text-lg font-bold text-[#E8E6E1] text-center mb-2" style={{ fontFamily: "'Oswald', sans-serif", textTransform: 'uppercase' }}>
+                Sign Out
+              </h3>
+              <p className="text-sm text-[#9BA3AE] text-center mb-6" style={{ fontFamily: "'DM Sans', sans-serif" }}>
+                Are you sure you want to sign out?
+              </p>
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setShowSignOutConfirm(false)}
+                  className="flex-1 py-3 rounded-[12px] border border-[rgba(255,255,255,0.05)] text-[#9BA3AE] font-semibold hover:bg-[#1B2A3D] transition-colors"
+                  style={{ fontFamily: "'DM Sans', sans-serif" }}
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={async () => { await signOut(); router.push('/'); }}
+                  className="flex-1 py-3 rounded-[12px] font-semibold text-white bg-[#EF5350] hover:bg-[#E53935] transition-colors"
+                  style={{ fontFamily: "'DM Sans', sans-serif" }}
+                >
+                  Sign Out
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
 
         <p className="text-center text-xs text-[#9BA3AE] opacity-50 pt-2" style={{ fontFamily: "'DM Sans', sans-serif" }}>
           v1.0.0 · © 2026 Survive the Dance
