@@ -108,6 +108,32 @@ function PickCell({
   );
 }
 
+// ─── Outcome Cell — Crown or "No Teams" indicator ───────────────
+
+function OutcomeCell({ type }: { type: 'champion' | 'no_teams' }) {
+  if (type === 'champion') {
+    return (
+      <div className="flex flex-col items-center justify-center rounded-md px-1 py-2 bg-[rgba(255,179,0,0.15)] min-h-[52px] border border-[rgba(255,179,0,0.25)]">
+        <span className="text-lg">👑</span>
+      </div>
+    );
+  }
+  return (
+    <div className="flex flex-col items-center justify-center rounded-md px-1 py-2 bg-[rgba(239,83,80,0.08)] min-h-[52px]">
+      <svg className="w-4 h-4" style={{ color: 'rgba(239,83,80,0.6)' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <circle cx="12" cy="12" r="10" strokeWidth={2} />
+        <line x1="4.93" y1="4.93" x2="19.07" y2="19.07" strokeWidth={2} />
+      </svg>
+      <span
+        className="mt-0.5 font-bold uppercase"
+        style={{ fontFamily: "'Space Mono', monospace", fontSize: '8px', color: 'rgba(239,83,80,0.5)' }}
+      >
+        NO TEAMS
+      </span>
+    </div>
+  );
+}
+
 // ─── Main Page ──────────────────────────────────────────────────
 
 export default function StandingsPage() {
@@ -358,18 +384,19 @@ export default function StandingsPage() {
                     {leaderboard.rounds_played.map((round) => {
                       const label = buildRoundLabel(round.name);
                       const isCurrentRound = leaderboard.current_round?.id === round.id;
+                      const isOutcome = round.is_outcome_round === true;
                       return (
                         <th
                           key={round.id}
-                          className={`px-1.5 py-2 text-center whitespace-nowrap min-w-[56px] ${isCurrentRound ? 'border-b-2 border-[#FF5722]' : ''}`}
+                          className={`px-1.5 py-2 text-center whitespace-nowrap min-w-[56px] ${isCurrentRound ? 'border-b-2 border-[#FF5722]' : ''} ${isOutcome ? 'border-b-2 border-[#FFB300]' : ''}`}
                         >
                           <div
-                            className={`text-[10px] font-bold ${isCurrentRound ? 'text-[#FF5722]' : 'text-[#5F6B7A]'}`}
+                            className={`text-[10px] font-bold ${isOutcome ? 'text-[#FFB300]' : isCurrentRound ? 'text-[#FF5722]' : 'text-[#5F6B7A]'}`}
                             style={{ fontFamily: "'Space Mono', monospace" }}
                           >
                             {label}
                           </div>
-                          <div className="text-[9px] text-[#5F6B7A] mt-0.5" style={{ fontFamily: "'DM Sans', sans-serif" }}>
+                          <div className={`text-[9px] mt-0.5 ${isOutcome ? 'text-[#FFB300]/60' : 'text-[#5F6B7A]'}`} style={{ fontFamily: "'DM Sans', sans-serif" }}>
                             {formatDateET(round.date)}
                           </div>
                         </th>
@@ -424,6 +451,14 @@ export default function StandingsPage() {
                         {leaderboard.rounds_played.map((round) => {
                           const result = player.round_results.find((r) => r.round_id === round.id);
                           const deadlinePassed = isPickVisible(round, isYou, clockOffset);
+                          // Champion crown in outcome round
+                          if (isChampionRow && round.is_outcome_round) {
+                            return (
+                              <td key={round.id} className="px-1 py-1.5 text-center">
+                                <OutcomeCell type="champion" />
+                              </td>
+                            );
+                          }
                           return (
                             <td key={round.id} className="px-1 py-1.5 text-center">
                               <PickCell result={result} deadlinePassed={deadlinePassed} />
@@ -470,6 +505,18 @@ export default function StandingsPage() {
                         {leaderboard.rounds_played.map((round) => {
                           const result = player.round_results.find((r) => r.round_id === round.id);
                           const deadlinePassed = isPickVisible(round, isYou, clockOffset);
+                          // "No teams" indicator: show in the first round after elimination_round_id
+                          if (player.elimination_reason === 'no_available_picks' && player.elimination_round_id) {
+                            const elimIdx = leaderboard.rounds_played.findIndex(r => r.id === player.elimination_round_id);
+                            const thisIdx = leaderboard.rounds_played.indexOf(round);
+                            if (elimIdx >= 0 && thisIdx === elimIdx + 1) {
+                              return (
+                                <td key={round.id} className="px-1 py-1.5 text-center">
+                                  <OutcomeCell type="no_teams" />
+                                </td>
+                              );
+                            }
+                          }
                           return (
                             <td key={round.id} className="px-1 py-1.5 text-center">
                               <PickCell result={result} deadlinePassed={deadlinePassed} />

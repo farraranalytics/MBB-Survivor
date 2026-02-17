@@ -189,6 +189,7 @@ export async function getPoolLeaderboard(poolId: string): Promise<PoolLeaderboar
       is_eliminated: player.is_eliminated,
       elimination_reason: player.elimination_reason as 'wrong_pick' | 'missed_pick' | 'manual' | 'no_available_picks' | null,
       elimination_round_name: eliminationRoundName,
+      elimination_round_id: player.elimination_round_id || null,
       picks_count: playerPicks.length,
       correct_picks: correctPicks,
       survival_streak: survivalStreak,

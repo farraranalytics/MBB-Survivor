@@ -24,6 +24,7 @@ export interface StandingsPlayer {
   is_eliminated: boolean;
   elimination_reason: 'wrong_pick' | 'missed_pick' | 'manual' | 'no_available_picks' | null;
   elimination_round_name: string | null;
+  elimination_round_id: string | null;
   picks_count: number;
   correct_picks: number;
   survival_streak: number; // consecutive correct picks from most recent
@@ -57,6 +58,7 @@ export interface PoolLeaderboard {
     date: string;
     deadline_datetime: string;
     is_complete: boolean;
+    is_outcome_round?: boolean;
   }[];
   players: StandingsPlayer[];
 }

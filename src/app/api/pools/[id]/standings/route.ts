@@ -216,6 +216,7 @@ async function buildLeaderboard(poolId: string): Promise<PoolLeaderboard> {
       is_eliminated: player.is_eliminated,
       elimination_reason: player.elimination_reason as 'wrong_pick' | 'missed_pick' | 'manual' | 'no_available_picks' | null,
       elimination_round_name: eliminationRoundName,
+      elimination_round_id: player.elimination_round_id || null,
       picks_count: playerPicks.length,
       correct_picks: correctPicks,
       survival_streak: survivalStreak,
@@ -236,7 +237,7 @@ async function buildLeaderboard(poolId: string): Promise<PoolLeaderboard> {
 
   // Rounds that have been played (have picks), with completion status
   const roundsWithPicks = new Set(picks.map(p => p.round_id));
-  const roundsPlayed = allRounds
+  const roundsPlayed: PoolLeaderboard['rounds_played'] = allRounds
     .filter(r => roundsWithPicks.has(r.id))
     .map(r => {
       const roundGames = games.filter(g => g.round_id === r.id);
@@ -250,6 +251,26 @@ async function buildLeaderboard(poolId: string): Promise<PoolLeaderboard> {
         : r.deadline_datetime;
       return { id: r.id, name: r.name, date: r.date, deadline_datetime, is_complete };
     });
+
+  // Append outcome round when pool is complete (shows crown / "no teams" cells)
+  const poolStatusForOutcome = pool.status === 'complete' || state.status === 'tournament_complete';
+  if (poolStatusForOutcome) {
+    const lastPlayedRound = roundsPlayed[roundsPlayed.length - 1];
+    if (lastPlayedRound) {
+      const lastDate = lastPlayedRound.date;
+      const nextRound = allRounds.find(r => r.date > lastDate && !roundsWithPicks.has(r.id));
+      if (nextRound) {
+        roundsPlayed.push({
+          id: nextRound.id,
+          name: nextRound.name,
+          date: nextRound.date,
+          deadline_datetime: nextRound.deadline_datetime,
+          is_complete: false,
+          is_outcome_round: true,
+        });
+      }
+    }
+  }
 
   const entryFee = parseFloat(pool.entry_fee) || 0;
   const prizePot = parseFloat(pool.prize_pool) || (entryFee * standingsPlayers.length);
