@@ -1,10 +1,15 @@
 node_modules/
 .next/
 dist/
+
+# ─── Secrets: NEVER commit these ───
 .env
-.env.local
-.env.production.local
-.env.development.local
+.env.*
+!.env.example
+*.pem
+*.key
+credentials.json
+secrets.json
 
 # Local-only scripts (use .env.local for credentials)
 scripts/*.mjs
