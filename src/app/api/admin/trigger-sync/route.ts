@@ -38,6 +38,9 @@ export async function POST(request: NextRequest) {
     case 'activate-rounds':
       targetUrl = `${baseUrl}/api/cron/activate-rounds`;
       break;
+    case 'sync-odds':
+      targetUrl = `${baseUrl}/api/cron/sync-odds`;
+      break;
     default:
       return NextResponse.json({ error: 'Invalid action' }, { status: 400 });
   }
