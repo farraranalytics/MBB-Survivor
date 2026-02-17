@@ -167,14 +167,24 @@ export async function POST(request: NextRequest) {
         quota = result.quota;
         data = {
           eventCount: result.events.length,
-          events: result.events.map(e => ({
-            id: e.id,
-            homeTeam: e.home_team,
-            awayTeam: e.away_team,
-            commenceTime: e.commence_time,
-            bookmakerCount: e.bookmakers.length,
-            bookmakers: e.bookmakers.map(bk => bk.title),
-          })),
+          events: result.events.map(e => {
+            const odds = extractBestOdds(e.bookmakers, e.home_team, e.away_team);
+            return {
+              id: e.id,
+              homeTeam: e.home_team,
+              awayTeam: e.away_team,
+              commenceTime: e.commence_time,
+              bookmakerCount: e.bookmakers.length,
+              odds: {
+                homeMoneyline: odds.team1Moneyline,
+                awayMoneyline: odds.team2Moneyline,
+                homeSpread: odds.team1Spread,
+                awaySpread: odds.team2Spread,
+                homeWinProb: odds.team1WinProbability,
+                awayWinProb: odds.team2WinProbability,
+              },
+            };
+          }),
         };
         break;
       }
