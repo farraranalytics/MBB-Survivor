@@ -55,6 +55,12 @@ export async function POST(request: NextRequest) {
       activeRound = { id: state.currentRound.id, name: state.currentRound.name, date: state.currentRound.date };
     }
 
+    // Ensure pools are active (in production the activate-rounds cron does this)
+    await supabaseAdmin
+      .from('pools')
+      .update({ status: 'active' })
+      .eq('status', 'open');
+
     // Get all non-final games for this round (skip shells missing teams)
     const { data: pendingGames } = await supabaseAdmin
       .from('games')

@@ -263,6 +263,12 @@ async function handleRoundStarted(roundId: string, roundName: string, simulatedD
 
 // ── Round Complete: complete all games, process results ──────────────
 async function handleRoundComplete(roundId: string, roundName: string, simulatedDatetime: string) {
+  // Ensure pools are active (in production the activate-rounds cron does this)
+  await supabaseAdmin
+    .from('pools')
+    .update({ status: 'active' })
+    .eq('status', 'open');
+
   // Complete all non-final games that have both teams (skip shells missing teams)
   const { data: pendingGames } = await supabaseAdmin
     .from('games')
