@@ -20,7 +20,7 @@ import {
   getGameIndexForRound,
   seedToR64Index,
 } from '@/lib/bracket';
-import RegionTracker from './RegionTracker';
+
 import DayCard, { MatchupInfo } from './DayCard';
 import BracketFlow from './BracketFlow';
 import UsageMap from './UsageMap';
@@ -475,15 +475,6 @@ export default function BracketPlanner({
             </button>
           )}
         </div>
-      </div>
-
-      {/* Region Trackers */}
-      <div id="region-tracker">
-        <RegionTracker
-          regionCounts={regionCounts}
-          bracket={bracket}
-          usedTeamIds={usedTeamIds}
-        />
       </div>
 
       {/* Day Cards */}
