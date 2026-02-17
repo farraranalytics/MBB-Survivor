@@ -21,6 +21,50 @@ interface ActionResult {
   result: any;
 }
 
+// ─── Helpers ────────────────────────────────────────────────────
+
+function formatTime(iso: string): string {
+  try {
+    const d = new Date(iso);
+    return d.toLocaleTimeString('en-US', {
+      timeZone: 'America/New_York',
+      hour: 'numeric',
+      minute: '2-digit',
+    }) + ' ET';
+  } catch {
+    return '—';
+  }
+}
+
+function formatDate(iso: string): string {
+  try {
+    const d = new Date(iso);
+    return d.toLocaleDateString('en-US', {
+      timeZone: 'America/New_York',
+      weekday: 'short',
+      month: 'short',
+      day: 'numeric',
+    });
+  } catch {
+    return '—';
+  }
+}
+
+function formatProb(p: number | null): string {
+  if (p === null || p === undefined) return '—';
+  return `${(p * 100).toFixed(1)}%`;
+}
+
+function formatML(ml: number | null): string {
+  if (ml === null || ml === undefined) return '—';
+  return ml > 0 ? `+${ml}` : `${ml}`;
+}
+
+function formatSpread(sp: number | null): string {
+  if (sp === null || sp === undefined) return '—';
+  return sp > 0 ? `+${sp}` : `${sp}`;
+}
+
 // ─── Status Dot ─────────────────────────────────────────────────
 
 function StatusDot({ color }: { color: 'green' | 'yellow' | 'red' | 'gray' }) {
@@ -75,41 +119,370 @@ function TestButton({
   );
 }
 
-// ─── Results Panel ──────────────────────────────────────────────
+// ─── Result Header Bar ──────────────────────────────────────────
 
-function ResultsPanel({ result }: { result: TestResult | null }) {
+function ResultHeader({
+  result,
+  expanded,
+  onToggle,
+  label,
+}: {
+  result: TestResult;
+  expanded: boolean;
+  onToggle: () => void;
+  label?: string;
+}) {
+  return (
+    <button
+      onClick={onToggle}
+      className="flex items-center gap-1.5 text-xs text-[#9BA3AE] hover:text-[#E8E6E1] transition-colors mb-2 w-full"
+      style={{ fontFamily: "'DM Sans', sans-serif" }}
+    >
+      <span className="text-[10px]">{expanded ? '▼' : '▶'}</span>
+      {label || 'Result'}
+      <span className="text-[#5F6B7A]">|</span>
+      <span className={result.success ? 'text-[#4CAF50]' : 'text-[#EF5350]'}>
+        {result.success ? 'OK' : 'ERROR'}
+      </span>
+      <span className="text-[#5F6B7A]">|</span>
+      <span>{result.duration_ms}ms</span>
+      {result.quota && result.quota.remaining !== null && (
+        <>
+          <span className="text-[#5F6B7A]">|</span>
+          <span>Quota: {result.quota.remaining}</span>
+        </>
+      )}
+      {result.data?.eventCount !== undefined && (
+        <>
+          <span className="text-[#5F6B7A]">|</span>
+          <span>{result.data.eventCount} games</span>
+        </>
+      )}
+    </button>
+  );
+}
+
+// ─── ESPN Matchup Card ──────────────────────────────────────────
+
+function EspnGameCard({ event }: { event: any }) {
+  const comp = event.competitors || [];
+  const away = comp.find((c: any) => c.homeAway === 'away') || comp[1];
+  const home = comp.find((c: any) => c.homeAway === 'home') || comp[0];
+  const isFinal = event.completed;
+  const isLive = event.status === 'STATUS_IN_PROGRESS';
+
+  return (
+    <div className="bg-[#080810] rounded-[10px] p-3 border border-[rgba(255,255,255,0.04)]">
+      {/* Header: time + status */}
+      <div className="flex justify-between items-center mb-2">
+        <span
+          className="text-[10px] tracking-[0.08em] text-[#5F6B7A] uppercase"
+          style={{ fontFamily: "'Space Mono', monospace" }}
+        >
+          {formatTime(event.datetime)}
+        </span>
+        {isFinal && (
+          <span className="text-[9px] tracking-[0.1em] font-bold text-[#5F6B7A] bg-[rgba(255,255,255,0.04)] px-1.5 py-0.5 rounded-[4px] uppercase"
+            style={{ fontFamily: "'Space Mono', monospace" }}>FINAL</span>
+        )}
+        {isLive && (
+          <span className="text-[9px] tracking-[0.1em] font-bold text-[#4CAF50] bg-[rgba(76,175,80,0.1)] px-1.5 py-0.5 rounded-[4px] uppercase"
+            style={{ fontFamily: "'Space Mono', monospace" }}>LIVE</span>
+        )}
+        {!isFinal && !isLive && (
+          <span className="text-[9px] tracking-[0.1em] text-[#5F6B7A]"
+            style={{ fontFamily: "'Space Mono', monospace" }}>{event.statusDetail || ''}</span>
+        )}
+      </div>
+
+      {/* Team rows */}
+      {[away, home].map((team: any, i: number) => {
+        if (!team) return null;
+        const isWinner = isFinal && team.winner;
+        return (
+          <div
+            key={i}
+            className={`flex items-center justify-between py-1.5 px-2 rounded-[6px] ${
+              isWinner ? 'bg-[rgba(76,175,80,0.08)]' : ''
+            } ${i === 0 ? 'mb-0.5' : ''}`}
+          >
+            <div className="flex items-center gap-2 min-w-0 flex-1">
+              <span
+                className={`text-[11px] w-4 text-right flex-shrink-0 ${
+                  team.homeAway === 'home' ? 'text-[#5F6B7A]' : 'text-[#5F6B7A]'
+                }`}
+                style={{ fontFamily: "'Space Mono', monospace" }}
+              >
+                {team.homeAway === 'away' ? '@' : ''}
+              </span>
+              <span
+                className={`text-[13px] font-semibold uppercase truncate ${
+                  isWinner ? 'text-[#E8E6E1]' : isFinal ? 'text-[#5F6B7A]' : 'text-[#E8E6E1]'
+                }`}
+                style={{ fontFamily: "'Oswald', sans-serif" }}
+              >
+                {team.team}
+              </span>
+            </div>
+            {team.score !== undefined && team.score !== null && (
+              <span
+                className={`text-[13px] font-bold flex-shrink-0 ${
+                  isWinner ? 'text-[#E8E6E1]' : 'text-[#5F6B7A]'
+                }`}
+                style={{ fontFamily: "'Space Mono', monospace" }}
+              >
+                {team.score}
+              </span>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+// ─── Odds Matchup Card ──────────────────────────────────────────
+
+function OddsGameCard({ event }: { event: any }) {
+  const odds = event.odds || {};
+  const homeFavored = (odds.homeMoneyline ?? 0) < (odds.awayMoneyline ?? 0);
+
+  return (
+    <div className="bg-[#080810] rounded-[10px] p-3 border border-[rgba(255,255,255,0.04)]">
+      {/* Header: time + bookmaker count */}
+      <div className="flex justify-between items-center mb-2">
+        <span
+          className="text-[10px] tracking-[0.08em] text-[#5F6B7A] uppercase"
+          style={{ fontFamily: "'Space Mono', monospace" }}
+        >
+          {formatTime(event.commenceTime)}
+        </span>
+        <span
+          className="text-[9px] tracking-[0.1em] text-[#5F6B7A]"
+          style={{ fontFamily: "'Space Mono', monospace" }}
+        >
+          {event.bookmakerCount} BOOKS
+        </span>
+      </div>
+
+      {/* Column headers */}
+      <div className="flex items-center justify-end gap-0 mb-1 px-2">
+        <span className="text-[8px] tracking-[0.1em] text-[#5F6B7A] w-12 text-right" style={{ fontFamily: "'Space Mono', monospace" }}>ML</span>
+        <span className="text-[8px] tracking-[0.1em] text-[#5F6B7A] w-12 text-right" style={{ fontFamily: "'Space Mono', monospace" }}>SPRD</span>
+        <span className="text-[8px] tracking-[0.1em] text-[#5F6B7A] w-14 text-right" style={{ fontFamily: "'Space Mono', monospace" }}>WIN%</span>
+      </div>
+
+      {/* Away team row */}
+      <div className={`flex items-center justify-between py-1.5 px-2 rounded-[6px] mb-0.5 ${
+        !homeFavored ? 'bg-[rgba(76,175,80,0.06)]' : ''
+      }`}>
+        <div className="flex items-center gap-2 min-w-0 flex-1">
+          <span className="text-[11px] w-4 text-right flex-shrink-0 text-[#5F6B7A]" style={{ fontFamily: "'Space Mono', monospace" }}>@</span>
+          <span
+            className="text-[13px] font-semibold uppercase truncate text-[#E8E6E1]"
+            style={{ fontFamily: "'Oswald', sans-serif" }}
+          >
+            {event.awayTeam}
+          </span>
+        </div>
+        <div className="flex items-center gap-0 flex-shrink-0">
+          <span className={`text-[11px] w-12 text-right ${(odds.awayMoneyline ?? 0) < 0 ? 'text-[#4CAF50]' : 'text-[#E8E6E1]'}`}
+            style={{ fontFamily: "'Space Mono', monospace" }}>{formatML(odds.awayMoneyline)}</span>
+          <span className="text-[11px] w-12 text-right text-[#9BA3AE]"
+            style={{ fontFamily: "'Space Mono', monospace" }}>{formatSpread(odds.awaySpread)}</span>
+          <span className={`text-[11px] w-14 text-right font-semibold ${
+            (odds.awayWinProb ?? 0) > 0.5 ? 'text-[#4CAF50]' : 'text-[#9BA3AE]'
+          }`} style={{ fontFamily: "'Space Mono', monospace" }}>{formatProb(odds.awayWinProb)}</span>
+        </div>
+      </div>
+
+      {/* Home team row */}
+      <div className={`flex items-center justify-between py-1.5 px-2 rounded-[6px] ${
+        homeFavored ? 'bg-[rgba(76,175,80,0.06)]' : ''
+      }`}>
+        <div className="flex items-center gap-2 min-w-0 flex-1">
+          <span className="text-[11px] w-4 text-right flex-shrink-0 text-[#5F6B7A]" style={{ fontFamily: "'Space Mono', monospace" }}></span>
+          <span
+            className="text-[13px] font-semibold uppercase truncate text-[#E8E6E1]"
+            style={{ fontFamily: "'Oswald', sans-serif" }}
+          >
+            {event.homeTeam}
+          </span>
+        </div>
+        <div className="flex items-center gap-0 flex-shrink-0">
+          <span className={`text-[11px] w-12 text-right ${(odds.homeMoneyline ?? 0) < 0 ? 'text-[#4CAF50]' : 'text-[#E8E6E1]'}`}
+            style={{ fontFamily: "'Space Mono', monospace" }}>{formatML(odds.homeMoneyline)}</span>
+          <span className="text-[11px] w-12 text-right text-[#9BA3AE]"
+            style={{ fontFamily: "'Space Mono', monospace" }}>{formatSpread(odds.homeSpread)}</span>
+          <span className={`text-[11px] w-14 text-right font-semibold ${
+            (odds.homeWinProb ?? 0) > 0.5 ? 'text-[#4CAF50]' : 'text-[#9BA3AE]'
+          }`} style={{ fontFamily: "'Space Mono', monospace" }}>{formatProb(odds.homeWinProb)}</span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Visual Results Panels ──────────────────────────────────────
+
+function EspnResultsPanel({ result }: { result: TestResult | null }) {
+  const [expanded, setExpanded] = useState(true);
+  const [showRaw, setShowRaw] = useState(false);
+
+  if (!result) return null;
+
+  const events = result.data?.events || [];
+
+  // Group events by date
+  const grouped: Record<string, any[]> = {};
+  for (const e of events) {
+    const dateKey = formatDate(e.datetime);
+    if (!grouped[dateKey]) grouped[dateKey] = [];
+    grouped[dateKey].push(e);
+  }
+
+  return (
+    <div className="mt-3">
+      <ResultHeader result={result} expanded={expanded} onToggle={() => setExpanded(!expanded)} label="Scoreboard" />
+
+      {expanded && (
+        <>
+          {result.error ? (
+            <div className="bg-[#1B2A3D] rounded-[10px] p-3 border border-[rgba(239,83,80,0.2)]">
+              <span className="text-xs text-[#EF5350]" style={{ fontFamily: "'Space Mono', monospace" }}>{result.error}</span>
+            </div>
+          ) : (
+            <>
+              {/* Date groups */}
+              {Object.entries(grouped).map(([date, dateEvents]) => (
+                <div key={date} className="mb-3">
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className="text-[10px] tracking-[0.1em] font-bold text-[#9BA3AE] uppercase"
+                      style={{ fontFamily: "'Space Mono', monospace" }}>{date}</span>
+                    <span className="text-[10px] text-[#5F6B7A]" style={{ fontFamily: "'Space Mono', monospace" }}>
+                      {dateEvents.length} {dateEvents.length === 1 ? 'game' : 'games'}
+                    </span>
+                    <div className="flex-1 h-px bg-[rgba(255,255,255,0.05)]" />
+                  </div>
+                  <div className="grid grid-cols-1 gap-1.5">
+                    {dateEvents.map((event: any, i: number) => (
+                      <EspnGameCard key={event.id || i} event={event} />
+                    ))}
+                  </div>
+                </div>
+              ))}
+
+              {/* Raw JSON toggle */}
+              <button
+                onClick={() => setShowRaw(!showRaw)}
+                className="text-[10px] text-[#5F6B7A] hover:text-[#9BA3AE] transition-colors mt-2"
+                style={{ fontFamily: "'DM Sans', sans-serif" }}
+              >
+                {showRaw ? 'Hide' : 'Show'} raw JSON
+              </button>
+              {showRaw && (
+                <pre className="text-[10px] text-[#5F6B7A] bg-[#1B2A3D] rounded-[10px] p-3 overflow-auto max-h-60 mt-1 border border-[rgba(255,255,255,0.03)]"
+                  style={{ fontFamily: "'Space Mono', monospace" }}>
+                  {JSON.stringify(result.data, null, 2)}
+                </pre>
+              )}
+            </>
+          )}
+        </>
+      )}
+    </div>
+  );
+}
+
+function OddsResultsPanel({ result }: { result: TestResult | null }) {
+  const [expanded, setExpanded] = useState(true);
+  const [showRaw, setShowRaw] = useState(false);
+
+  if (!result) return null;
+
+  const events = result.data?.events || [];
+
+  // Group events by date
+  const grouped: Record<string, any[]> = {};
+  for (const e of events) {
+    const dateKey = formatDate(e.commenceTime);
+    if (!grouped[dateKey]) grouped[dateKey] = [];
+    grouped[dateKey].push(e);
+  }
+
+  // Check if this is the odds-fetch test (has events with odds) vs other tests
+  const hasMatchupData = events.length > 0 && events[0].odds !== undefined;
+
+  return (
+    <div className="mt-3">
+      <ResultHeader result={result} expanded={expanded} onToggle={() => setExpanded(!expanded)} label="Odds" />
+
+      {expanded && (
+        <>
+          {result.error ? (
+            <div className="bg-[#1B2A3D] rounded-[10px] p-3 border border-[rgba(239,83,80,0.2)]">
+              <span className="text-xs text-[#EF5350]" style={{ fontFamily: "'Space Mono', monospace" }}>{result.error}</span>
+            </div>
+          ) : hasMatchupData ? (
+            <>
+              {Object.entries(grouped).map(([date, dateEvents]) => (
+                <div key={date} className="mb-3">
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className="text-[10px] tracking-[0.1em] font-bold text-[#9BA3AE] uppercase"
+                      style={{ fontFamily: "'Space Mono', monospace" }}>{date}</span>
+                    <span className="text-[10px] text-[#5F6B7A]" style={{ fontFamily: "'Space Mono', monospace" }}>
+                      {dateEvents.length} {dateEvents.length === 1 ? 'game' : 'games'}
+                    </span>
+                    <div className="flex-1 h-px bg-[rgba(255,255,255,0.05)]" />
+                  </div>
+                  <div className="grid grid-cols-1 gap-1.5">
+                    {dateEvents.map((event: any, i: number) => (
+                      <OddsGameCard key={event.id || i} event={event} />
+                    ))}
+                  </div>
+                </div>
+              ))}
+
+              <button
+                onClick={() => setShowRaw(!showRaw)}
+                className="text-[10px] text-[#5F6B7A] hover:text-[#9BA3AE] transition-colors mt-2"
+                style={{ fontFamily: "'DM Sans', sans-serif" }}
+              >
+                {showRaw ? 'Hide' : 'Show'} raw JSON
+              </button>
+              {showRaw && (
+                <pre className="text-[10px] text-[#5F6B7A] bg-[#1B2A3D] rounded-[10px] p-3 overflow-auto max-h-60 mt-1 border border-[rgba(255,255,255,0.03)]"
+                  style={{ fontFamily: "'Space Mono', monospace" }}>
+                  {JSON.stringify(result.data, null, 2)}
+                </pre>
+              )}
+            </>
+          ) : (
+            /* Fallback to JSON for non-matchup results (validate, active, sync-preview) */
+            <pre className="text-xs text-[#9BA3AE] bg-[#1B2A3D] rounded-[10px] p-3 overflow-auto max-h-80 border border-[rgba(255,255,255,0.03)]"
+              style={{ fontFamily: "'Space Mono', monospace" }}>
+              {JSON.stringify(result.data, null, 2)}
+            </pre>
+          )}
+        </>
+      )}
+    </div>
+  );
+}
+
+// ─── Generic JSON Panel (for non-matchup results) ───────────────
+
+function JsonResultsPanel({ result, label }: { result: TestResult | null; label?: string }) {
   const [expanded, setExpanded] = useState(true);
 
   if (!result) return null;
 
   return (
     <div className="mt-3">
-      <button
-        onClick={() => setExpanded(!expanded)}
-        className="flex items-center gap-1.5 text-xs text-[#9BA3AE] hover:text-[#E8E6E1] transition-colors mb-2"
-        style={{ fontFamily: "'DM Sans', sans-serif" }}
-      >
-        <span className="text-[10px]">{expanded ? '▼' : '▶'}</span>
-        Result
-        <span className="text-[#5F6B7A]">|</span>
-        <span className={result.success ? 'text-[#4CAF50]' : 'text-[#EF5350]'}>
-          {result.success ? 'OK' : 'ERROR'}
-        </span>
-        <span className="text-[#5F6B7A]">|</span>
-        <span>{result.duration_ms}ms</span>
-        {result.quota && result.quota.remaining !== null && (
-          <>
-            <span className="text-[#5F6B7A]">|</span>
-            <span>Quota: {result.quota.remaining} remaining</span>
-          </>
-        )}
-      </button>
-
+      <ResultHeader result={result} expanded={expanded} onToggle={() => setExpanded(!expanded)} label={label} />
       {expanded && (
-        <pre
-          className="text-xs text-[#9BA3AE] bg-[#1B2A3D] rounded-[10px] p-3 overflow-auto max-h-80 border border-[rgba(255,255,255,0.03)]"
-          style={{ fontFamily: "'Space Mono', monospace" }}
-        >
+        <pre className="text-xs text-[#9BA3AE] bg-[#1B2A3D] rounded-[10px] p-3 overflow-auto max-h-80 border border-[rgba(255,255,255,0.03)]"
+          style={{ fontFamily: "'Space Mono', monospace" }}>
           {result.error
             ? JSON.stringify({ error: result.error }, null, 2)
             : JSON.stringify(result.data, null, 2)}
@@ -127,7 +500,9 @@ export default function DiagnosticsPage() {
 
   const [authorized, setAuthorized] = useState<boolean | null>(null);
   const [espnResult, setEspnResult] = useState<TestResult | null>(null);
+  const [espnTestType, setEspnTestType] = useState<string>('');
   const [oddsResult, setOddsResult] = useState<TestResult | null>(null);
+  const [oddsTestType, setOddsTestType] = useState<string>('');
   const [runningTest, setRunningTest] = useState<string | null>(null);
   const [actionLog, setActionLog] = useState<ActionResult[]>([]);
   const [teamIdInput, setTeamIdInput] = useState('150');
@@ -167,8 +542,10 @@ export default function DiagnosticsPage() {
 
       if (isEspn) {
         setEspnResult(result);
+        setEspnTestType(test);
       } else {
         setOddsResult(result);
+        setOddsTestType(test);
       }
     } catch (err: any) {
       const errorResult: TestResult = {
@@ -176,8 +553,13 @@ export default function DiagnosticsPage() {
         error: err.message,
         duration_ms: 0,
       };
-      if (isEspn) setEspnResult(errorResult);
-      else setOddsResult(errorResult);
+      if (isEspn) {
+        setEspnResult(errorResult);
+        setEspnTestType(test);
+      } else {
+        setOddsResult(errorResult);
+        setOddsTestType(test);
+      }
     } finally {
       setRunningTest(null);
     }
@@ -237,6 +619,19 @@ export default function DiagnosticsPage() {
       </div>
     );
   }
+
+  // Choose the right panel based on which test was run
+  const renderEspnResults = () => {
+    if (!espnResult) return null;
+    if (espnTestType === 'espn-scoreboard') return <EspnResultsPanel result={espnResult} />;
+    return <JsonResultsPanel result={espnResult} label={espnTestType} />;
+  };
+
+  const renderOddsResults = () => {
+    if (!oddsResult) return null;
+    if (oddsTestType === 'odds-fetch') return <OddsResultsPanel result={oddsResult} />;
+    return <JsonResultsPanel result={oddsResult} label={oddsTestType} />;
+  };
 
   return (
     <div className="min-h-screen bg-[#0D1B2A]">
@@ -298,7 +693,7 @@ export default function DiagnosticsPage() {
             />
           </div>
 
-          <ResultsPanel result={espnResult} />
+          {renderEspnResults()}
         </div>
 
         {/* Odds API Section */}
@@ -343,7 +738,7 @@ export default function DiagnosticsPage() {
             />
           </div>
 
-          <ResultsPanel result={oddsResult} />
+          {renderOddsResults()}
         </div>
 
         {/* Quick Actions Section */}
