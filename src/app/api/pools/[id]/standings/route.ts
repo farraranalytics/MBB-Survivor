@@ -48,7 +48,7 @@ async function buildLeaderboard(poolId: string): Promise<PoolLeaderboard> {
   // 1. Pool info
   const { data: pool, error: poolError } = await supabaseAdmin
     .from('pools')
-    .select('id, name, status, entry_fee, prize_pool')
+    .select('id, name, status, winner_id, entry_fee, prize_pool')
     .eq('id', poolId)
     .single();
 
@@ -214,7 +214,7 @@ async function buildLeaderboard(poolId: string): Promise<PoolLeaderboard> {
       display_name: player.display_name,
       entry_label: player.entry_label || player.display_name,
       is_eliminated: player.is_eliminated,
-      elimination_reason: player.elimination_reason as 'wrong_pick' | 'missed_pick' | 'manual' | null,
+      elimination_reason: player.elimination_reason as 'wrong_pick' | 'missed_pick' | 'manual' | 'no_available_picks' | null,
       elimination_round_name: eliminationRoundName,
       picks_count: playerPicks.length,
       correct_picks: correctPicks,
@@ -254,12 +254,24 @@ async function buildLeaderboard(poolId: string): Promise<PoolLeaderboard> {
   const entryFee = parseFloat(pool.entry_fee) || 0;
   const prizePot = parseFloat(pool.prize_pool) || (entryFee * standingsPlayers.length);
 
+  // Champion data
+  const poolStatus = state.status === 'pre_tournament' ? 'open'
+    : state.status === 'tournament_complete' ? 'complete'
+    : (pool.status === 'complete' ? 'complete' : 'active');
+  const championEntries = poolStatus === 'complete'
+    ? standingsPlayers.filter(p => !p.is_eliminated).map(p => ({
+        entry_label: p.entry_label,
+        display_name: p.display_name,
+      }))
+    : [];
+
   return {
     pool_id: poolId,
     pool_name: pool.name,
-    pool_status: state.status === 'pre_tournament' ? 'open'
-      : state.status === 'tournament_complete' ? 'complete'
-      : 'active',
+    pool_status: poolStatus as 'open' | 'active' | 'complete',
+    winner_id: pool.winner_id || null,
+    champion_count: championEntries.length,
+    champion_entries: championEntries,
     entry_fee: entryFee,
     prize_pool: prizePot,
     total_players: standingsPlayers.length,

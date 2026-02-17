@@ -10,6 +10,8 @@ export interface ProcessingResults {
   picksMarkedIncorrect: number;
   playersEliminated: number;
   missedPickEliminations: number;
+  noAvailablePickEliminations: number;
+  championsDeclared: number;
   roundsCompleted: number;
   poolsCompleted: number;
   errors: string[];
@@ -22,6 +24,8 @@ export function createEmptyResults(): ProcessingResults {
     picksMarkedIncorrect: 0,
     playersEliminated: 0,
     missedPickEliminations: 0,
+    noAvailablePickEliminations: 0,
+    championsDeclared: 0,
     roundsCompleted: 0,
     poolsCompleted: 0,
     errors: [],
@@ -135,6 +139,171 @@ export async function processMissedPicks(
     .select('id');
 
   results.missedPickEliminations = missedEliminated?.length || 0;
+}
+
+/**
+ * After a round completes, auto-eliminate entries that have no available teams for the next round.
+ * Runs after processMissedPicks so only still-alive entries are checked.
+ * Uses completedRoundId for elimination_round_id (they were eliminated as a result of this round).
+ */
+export async function processNoAvailablePicks(
+  completedRoundId: string,
+  results: ProcessingResults
+) {
+  // Find the next round by date
+  const { data: completedRound } = await supabaseAdmin
+    .from('rounds')
+    .select('date')
+    .eq('id', completedRoundId)
+    .single();
+
+  if (!completedRound) return;
+
+  const { data: nextRound } = await supabaseAdmin
+    .from('rounds')
+    .select('id')
+    .gt('date', completedRound.date)
+    .order('date', { ascending: true })
+    .limit(1)
+    .single();
+
+  if (!nextRound) return; // No next round — tournament ending, skip
+
+  // Get games in next round with both teams populated (winners already propagated)
+  const { data: nextRoundGames } = await supabaseAdmin
+    .from('games')
+    .select('team1_id, team2_id')
+    .eq('round_id', nextRound.id)
+    .not('team1_id', 'is', null)
+    .not('team2_id', 'is', null);
+
+  if (!nextRoundGames || nextRoundGames.length === 0) return;
+
+  // Collect available team IDs
+  const availableTeamIds = new Set<string>();
+  for (const g of nextRoundGames) {
+    availableTeamIds.add(g.team1_id);
+    availableTeamIds.add(g.team2_id);
+  }
+
+  // Get alive entries
+  const { data: alivePlayers } = await supabaseAdmin
+    .from('pool_players')
+    .select('id')
+    .eq('is_eliminated', false)
+    .eq('entry_deleted', false);
+
+  if (!alivePlayers || alivePlayers.length === 0) return;
+
+  // Get all picks for alive entries to find used teams
+  const aliveIds = alivePlayers.map(p => p.id);
+  const { data: allPicks } = await supabaseAdmin
+    .from('picks')
+    .select('pool_player_id, team_id')
+    .in('pool_player_id', aliveIds);
+
+  // Build map: entry → set of used team IDs
+  const usedTeams = new Map<string, Set<string>>();
+  for (const pick of (allPicks || [])) {
+    if (!usedTeams.has(pick.pool_player_id)) {
+      usedTeams.set(pick.pool_player_id, new Set());
+    }
+    usedTeams.get(pick.pool_player_id)!.add(pick.team_id);
+  }
+
+  // Find entries with no available picks
+  const stuckIds: string[] = [];
+  for (const player of alivePlayers) {
+    const used = usedTeams.get(player.id) || new Set();
+    const hasAvailable = [...availableTeamIds].some(tid => !used.has(tid));
+    if (!hasAvailable) {
+      stuckIds.push(player.id);
+    }
+  }
+
+  if (stuckIds.length === 0) return;
+
+  // Eliminate — tagged with completed round (they were eliminated as a result of this round)
+  const { data: eliminated } = await supabaseAdmin
+    .from('pool_players')
+    .update({
+      is_eliminated: true,
+      elimination_round_id: completedRoundId,
+      elimination_reason: 'no_available_picks',
+    })
+    .in('id', stuckIds)
+    .eq('is_eliminated', false)
+    .select('id');
+
+  results.noAvailablePickEliminations = eliminated?.length || 0;
+}
+
+/**
+ * After all eliminations, check if any pool has a sole champion or a tie.
+ * - 1 alive → sole champion, complete pool
+ * - 0 alive → tie: un-eliminate entries from this round, they're co-champions
+ * - >1 alive → continue
+ */
+export async function checkForChampions(
+  roundId: string,
+  results: ProcessingResults
+) {
+  const { data: activePools } = await supabaseAdmin
+    .from('pools')
+    .select('id')
+    .eq('status', 'active');
+
+  if (!activePools || activePools.length === 0) return;
+
+  for (const pool of activePools) {
+    const { data: aliveEntries } = await supabaseAdmin
+      .from('pool_players')
+      .select('id, user_id')
+      .eq('pool_id', pool.id)
+      .eq('is_eliminated', false)
+      .eq('entry_deleted', false);
+
+    const aliveCount = aliveEntries?.length || 0;
+
+    if (aliveCount === 1) {
+      // Sole champion
+      await supabaseAdmin
+        .from('pools')
+        .update({ status: 'complete', winner_id: aliveEntries![0].user_id })
+        .eq('id', pool.id);
+      results.championsDeclared++;
+      results.poolsCompleted++;
+    } else if (aliveCount === 0) {
+      // TIE — un-eliminate entries eliminated this round in this pool
+      const { data: tiedEntries } = await supabaseAdmin
+        .from('pool_players')
+        .select('id, user_id')
+        .eq('pool_id', pool.id)
+        .eq('elimination_round_id', roundId)
+        .eq('entry_deleted', false);
+
+      if (tiedEntries && tiedEntries.length > 0) {
+        const tiedIds = tiedEntries.map(e => e.id);
+        await supabaseAdmin
+          .from('pool_players')
+          .update({
+            is_eliminated: false,
+            elimination_round_id: null,
+            elimination_reason: null,
+          })
+          .in('id', tiedIds);
+
+        // Complete pool — winner_id = first champion (backward compat), real truth = alive entries
+        await supabaseAdmin
+          .from('pools')
+          .update({ status: 'complete', winner_id: tiedEntries[0].user_id })
+          .eq('id', pool.id);
+        results.championsDeclared += tiedEntries.length;
+        results.poolsCompleted++;
+      }
+    }
+    // aliveCount > 1: tournament continues, no action
+  }
 }
 
 // ─── Pre-Generated Bracket: Winner Propagation ──────────────────

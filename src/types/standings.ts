@@ -22,7 +22,7 @@ export interface StandingsPlayer {
   display_name: string;
   entry_label: string;
   is_eliminated: boolean;
-  elimination_reason: 'wrong_pick' | 'missed_pick' | 'manual' | null;
+  elimination_reason: 'wrong_pick' | 'missed_pick' | 'manual' | 'no_available_picks' | null;
   elimination_round_name: string | null;
   picks_count: number;
   correct_picks: number;
@@ -37,6 +37,9 @@ export interface PoolLeaderboard {
   pool_id: string;
   pool_name: string;
   pool_status: 'open' | 'active' | 'complete';
+  winner_id: string | null;
+  champion_count: number;
+  champion_entries: { entry_label: string; display_name: string }[];
   entry_fee: number;
   prize_pool: number;
   total_players: number;
@@ -70,13 +73,16 @@ export interface MyPoolEntry {
   has_picked_today: boolean;
   elimination_round_name: string | null;
   elimination_team_name: string | null;
-  elimination_reason: 'wrong_pick' | 'missed_pick' | 'manual' | null;
+  elimination_reason: 'wrong_pick' | 'missed_pick' | 'manual' | 'no_available_picks' | null;
 }
 
 export interface MyPool {
   pool_id: string;
   pool_name: string;
   pool_status: 'open' | 'active' | 'complete';
+  winner_id: string | null;
+  champion_count: number;
+  champion_entries: { entry_label: string; display_name: string }[];
   join_code: string;
   creator_id: string;
   creator_name: string;

@@ -69,6 +69,32 @@ export default function PoolCard({ pool, isActive, onActivate, clickTarget, cloc
         )}
       </div>
 
+      {/* Champion banner on completed pools */}
+      {pool.pool_status === 'complete' && pool.champion_entries.length > 0 && (
+        <div className="flex items-center gap-2 px-2.5 py-1.5 bg-[rgba(255,179,0,0.08)] border border-[rgba(255,179,0,0.15)] rounded-[8px] mb-2">
+          <span className="text-sm">🏆</span>
+          <div className="flex-1 min-w-0">
+            {pool.champion_entries.length === 1 ? (
+              <p className="text-[10px] font-bold text-[#FFB300] uppercase tracking-[0.08em] truncate"
+                style={{ fontFamily: "'Space Mono', monospace" }}>
+                CHAMPION: {pool.champion_entries[0].entry_label}
+              </p>
+            ) : (
+              <div>
+                <p className="text-[10px] font-bold text-[#FFB300] uppercase tracking-[0.08em]"
+                  style={{ fontFamily: "'Space Mono', monospace" }}>
+                  CO-CHAMPIONS
+                </p>
+                <p className="text-[9px] text-[#FFB300]/70 truncate"
+                  style={{ fontFamily: "'DM Sans', sans-serif" }}>
+                  {pool.champion_entries.map(c => c.entry_label).join(', ')}
+                </p>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* Subtitle: hosted by + buy-in */}
       <p
         className="text-[10px] text-[#5F6B7A] mb-3 tracking-[0.08em]"
@@ -121,6 +147,7 @@ export default function PoolCard({ pool, isActive, onActivate, clickTarget, cloc
           <EntryRow
             key={entry.pool_player_id}
             entry={entry}
+            isPoolComplete={pool.pool_status === 'complete'}
             deadlinePassed={
               pool.deadline_datetime
                 ? new Date(pool.deadline_datetime).getTime() < (Date.now() + clockOffset)
@@ -180,12 +207,25 @@ export default function PoolCard({ pool, isActive, onActivate, clickTarget, cloc
 
 // ─── Entry Row ──────────────────────────────────────────────────
 
-function EntryRow({ entry, deadlinePassed = false }: { entry: MyPoolEntry; deadlinePassed?: boolean }) {
+function EntryRow({ entry, isPoolComplete = false, deadlinePassed = false }: { entry: MyPoolEntry; isPoolComplete?: boolean; deadlinePassed?: boolean }) {
   const alive = !entry.is_eliminated;
+  const isChampion = isPoolComplete && alive;
 
   // Badge logic
   let badge: { text: string; bgColor: string; textColor: string };
-  if (entry.is_eliminated) {
+  if (isChampion) {
+    badge = {
+      text: '🏆 CHAMPION',
+      bgColor: 'rgba(255,179,0,0.12)',
+      textColor: '#FFB300',
+    };
+  } else if (entry.is_eliminated && entry.elimination_reason === 'no_available_picks') {
+    badge = {
+      text: 'NO PICKS LEFT',
+      bgColor: 'rgba(255,179,0,0.1)',
+      textColor: '#FFB300',
+    };
+  } else if (entry.is_eliminated) {
     const reason = entry.elimination_reason === 'missed_pick' ? 'MISSED' : 'OUT';
     badge = {
       text: entry.elimination_round_name ? `\u2620 ${entry.elimination_round_name}` : `\u2620 ${reason}`,
@@ -219,8 +259,8 @@ function EntryRow({ entry, deadlinePassed = false }: { entry: MyPoolEntry; deadl
       <div
         className="w-2 h-2 rounded-full flex-shrink-0"
         style={{
-          background: alive ? '#4CAF50' : '#EF5350',
-          boxShadow: alive ? '0 0 4px rgba(76,175,80,0.4)' : 'none',
+          background: isChampion ? '#FFB300' : alive ? '#4CAF50' : '#EF5350',
+          boxShadow: isChampion ? '0 0 4px rgba(255,179,0,0.4)' : alive ? '0 0 4px rgba(76,175,80,0.4)' : 'none',
         }}
       />
 

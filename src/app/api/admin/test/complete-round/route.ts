@@ -5,6 +5,8 @@ import { getTournamentStateServer } from '@/lib/status-server';
 import {
   processCompletedGame,
   processMissedPicks,
+  processNoAvailablePicks,
+  checkForChampions,
   checkRoundCompletion,
   propagateWinner,
   createEmptyResults,
@@ -149,8 +151,10 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    // All games done — process missed picks + round completion
+    // All games done — process missed picks, no-available-picks, champions, round completion
     await processMissedPicks(activeRound.id, results);
+    await processNoAvailablePicks(activeRound.id, results);
+    await checkForChampions(activeRound.id, results);
     await checkRoundCompletion(activeRound.id, results);
 
     return NextResponse.json({

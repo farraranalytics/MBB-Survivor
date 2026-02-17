@@ -14,9 +14,6 @@ export default function QuickStats({ pools }: QuickStatsProps) {
     0
   );
 
-  // Best streak across all entries
-  const bestStreak = pools.reduce((best, p) => Math.max(best, p.your_streak), 0);
-
   // Active pool count
   const activePools = pools.length;
 
@@ -28,14 +25,6 @@ export default function QuickStats({ pools }: QuickStatsProps) {
       color: '#4CAF50',
       bgColor: 'rgba(76,175,80,0.08)',
       borderColor: 'rgba(76,175,80,0.15)',
-    },
-    {
-      value: bestStreak,
-      label: 'DAYS',
-      title: 'BEST STREAK',
-      color: '#FFB300',
-      bgColor: 'rgba(255,179,0,0.08)',
-      borderColor: 'rgba(255,179,0,0.15)',
     },
     {
       value: activePools,

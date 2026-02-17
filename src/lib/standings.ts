@@ -17,7 +17,7 @@ export async function getPoolLeaderboard(poolId: string): Promise<PoolLeaderboar
   // 1. Pool info
   const { data: pool, error: poolError } = await supabase
     .from('pools')
-    .select('id, name, status, entry_fee, prize_pool')
+    .select('id, name, status, winner_id, entry_fee, prize_pool')
     .eq('id', poolId)
     .single();
 
@@ -187,7 +187,7 @@ export async function getPoolLeaderboard(poolId: string): Promise<PoolLeaderboar
       display_name: player.display_name,
       entry_label: player.entry_label || player.display_name,
       is_eliminated: player.is_eliminated,
-      elimination_reason: player.elimination_reason as 'wrong_pick' | 'missed_pick' | 'manual' | null,
+      elimination_reason: player.elimination_reason as 'wrong_pick' | 'missed_pick' | 'manual' | 'no_available_picks' | null,
       elimination_round_name: eliminationRoundName,
       picks_count: playerPicks.length,
       correct_picks: correctPicks,
@@ -228,12 +228,24 @@ export async function getPoolLeaderboard(poolId: string): Promise<PoolLeaderboar
   const entryFee = parseFloat(pool.entry_fee) || 0;
   const prizePot = parseFloat(pool.prize_pool) || (entryFee * standingsPlayers.length);
 
+  // Champion data: alive entries in a completed pool are champions
+  const poolStatus = state.status === 'pre_tournament' ? 'open'
+    : state.status === 'tournament_complete' ? 'complete'
+    : (pool.status === 'complete' ? 'complete' : 'active');
+  const championEntries = poolStatus === 'complete'
+    ? standingsPlayers.filter(p => !p.is_eliminated).map(p => ({
+        entry_label: p.entry_label,
+        display_name: p.display_name,
+      }))
+    : [];
+
   return {
     pool_id: poolId,
     pool_name: pool.name,
-    pool_status: state.status === 'pre_tournament' ? 'open'
-      : state.status === 'tournament_complete' ? 'complete'
-      : 'active',
+    pool_status: poolStatus as 'open' | 'active' | 'complete',
+    winner_id: pool.winner_id || null,
+    champion_count: championEntries.length,
+    champion_entries: championEntries,
     entry_fee: entryFee,
     prize_pool: prizePot,
     total_players: standingsPlayers.length,
@@ -274,6 +286,7 @@ export async function getMyPools(userId: string): Promise<MyPool[]> {
         id,
         name,
         status,
+        winner_id,
         join_code,
         creator_id,
         max_entries_per_user,
@@ -322,6 +335,7 @@ export async function getMyPools(userId: string): Promise<MyPool[]> {
       id: string;
       name: string;
       status: string;
+      winner_id: string | null;
       join_code: string;
       creator_id: string;
       max_entries_per_user: number | null;
@@ -393,7 +407,7 @@ export async function getMyPools(userId: string): Promise<MyPool[]> {
       // Build elimination context for eliminated entries
       let eliminationRoundName: string | null = null;
       let eliminationTeamName: string | null = null;
-      const eliminationReason = ((entry as any).elimination_reason as 'wrong_pick' | 'missed_pick' | 'manual' | null) || null;
+      const eliminationReason = ((entry as any).elimination_reason as 'wrong_pick' | 'missed_pick' | 'manual' | 'no_available_picks' | null) || null;
 
       if (entry.is_eliminated) {
         const elimRoundId = (entry as any).elimination_round_id;
@@ -426,12 +440,31 @@ export async function getMyPools(userId: string): Promise<MyPool[]> {
       });
     }
 
+    // Resolve champion data for completed pools
+    const myPoolStatus = state.status === 'pre_tournament' ? 'open'
+      : state.status === 'tournament_complete' ? 'complete'
+      : (pool.status === 'complete' ? 'complete' : 'active');
+    let championEntries: { entry_label: string; display_name: string }[] = [];
+    if (myPoolStatus === 'complete') {
+      const { data: champions } = await supabase
+        .from('pool_players')
+        .select('entry_label, display_name')
+        .eq('pool_id', pool.id)
+        .eq('is_eliminated', false)
+        .eq('entry_deleted', false);
+      championEntries = (champions || []).map(c => ({
+        entry_label: c.entry_label || c.display_name,
+        display_name: c.display_name,
+      }));
+    }
+
     myPools.push({
       pool_id: pool.id,
       pool_name: pool.name,
-      pool_status: state.status === 'pre_tournament' ? 'open'
-        : state.status === 'tournament_complete' ? 'complete'
-        : 'active',
+      pool_status: myPoolStatus as 'open' | 'active' | 'complete',
+      winner_id: pool.winner_id || null,
+      champion_count: championEntries.length,
+      champion_entries: championEntries,
       join_code: pool.join_code,
       creator_id: pool.creator_id,
       creator_name: creatorName,

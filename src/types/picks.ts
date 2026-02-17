@@ -26,7 +26,7 @@ export interface PoolPlayer {
   entry_label: string | null;
   is_eliminated: boolean;
   elimination_round_id: string | null;
-  elimination_reason: 'wrong_pick' | 'missed_pick' | 'manual' | null;
+  elimination_reason: 'wrong_pick' | 'missed_pick' | 'manual' | 'no_available_picks' | null;
   joined_at: string;
 }
 

@@ -264,6 +264,32 @@ export default function StandingsPage() {
           </div>
         </div>
 
+        {/* ─── Champion Banner ────────────────────────────────── */}
+        {leaderboard.pool_status === 'complete' && leaderboard.champion_entries.length > 0 && (
+          <div className="flex items-center gap-3 px-4 py-3 bg-[rgba(255,179,0,0.08)] border border-[rgba(255,179,0,0.2)] rounded-[12px] mb-3 sm:mb-4">
+            <span className="text-2xl">🏆</span>
+            <div>
+              {leaderboard.champion_entries.length === 1 ? (
+                <p className="text-sm font-bold text-[#FFB300] uppercase"
+                  style={{ fontFamily: "'Oswald', sans-serif" }}>
+                  Survivor Champion: {leaderboard.champion_entries[0].entry_label}
+                </p>
+              ) : (
+                <>
+                  <p className="text-sm font-bold text-[#FFB300] uppercase"
+                    style={{ fontFamily: "'Oswald', sans-serif" }}>
+                    {leaderboard.champion_entries.length}-Way Tie
+                  </p>
+                  <p className="text-xs text-[#FFB300]/80 mt-0.5"
+                    style={{ fontFamily: "'DM Sans', sans-serif" }}>
+                    {leaderboard.champion_entries.map(c => c.entry_label).join(', ')}
+                  </p>
+                </>
+              )}
+            </div>
+          </div>
+        )}
+
         {/* ─── Filter Tabs + Sort Dropdown ────────────────────── */}
         <div className="flex items-center justify-between mb-3 sm:mb-4">
           <div className="flex space-x-1 bg-[#111827] rounded-[10px] p-1">
@@ -357,23 +383,33 @@ export default function StandingsPage() {
                     <tr>
                       <td colSpan={leaderboard.rounds_played.length + 1} className="px-3 py-2 bg-[#0D1B2A] border-b border-[rgba(255,255,255,0.05)]">
                         <span className="label">
-                          ALIVE <span className="text-[#9BA3AE] font-normal" style={{ fontFamily: "'DM Sans', sans-serif", textTransform: 'none' }}>&middot; {alivePlayers.length} remaining</span>
+                          {leaderboard.pool_status === 'complete' ? (
+                            <><span style={{ color: '#FFB300' }}>CHAMPION{alivePlayers.length > 1 ? 'S' : ''}</span> <span className="text-[#9BA3AE] font-normal" style={{ fontFamily: "'DM Sans', sans-serif", textTransform: 'none' }}>&middot; {alivePlayers.length > 1 ? `${alivePlayers.length}-Way Tie` : 'Last One Standing'}</span></>
+                          ) : (
+                            <>ALIVE <span className="text-[#9BA3AE] font-normal" style={{ fontFamily: "'DM Sans', sans-serif", textTransform: 'none' }}>&middot; {alivePlayers.length} remaining</span></>
+                          )}
                         </span>
                       </td>
                     </tr>
                   )}
                   {alivePlayers.map((player, index) => {
                     const isYou = user?.id === player.user_id;
+                    const isChampionRow = leaderboard.pool_status === 'complete';
                     return (
                       <tr
                         key={player.pool_player_id}
                         className={`border-b border-[rgba(255,255,255,0.05)] ${
-                          isYou ? 'bg-[rgba(255,87,34,0.05)]' : index % 2 === 0 ? 'bg-[#111827]' : 'bg-[#0D1B2A]'
+                          isChampionRow ? 'bg-[rgba(255,179,0,0.04)]'
+                          : isYou ? 'bg-[rgba(255,87,34,0.05)]' : index % 2 === 0 ? 'bg-[#111827]' : 'bg-[#0D1B2A]'
                         }`}
                       >
                         <td className="sticky left-0 bg-inherit z-10 px-3 py-2 whitespace-nowrap">
                           <div className="flex items-center space-x-1.5">
-                            <span className="inline-block w-1.5 h-1.5 rounded-full flex-shrink-0 bg-[#4CAF50]" />
+                            {isChampionRow ? (
+                              <span className="text-sm flex-shrink-0">🏆</span>
+                            ) : (
+                              <span className="inline-block w-1.5 h-1.5 rounded-full flex-shrink-0 bg-[#4CAF50]" />
+                            )}
                             <div style={{ maxWidth: '120px' }}>
                               <p className="text-xs font-bold text-[#E8E6E1] leading-tight truncate" style={{ fontFamily: "'Oswald', sans-serif", textTransform: 'uppercase' }}>
                                 {player.entry_label}

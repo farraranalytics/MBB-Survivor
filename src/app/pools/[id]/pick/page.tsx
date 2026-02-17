@@ -304,7 +304,7 @@ function SpectatorHeader({
   eliminationInfo,
   pickHistory,
 }: {
-  eliminationInfo: { roundName: string; teamName: string | null; reason: 'wrong_pick' | 'missed_pick' | 'manual' | null };
+  eliminationInfo: { roundName: string; teamName: string | null; reason: 'wrong_pick' | 'missed_pick' | 'manual' | 'no_available_picks' | null };
   pickHistory: Pick[];
 }) {
   const survivedRounds = pickHistory.filter(p => p.is_correct === true).length;
@@ -314,6 +314,8 @@ function SpectatorHeader({
     reasonText = `Picked ${eliminationInfo.teamName}`;
   } else if (eliminationInfo.reason === 'missed_pick') {
     reasonText = 'No pick submitted';
+  } else if (eliminationInfo.reason === 'no_available_picks') {
+    reasonText = 'No teams available to pick';
   } else if (eliminationInfo.reason === 'manual') {
     reasonText = 'Manually removed';
   }
@@ -361,6 +363,64 @@ function SpectatorHeader({
             })}
           </div>
           <p className="text-xs text-[#9BA3AE] text-center mt-2" style={{ fontFamily: "'DM Sans', sans-serif" }}>
+            Survived {survivedRounds} round{survivedRounds !== 1 ? 's' : ''}
+          </p>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── Champion Header (winner display) ────────────────────────────
+
+function ChampionHeader({
+  championCount,
+  poolName,
+  pickHistory,
+}: {
+  championCount: number;
+  poolName: string;
+  pickHistory: Pick[];
+}) {
+  const survivedRounds = pickHistory.filter(p => p.is_correct === true).length;
+  const isTied = championCount > 1;
+
+  return (
+    <div className="bg-[rgba(255,179,0,0.06)] border border-[rgba(255,179,0,0.2)] rounded-[12px] p-5 mb-4">
+      <div className="text-center mb-4">
+        <span className="text-3xl mb-1 block">🏆</span>
+        <h2 className="text-lg font-bold text-[#FFB300]" style={{ fontFamily: "'Oswald', sans-serif", textTransform: 'uppercase' }}>
+          Survivor Champion
+        </h2>
+        <p className="text-sm text-[#9BA3AE] mt-0.5" style={{ fontFamily: "'DM Sans', sans-serif" }}>
+          {isTied ? `${championCount}-Way Tie` : `Last one standing in ${poolName}`}
+        </p>
+      </div>
+
+      {pickHistory.length > 0 && (
+        <div>
+          <p className="label mb-2 text-center">Your Winning Run</p>
+          <div className="flex flex-wrap gap-1.5 justify-center">
+            {pickHistory.map((pick, i) => {
+              let chipClass = 'bg-[rgba(255,179,0,0.15)] text-[#FFB300]';
+              let icon = '';
+              if (pick.is_correct === true) {
+                icon = ' ✓';
+              } else if (pick.is_correct === null) {
+                chipClass = 'bg-[rgba(255,179,0,0.08)] text-[#FFB300]/70';
+              }
+              return (
+                <span
+                  key={pick.id}
+                  className={`inline-flex items-center px-2 py-1 rounded-[6px] font-bold ${chipClass}`}
+                  style={{ fontFamily: "'Space Mono', monospace", fontSize: '10px', letterSpacing: '-0.02em' }}
+                >
+                  R{i + 1} {pick.team?.abbreviation || '???'}{icon}
+                </span>
+              );
+            })}
+          </div>
+          <p className="text-xs text-[#FFB300] text-center mt-2" style={{ fontFamily: "'DM Sans', sans-serif" }}>
             Survived {survivedRounds} round{survivedRounds !== 1 ? 's' : ''}
           </p>
         </div>
@@ -473,11 +533,14 @@ export default function PickPage() {
   const [eliminationInfo, setEliminationInfo] = useState<{
     roundName: string;
     teamName: string | null;
-    reason: 'wrong_pick' | 'missed_pick' | 'manual' | null;
+    reason: 'wrong_pick' | 'missed_pick' | 'manual' | 'no_available_picks' | null;
   } | null>(null);
   const [spectatorGames, setSpectatorGames] = useState<Game[]>([]);
   const [poolMaxEntries, setPoolMaxEntries] = useState(1);
   const [poolStatus, setPoolStatus] = useState<string>('open');
+  const [poolName, setPoolName] = useState<string>('');
+  const [isChampion, setIsChampion] = useState(false);
+  const [championCount, setChampionCount] = useState(0);
   const [showAddEntry, setShowAddEntry] = useState(false);
   const [addEntryName, setAddEntryName] = useState('');
   const [addEntryLoading, setAddEntryLoading] = useState(false);
@@ -536,15 +599,16 @@ export default function PickPage() {
 
       if (allEntries) setEntries(allEntries.map(e => ({ ...e, has_picked: false })));
 
-      // Fetch pool info for entry limits
+      // Fetch pool info for entry limits + champion detection
       const { data: poolData } = await supabase
         .from('pools')
-        .select('max_entries_per_user, status')
+        .select('name, max_entries_per_user, status, winner_id')
         .eq('id', poolId)
         .single();
       if (poolData) {
         setPoolMaxEntries(poolData.max_entries_per_user ?? 1);
         setPoolStatus(poolData.status);
+        setPoolName(poolData.name || '');
       }
 
       // Fetch all rounds for timeline + day counting (uses bracket.ts)
@@ -584,6 +648,20 @@ export default function PickPage() {
           teamName,
           reason: poolPlayer.elimination_reason,
         });
+      }
+
+      // Champion detection: pool complete + entry alive = champion
+      if (poolData?.status === 'complete' && !poolPlayer.is_eliminated) {
+        const { data: aliveInPool } = await supabase
+          .from('pool_players')
+          .select('id')
+          .eq('pool_id', poolId)
+          .eq('is_eliminated', false)
+          .eq('entry_deleted', false);
+        setIsChampion(true);
+        setChampionCount(aliveInPool?.length || 1);
+        setLoading(false);
+        return;
       }
 
       const activeRound = await getActiveRound();
@@ -829,6 +907,9 @@ export default function PickPage() {
     ? regionGroups.find(rg => rg.games.some(g => g.teams.some(t => t.id === selectedTeam.id)))?.region || null
     : null;
 
+  // All teams used — no available picks warning
+  const allTeamsUsed = teams.length > 0 && teams.every(t => t.already_used);
+
   // Lock button state
   const isSameAsExisting = selectedTeam?.id === existingPick?.team_id;
 
@@ -942,7 +1023,21 @@ export default function PickPage() {
           </div>
         )}
 
-        {isEliminated && (
+        {isChampion && (
+          <div className="flex items-center gap-2 px-2.5 sm:px-4 py-1.5 sm:py-2.5 bg-[rgba(255,179,0,0.12)] border border-[rgba(255,179,0,0.2)] rounded-[10px] mb-2 sm:mb-4">
+            <span className="text-sm">🏆</span>
+            <div className="text-xs font-bold text-[#FFB300] uppercase"
+              style={{ fontFamily: "'Oswald', sans-serif" }}>
+              CHAMPION
+            </div>
+            <span className="text-[10px] font-bold px-2 py-0.5 rounded-[4px] bg-[rgba(255,179,0,0.1)] text-[#FFB300] ml-auto"
+              style={{ fontFamily: "'Space Mono', monospace", letterSpacing: '0.1em' }}>
+              {championCount > 1 ? `${championCount}-WAY TIE` : 'WINNER'}
+            </span>
+          </div>
+        )}
+
+        {isEliminated && !isChampion && (
           <div className="flex items-center gap-2 px-2.5 sm:px-4 py-1.5 sm:py-2.5 bg-[rgba(239,83,80,0.12)] border border-[rgba(239,83,80,0.15)] rounded-[10px] mb-2 sm:mb-4">
             <div className="w-2 h-2 rounded-full bg-[#EF5350] flex-shrink-0" />
             <div className="text-xs font-bold text-[#EF5350] uppercase"
@@ -957,7 +1052,9 @@ export default function PickPage() {
         )}
 
         {/* ═══ MAIN CONTENT ═══ */}
-        {isEliminated && eliminationInfo ? (
+        {isChampion ? (
+          <ChampionHeader championCount={championCount} poolName={poolName} pickHistory={pickHistory} />
+        ) : isEliminated && eliminationInfo ? (
           <>
             <SpectatorHeader eliminationInfo={eliminationInfo} pickHistory={pickHistory} />
 
@@ -980,6 +1077,21 @@ export default function PickPage() {
           </>
         ) : (
           <>
+            {/* ═══ NO TEAMS AVAILABLE WARNING ═══ */}
+            {allTeamsUsed && !existingPick && (
+              <div className="bg-[rgba(255,179,0,0.06)] border border-[rgba(255,179,0,0.2)] rounded-[12px] p-4 mb-4">
+                <div className="text-center">
+                  <span className="text-xl mb-1 block">⚠️</span>
+                  <h3 className="text-sm font-bold text-[#FFB300] uppercase" style={{ fontFamily: "'Oswald', sans-serif" }}>
+                    No Teams Available
+                  </h3>
+                  <p className="text-xs text-[#9BA3AE] mt-1" style={{ fontFamily: "'DM Sans', sans-serif" }}>
+                    You&apos;ve used every remaining team. You&apos;ll be auto-eliminated when this round is processed.
+                  </p>
+                </div>
+              </div>
+            )}
+
             {/* ═══ GAMES BY REGION ═══ */}
             {regionGroups.length === 0 ? (
               <div className="text-center py-12">
@@ -1079,7 +1191,7 @@ export default function PickPage() {
       </div>
 
       {/* ═══ FIXED BOTTOM BAR ═══ */}
-      {!isEliminated && (
+      {!isEliminated && !isChampion && !allTeamsUsed && (
         <div className="fixed inset-x-0 z-20 bg-[#111827] border-t border-[rgba(255,255,255,0.05)] tab-bar-shadow" style={{ bottom: 'calc(3.5rem + env(safe-area-inset-bottom, 0px))' }}>
           <div className="max-w-[740px] mx-auto px-3 sm:px-5 py-2 sm:py-3">
             <button

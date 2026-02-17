@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase/admin';
 import { verifyCronAuth } from '@/lib/cron-auth';
-import { propagateWinner } from '@/lib/game-processing';
+import { propagateWinner, processNoAvailablePicks, checkForChampions } from '@/lib/game-processing';
 
 const ESPN_BASE_URL = 'https://site.api.espn.com/apis/site/v2/sports/basketball/mens-college-basketball';
 
@@ -18,6 +18,8 @@ export async function GET(request: NextRequest) {
       picksMarkedIncorrect: 0,
       playersEliminated: 0,
       missedPickEliminations: 0,
+      noAvailablePickEliminations: 0,
+      championsDeclared: 0,
       roundsCompleted: 0,
       poolsCompleted: 0,
       roundActivated: null as string | null,
@@ -45,8 +47,10 @@ export async function GET(request: NextRequest) {
       .in('status', ['scheduled', 'in_progress']);
 
     if (!pendingGames || pendingGames.length === 0) {
-      // All games may already be final — check for missed pick processing
+      // All games may already be final — process eliminations + champion check
       await processMissedPicks(activeRound.id, results);
+      await processNoAvailablePicks(activeRound.id, results as any);
+      await checkForChampions(activeRound.id, results as any);
       await checkRoundCompletion(activeRound.id, results);
       return NextResponse.json({ message: 'No pending games', results });
     }
@@ -202,8 +206,10 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    // 7. Check if all games in round are complete → process missed picks
+    // 7. Check if all games in round are complete → process eliminations
     await processMissedPicks(activeRound.id, results);
+    await processNoAvailablePicks(activeRound.id, results as any);
+    await checkForChampions(activeRound.id, results as any);
 
     // 8. Check if round is complete → advance to next
     await checkRoundCompletion(activeRound.id, results);
