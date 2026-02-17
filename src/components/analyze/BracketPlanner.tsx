@@ -447,12 +447,12 @@ export default function BracketPlanner({
           {tutorialDismissed && (
             <button
               onClick={restartTutorial}
-              className="font-[family-name:var(--font-mono)] text-[0.5rem] tracking-[0.1em] cursor-pointer px-2 py-1"
+              className="font-[family-name:var(--font-mono)] text-[0.7rem] font-bold tracking-[0.05em] cursor-pointer w-7 h-7 flex items-center justify-center"
               style={{
-                background: 'none',
+                background: 'var(--surface-3)',
                 border: '1px solid var(--border-default)',
-                color: 'var(--text-tertiary)',
-                borderRadius: 'var(--radius-sm)',
+                color: 'var(--text-primary)',
+                borderRadius: 'var(--radius-full)',
               }}
             >
               ?
