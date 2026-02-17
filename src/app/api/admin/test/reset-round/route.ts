@@ -202,6 +202,22 @@ export async function POST(request: NextRequest) {
       .update({ status: 'active', winner_id: null })
       .eq('status', 'complete');
 
+    // 8. Update simulated clock to pre_round of target round
+    const simulatedDatetime = `${targetRound.date}T12:00:00+00:00`;
+    await supabaseAdmin
+      .from('admin_test_state')
+      .update({
+        is_test_mode: true,
+        simulated_datetime: simulatedDatetime,
+        target_round_id: targetRound.id,
+        phase: 'pre_round',
+        updated_by: user.id,
+        updated_at: new Date().toISOString(),
+      })
+      .not('id', 'is', null);
+
+    clearServerClockCache();
+
     return NextResponse.json({
       success: true,
       roundsReset: roundNames,
@@ -209,6 +225,7 @@ export async function POST(request: NextRequest) {
       teamsRevived: loserIds.length,
       playersRevived: revivedPlayers?.length || 0,
       shellGamesCleared: shellsCleared,
+      clockReset: { round: targetRound.name, phase: 'pre_round', simulatedDatetime },
     });
 
   } catch (err: any) {
