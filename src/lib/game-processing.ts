@@ -274,15 +274,23 @@ export async function checkForChampions(
       results.championsDeclared++;
       results.poolsCompleted++;
     } else if (aliveCount === 0) {
-      // TIE — un-eliminate entries eliminated this round in this pool
-      const { data: tiedEntries } = await supabaseAdmin
+      // TIE — un-eliminate entries from this round using priority tiers:
+      // Tier 1: wrong_pick / no_available_picks (actively playing)
+      // Tier 2: missed_pick (forfeited — only if tier 1 is empty)
+      const { data: allElimThisRound } = await supabaseAdmin
         .from('pool_players')
-        .select('id, user_id')
+        .select('id, user_id, elimination_reason')
         .eq('pool_id', pool.id)
         .eq('elimination_round_id', roundId)
         .eq('entry_deleted', false);
 
-      if (tiedEntries && tiedEntries.length > 0) {
+      if (allElimThisRound && allElimThisRound.length > 0) {
+        // Prefer entries that actually picked (wrong_pick) over those who didn't participate
+        const activePlayers = allElimThisRound.filter(
+          e => e.elimination_reason === 'wrong_pick'
+        );
+        const tiedEntries = activePlayers.length > 0 ? activePlayers : allElimThisRound;
+
         const tiedIds = tiedEntries.map(e => e.id);
         await supabaseAdmin
           .from('pool_players')
