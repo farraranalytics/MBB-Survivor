@@ -48,6 +48,7 @@ export default function MatchupCard({
   const isLocked = lockedAdvancerKeys.has(advancerKey);
   const isDayLocked = lockedDayIds.has(dayId);
   const isFinal = gameStatus === 'final';
+  const isLive = gameStatus === 'in_progress';
 
   // Format game time in ET
   const timeLabel = (() => {
@@ -61,41 +62,44 @@ export default function MatchupCard({
     }
   })();
 
-  // Detect upset
-  const chalkSeed = teams.filter(Boolean).reduce((min, t) => Math.min(min, t!.seed), 99);
-  const hasUpset = !isSingle && advancer && advancer.seed > chalkSeed;
+  // Check if any team in this card is the day pick
+  const hasPickInCard = teams.some(t => t && dayPick?.team.id === t.id);
 
   return (
-    <div
-      className="mb-2 rounded-[var(--radius-sm)] p-2"
-      style={{
-        background: 'var(--surface-2)',
-        border: hasUpset
-          ? '1px solid rgba(255,179,0,0.27)'
-          : '1px solid var(--border-subtle)',
-      }}
-    >
-      {/* Header row */}
-      <div className="flex justify-between mb-1.5">
-        <span className="font-[family-name:var(--font-mono)] text-[0.55rem] tracking-[0.1em] font-semibold text-[var(--text-secondary)]">
-          {timeLabel}
+    <div className={`rounded-[6px] overflow-hidden transition-all ${
+      hasPickInCard
+        ? 'border border-[rgba(255,87,34,0.3)] shadow-[0_0_12px_rgba(255,87,34,0.08)]'
+        : 'border border-[rgba(255,255,255,0.05)]'
+    } bg-[#111827]`}>
+      {/* Time strip */}
+      <div className={`flex items-center justify-between px-2.5 py-[3px] ${
+        isLive ? 'bg-[rgba(255,179,0,0.12)]' : 'bg-[#1B2A3D]'
+      }`}>
+        <span className="text-[10px] font-bold tracking-[0.08em]"
+          style={{
+            fontFamily: "'Space Mono', monospace",
+            color: isLive ? '#FFB300' : '#5F6B7A',
+          }}>
+          {isLive ? 'LIVE' : isFinal ? 'FINAL' : timeLabel}
         </span>
-        <div className="flex items-center gap-1.5">
-          {hasUpset && (
-            <span className="badge" style={{ background: 'var(--color-warning-subtle)', color: 'var(--color-warning)', fontSize: '0.5rem', padding: '2px 6px' }}>
-              UPSET
-            </span>
-          )}
-          {isFinal && (
-            <span className="badge" style={{ background: 'rgba(255,255,255,0.1)', color: 'var(--text-secondary)', fontSize: '0.5rem', padding: '2px 6px' }}>
-              FINAL
-            </span>
-          )}
+        {/* Badges */}
+        <div className="flex items-center gap-1">
+          {isFinal && gameScore?.winnerId && (() => {
+            const chalkSeed = teams.filter(Boolean).reduce((min, t) => Math.min(min, t!.seed), 99);
+            const winner = teams.find(t => t?.id === gameScore.winnerId);
+            if (winner && winner.seed > chalkSeed) {
+              return (
+                <span className="text-[8px] font-bold tracking-[0.1em] text-[#FFB300] bg-[rgba(255,179,0,0.12)] px-1 py-px rounded-[3px]"
+                  style={{ fontFamily: "'Space Mono', monospace" }}>UPSET</span>
+              );
+            }
+            return null;
+          })()}
         </div>
       </div>
 
       {/* Team rows */}
-      {teams.map(team => {
+      {teams.map((team, idx) => {
         if (!team) return null;
         const isUsed = usedTeamIds.has(team.id);
         const isPick = dayPick?.team.id === team.id;
@@ -108,56 +112,66 @@ export default function MatchupCard({
           : null;
 
         return (
-          <div key={team.id} className="flex items-center gap-1.5 mb-1">
-            {/* Team name button (predict winner) */}
+          <div
+            key={team.id}
+            className={`flex items-center ${
+              idx === 0 && teams.filter(Boolean).length > 1 ? 'border-b border-[rgba(255,255,255,0.05)]' : ''
+            }`}
+          >
+            {/* Team name button (predict winner / click to advance) */}
             <button
               onClick={() => {
                 if (!isSingle && !isLocked) onToggleAdvancer(region, round, gameIdx, team);
               }}
               disabled={isSingle || isLocked}
-              className="flex-1 flex items-center gap-2 py-1.5 px-2.5 rounded-[var(--radius-sm)] text-left transition-all duration-150"
-              style={{
-                fontFamily: 'var(--font-display)',
-                fontWeight: isAdv ? 700 : 500,
-                fontSize: '0.9rem',
-                textTransform: 'uppercase',
-                background: isPick
-                  ? 'var(--color-orange-subtle)'
+              className={`flex-1 flex items-center gap-1.5 px-2.5 py-[7px] text-left transition-all ${
+                isPick
+                  ? 'bg-[rgba(255,87,34,0.08)] border-l-[2.5px] border-l-[#FF5722]'
                   : isAdv && !isSingle
-                    ? 'var(--surface-3)'
-                    : 'transparent',
-                color: isPick
-                  ? 'var(--color-orange)'
-                  : isUsed && !isPick
-                    ? 'var(--text-tertiary)'
-                    : 'var(--text-primary)',
-                border: isPick
-                  ? '1.5px solid var(--color-orange)'
-                  : isAdv && !isSingle
-                    ? '1px solid var(--border-default)'
-                    : '1px solid transparent',
-                cursor: isSingle || isLocked ? 'default' : 'pointer',
-                textDecoration: isUsed && !isPick ? 'line-through' : 'none',
-                opacity: isUsed && !isPick ? 0.35 : 1,
-              }}
+                    ? 'bg-[rgba(76,175,80,0.06)] border-l-[2.5px] border-l-[#4CAF50]'
+                    : 'border-l-[2.5px] border-l-transparent'
+              } ${isUsed && !isPick ? 'opacity-25' : ''}`}
+              style={{ cursor: isSingle || isLocked ? 'default' : 'pointer' }}
             >
-              <span className="font-[family-name:var(--font-display)] font-bold text-[0.75rem] text-[var(--text-secondary)] min-w-[18px] text-center">
+              <span className={`text-[11px] font-bold min-w-[16px] text-center flex-shrink-0 ${
+                isPick ? 'text-[#FF5722]' : isAdv ? 'text-[#4CAF50]' : 'text-[#5F6B7A]'
+              }`} style={{ fontFamily: "'Oswald', sans-serif" }}>
                 {team.seed}
               </span>
-              <span className="truncate">{team.abbreviation || team.name}</span>
+              <span className={`text-[13px] flex-1 truncate ${
+                isPick ? 'text-[#FF5722] font-bold' :
+                isWinner ? 'text-[#E8E6E1] font-bold' :
+                isLoser ? 'text-[#5F6B7A] font-semibold' :
+                isAdv ? 'text-[#E8E6E1] font-bold' :
+                'text-[#E8E6E1] font-semibold'
+              } ${isUsed && !isPick ? 'line-through' : ''}`}
+                style={{ fontFamily: "'Oswald', sans-serif", textTransform: 'uppercase' }}>
+                {team.abbreviation || team.name}
+              </span>
               {score !== null && (
-                <span className="font-[family-name:var(--font-mono)] text-[0.75rem] ml-auto" style={{ color: isWinner ? 'var(--text-primary)' : 'var(--text-secondary)' }}>
+                <span className={`text-[11px] font-bold flex-shrink-0 ${
+                  isWinner ? 'text-[#E8E6E1]' : 'text-[#5F6B7A]'
+                }`} style={{ fontFamily: "'Space Mono', monospace" }}>
                   {score}
                 </span>
               )}
-              {isAdv && !isSingle && !isFinal && (
-                <span className="font-[family-name:var(--font-mono)] text-[0.55rem] text-[var(--color-alive)] ml-auto">✓</span>
+              {isAdv && !isSingle && !isFinal && !isPick && (
+                <span className="text-[10px] font-bold text-[#4CAF50] flex-shrink-0"
+                  style={{ fontFamily: "'Space Mono', monospace" }}>
+                  ✓
+                </span>
               )}
-              {isWinner && (
-                <span className="font-[family-name:var(--font-mono)] text-[0.55rem] text-[var(--color-alive)] ml-1">W</span>
+              {isUsed && !isPick && (
+                <span className="text-[8px] font-bold text-[#EF5350] tracking-[0.1em] flex-shrink-0"
+                  style={{ fontFamily: "'Space Mono', monospace" }}>
+                  USED
+                </span>
               )}
-              {isLoser && (
-                <span className="font-[family-name:var(--font-mono)] text-[0.55rem] text-[var(--text-secondary)] ml-1">L</span>
+              {isPick && (
+                <span className="text-[10px] font-bold text-[#FF5722] flex-shrink-0"
+                  style={{ fontFamily: "'Space Mono', monospace" }}>
+                  ✓
+                </span>
               )}
             </button>
 
@@ -168,16 +182,17 @@ export default function MatchupCard({
                   if (canPick) onHandlePick(dayId, team, region, round, gameIdx);
                 }}
                 disabled={!canPick}
-                className="w-7 h-7 rounded-[var(--radius-sm)] shrink-0 flex items-center justify-center transition-all duration-150"
+                className="w-7 h-7 shrink-0 flex items-center justify-center mr-1 transition-all duration-150"
                 style={{
-                  background: isPick ? 'var(--color-orange-subtle)' : 'transparent',
-                  border: isPick ? '1.5px solid var(--color-orange)' : '1.5px solid var(--border-default)',
-                  color: isPick ? 'var(--color-orange)' : canPick ? 'var(--text-secondary)' : 'var(--text-disabled)',
+                  background: isPick ? 'rgba(255,87,34,0.12)' : 'transparent',
+                  border: isPick ? '1.5px solid rgba(255,87,34,0.4)' : '1.5px solid rgba(255,255,255,0.08)',
+                  borderRadius: '4px',
+                  color: isPick ? '#FF5722' : canPick ? '#5F6B7A' : '#243447',
                   cursor: canPick ? 'pointer' : 'not-allowed',
-                  opacity: canPick ? 1 : 0.25,
-                  fontFamily: 'var(--font-body)',
-                  fontSize: '0.75rem',
-                  boxShadow: isPick ? '0 0 0 1px var(--color-orange), 0 0 12px rgba(255,87,34,0.2)' : 'none',
+                  opacity: canPick ? 1 : 0.3,
+                  fontFamily: "'DM Sans', sans-serif",
+                  fontSize: '0.7rem',
+                  boxShadow: isPick ? '0 0 0 1px rgba(255,87,34,0.15), 0 0 8px rgba(255,87,34,0.1)' : 'none',
                 }}
                 title={isPick ? 'Remove pick' : `Pick ${team.abbreviation || team.name}`}
               >
