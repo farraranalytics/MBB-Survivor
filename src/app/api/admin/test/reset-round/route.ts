@@ -101,51 +101,65 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    // ── Single round reset ────────────────────────────────────
-    let round;
+    // ── Rewind to before selected round (resets it + all later rounds) ──
+    let targetRound;
     if (roundId) {
       const { data } = await supabaseAdmin
         .from('rounds')
-        .select('id, name')
+        .select('id, name, date')
         .eq('id', roundId)
         .single();
-      round = data;
+      targetRound = data;
     } else {
       const state = await getTournamentStateServer();
       const currentRoundId = state.currentRound?.id;
       if (currentRoundId) {
         const { data } = await supabaseAdmin
           .from('rounds')
-          .select('id, name')
+          .select('id, name, date')
           .eq('id', currentRoundId)
           .single();
-        round = data;
+        targetRound = data;
       }
     }
 
-    if (!round) {
+    if (!targetRound) {
       return NextResponse.json({ error: 'Round not found' }, { status: 404 });
     }
 
-    // 1. Clear team slots in rounds AFTER this one (keep shell games)
-    const roundCode = mapRoundNameToCode(round.name);
+    // Get the selected round + all rounds after it (to cascade-reset)
+    const { data: roundsToReset } = await supabaseAdmin
+      .from('rounds')
+      .select('id, name')
+      .gte('date', targetRound.date)
+      .order('date', { ascending: false }); // latest first
+
+    if (!roundsToReset || roundsToReset.length === 0) {
+      return NextResponse.json({ error: 'No rounds to reset' }, { status: 400 });
+    }
+
+    const roundIdsToReset = roundsToReset.map(r => r.id);
+    const roundNames = roundsToReset.map(r => r.name);
+
+    // 1. Clear bracket advancement from selected round onward
+    const roundCode = mapRoundNameToCode(targetRound.name);
     const shellsCleared = await clearBracketAdvancement(roundCode);
 
-    // 2. Get games in this round to find losers
+    // 2. Get all games in affected rounds to find losers
     const { data: games } = await supabaseAdmin
       .from('games')
-      .select('id, team1_id, team2_id, winner_id')
-      .eq('round_id', round.id);
+      .select('id, round_id, team1_id, team2_id, winner_id')
+      .in('round_id', roundIdsToReset);
 
     const loserIds: string[] = [];
     for (const game of (games || [])) {
       if (game.winner_id) {
         const loserId = game.winner_id === game.team1_id ? game.team2_id : game.team1_id;
-        loserIds.push(loserId);
+        if (loserId) loserIds.push(loserId);
       }
     }
 
-    // 3. Reset all games in this round — NEVER touch game_datetime
+    // 3. Reset all games in affected rounds — NEVER touch game_datetime
     await supabaseAdmin
       .from('games')
       .update({
@@ -154,9 +168,9 @@ export async function POST(request: NextRequest) {
         team1_score: null,
         team2_score: null,
       })
-      .eq('round_id', round.id);
+      .in('round_id', roundIdsToReset);
 
-    // 4. Un-eliminate teams that lost in this round
+    // 4. Un-eliminate teams that lost in affected rounds
     if (loserIds.length > 0) {
       await supabaseAdmin
         .from('teams')
@@ -164,13 +178,13 @@ export async function POST(request: NextRequest) {
         .in('id', loserIds);
     }
 
-    // 5. Reset picks for this round (clear is_correct)
+    // 5. Reset picks for affected rounds (clear is_correct)
     await supabaseAdmin
       .from('picks')
       .update({ is_correct: null })
-      .eq('round_id', round.id);
+      .in('round_id', roundIdsToReset);
 
-    // 6. Un-eliminate players eliminated in this round
+    // 6. Un-eliminate players eliminated in any affected round
     const { data: revivedPlayers } = await supabaseAdmin
       .from('pool_players')
       .update({
@@ -178,7 +192,7 @@ export async function POST(request: NextRequest) {
         elimination_round_id: null,
         elimination_reason: null,
       })
-      .eq('elimination_round_id', round.id)
+      .in('elimination_round_id', roundIdsToReset)
       .eq('entry_deleted', false)
       .select('id');
 
@@ -190,7 +204,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      round: round.name,
+      roundsReset: roundNames,
       gamesReset: games?.length || 0,
       teamsRevived: loserIds.length,
       playersRevived: revivedPlayers?.length || 0,
