@@ -90,9 +90,14 @@ export default function LoginForm() {
             </div>
 
             <div>
-              <label htmlFor="password" className="block text-sm font-medium text-[#9BA3AE] mb-2" style={{ fontFamily: "'DM Sans', sans-serif" }}>
-                Password
-              </label>
+              <div className="flex items-center justify-between mb-2">
+                <label htmlFor="password" className="block text-sm font-medium text-[#9BA3AE]" style={{ fontFamily: "'DM Sans', sans-serif" }}>
+                  Password
+                </label>
+                <Link href="/auth/forgot-password" className="text-xs text-[#FF5722] hover:text-[#E64A19] transition-colors" style={{ fontFamily: "'DM Sans', sans-serif" }}>
+                  Forgot password?
+                </Link>
+              </div>
               <input
                 id="password"
                 type="password"
