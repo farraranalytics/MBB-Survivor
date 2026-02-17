@@ -59,11 +59,11 @@ export async function POST(request: NextRequest) {
         .update({ is_eliminated: false })
         .eq('is_eliminated', true);
 
-      // Clear all pick results (safe UPDATE — never DELETE picks to avoid FK cascade)
+      // Delete all picks (picks are leaf records, safe to delete)
       await supabaseAdmin
         .from('picks')
-        .update({ is_correct: null })
-        .not('is_correct', 'is', null);
+        .delete()
+        .not('id', 'is', null);
 
       // Un-eliminate all players
       const { data: revivedPlayers } = await supabaseAdmin
@@ -178,11 +178,12 @@ export async function POST(request: NextRequest) {
         .in('id', loserIds);
     }
 
-    // 5. Reset picks for affected rounds (clear is_correct)
-    await supabaseAdmin
+    // 5. Delete picks for affected rounds (picks are leaf records, safe to delete)
+    const { data: deletedPicks } = await supabaseAdmin
       .from('picks')
-      .update({ is_correct: null })
-      .in('round_id', roundIdsToReset);
+      .delete()
+      .in('round_id', roundIdsToReset)
+      .select('id');
 
     // 6. Un-eliminate players eliminated in any affected round
     const { data: revivedPlayers } = await supabaseAdmin
@@ -202,7 +203,28 @@ export async function POST(request: NextRequest) {
       .update({ status: 'active', winner_id: null })
       .eq('status', 'complete');
 
-    // 8. Update simulated clock to pre_round of target round
+    // 8. Re-propagate winners from prior round into target round team slots
+    // A previous reset may have cleared these slots; fill them from completed feeder games.
+    const gameIdsInScope = new Set((games || []).map(g => g.id));
+    const { data: feederGames } = await supabaseAdmin
+      .from('games')
+      .select('id, winner_id, advances_to_game_id, advances_to_slot')
+      .not('winner_id', 'is', null)
+      .not('advances_to_game_id', 'is', null);
+
+    let repropagated = 0;
+    for (const fg of (feederGames || [])) {
+      if (gameIdsInScope.has(fg.advances_to_game_id)) {
+        const field = fg.advances_to_slot === 1 ? 'team1_id' : 'team2_id';
+        await supabaseAdmin
+          .from('games')
+          .update({ [field]: fg.winner_id })
+          .eq('id', fg.advances_to_game_id);
+        repropagated++;
+      }
+    }
+
+    // 9. Update simulated clock to pre_round of target round
     const simulatedDatetime = `${targetRound.date}T12:00:00+00:00`;
     await supabaseAdmin
       .from('admin_test_state')
@@ -225,6 +247,8 @@ export async function POST(request: NextRequest) {
       teamsRevived: loserIds.length,
       playersRevived: revivedPlayers?.length || 0,
       shellGamesCleared: shellsCleared,
+      picksDeleted: deletedPicks?.length || 0,
+      teamsRepropagated: repropagated,
       clockReset: { round: targetRound.name, phase: 'pre_round', simulatedDatetime },
     });
 

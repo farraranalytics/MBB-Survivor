@@ -6,6 +6,8 @@ import { clearServerClockCache } from '@/lib/clock-server';
 import {
   processCompletedGame,
   processMissedPicks,
+  processNoAvailablePicks,
+  checkForChampions,
   checkRoundCompletion,
   propagateWinner,
   clearBracketAdvancement,
@@ -177,11 +179,12 @@ async function handlePreRound(roundId: string, roundName: string, simulatedDatet
       .in('id', loserIds);
   }
 
-  // Clear pick results
-  await supabaseAdmin
+  // Delete picks for this round (picks are leaf records, safe to delete)
+  const { data: deletedPicks } = await supabaseAdmin
     .from('picks')
-    .update({ is_correct: null })
-    .eq('round_id', roundId);
+    .delete()
+    .eq('round_id', roundId)
+    .select('id');
 
   // Un-eliminate players
   const { data: revivedPlayers } = await supabaseAdmin
@@ -197,6 +200,27 @@ async function handlePreRound(roundId: string, roundName: string, simulatedDatet
     .update({ status: 'active', winner_id: null })
     .eq('status', 'complete');
 
+  // Re-propagate winners from prior round into this round's team slots
+  // A previous reset may have cleared these slots; fill them from completed feeder games.
+  const gameIdsInScope = new Set((games || []).map(g => g.id));
+  const { data: feederGames } = await supabaseAdmin
+    .from('games')
+    .select('id, winner_id, advances_to_game_id, advances_to_slot')
+    .not('winner_id', 'is', null)
+    .not('advances_to_game_id', 'is', null);
+
+  let repropagated = 0;
+  for (const fg of (feederGames || [])) {
+    if (gameIdsInScope.has(fg.advances_to_game_id)) {
+      const field = fg.advances_to_slot === 1 ? 'team1_id' : 'team2_id';
+      await supabaseAdmin
+        .from('games')
+        .update({ [field]: fg.winner_id })
+        .eq('id', fg.advances_to_game_id);
+      repropagated++;
+    }
+  }
+
   return NextResponse.json({
     success: true,
     state: 'pre_round',
@@ -207,6 +231,8 @@ async function handlePreRound(roundId: string, roundName: string, simulatedDatet
     teamsRevived: loserIds.length,
     playersRevived: revivedPlayers?.length || 0,
     shellGamesCleared: shellsCleared,
+    picksDeleted: deletedPicks?.length || 0,
+    teamsRepropagated: repropagated,
   });
 }
 
@@ -308,6 +334,8 @@ async function handleRoundComplete(roundId: string, roundName: string, simulated
   }
 
   await processMissedPicks(roundId, results);
+  await processNoAvailablePicks(roundId, results);
+  await checkForChampions(roundId, results);
   await checkRoundCompletion(roundId, results);
 
   return NextResponse.json({
