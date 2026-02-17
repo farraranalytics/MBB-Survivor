@@ -273,8 +273,8 @@ export async function getAllGamesWithTeams(): Promise<BracketGame[]> {
     .from('games')
     .select(`
       *,
-      team1:team1_id(id, name, mascot, abbreviation, seed, region, logo_url, is_eliminated),
-      team2:team2_id(id, name, mascot, abbreviation, seed, region, logo_url, is_eliminated),
+      team1:team1_id(id, name, mascot, abbreviation, seed, region, logo_url, espn_team_id, is_eliminated),
+      team2:team2_id(id, name, mascot, abbreviation, seed, region, logo_url, espn_team_id, is_eliminated),
       round:round_id(id, name, date, deadline_datetime, is_active, created_at, updated_at)
     `)
     .order('game_datetime', { ascending: true });
