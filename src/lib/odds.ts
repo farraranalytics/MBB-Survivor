@@ -11,6 +11,9 @@ import type {
 const ODDS_BASE_URL = 'https://api.the-odds-api.com/v4';
 const SPORT = 'basketball_ncaab';
 
+// Only use these 3 bookmakers for consensus odds
+const PREFERRED_BOOKMAKERS = ['draftkings', 'fanduel', 'betmgm'];
+
 export class OddsApiError extends Error {
   constructor(message: string, public status?: number) {
     super(message);
@@ -119,6 +122,7 @@ export async function fetchNcaabOdds(): Promise<{ events: OddsEvent[]; quota: Od
     markets: 'h2h,spreads',
     oddsFormat: 'american',
     dateFormat: 'iso',
+    bookmakers: PREFERRED_BOOKMAKERS.join(','),
   });
 
   const response = await fetch(
@@ -177,8 +181,8 @@ export async function fetchNcaabScores(
 }
 
 /**
- * Extract consensus odds from bookmakers for a given event.
- * Averages moneyline and spread across all bookmakers.
+ * Extract consensus odds from preferred bookmakers (DraftKings, FanDuel, BetMGM).
+ * Averages moneyline and spread across matched bookmakers.
  */
 export function extractBestOdds(
   bookmakers: OddsBookmaker[],
@@ -188,7 +192,10 @@ export function extractBestOdds(
   const moneylines: { home: number[]; away: number[] } = { home: [], away: [] };
   const spreads: { home: number[]; away: number[] } = { home: [], away: [] };
 
-  for (const bk of bookmakers) {
+  // Filter to preferred bookmakers only
+  const filtered = bookmakers.filter(bk => PREFERRED_BOOKMAKERS.includes(bk.key));
+
+  for (const bk of filtered) {
     for (const market of bk.markets) {
       for (const outcome of market.outcomes) {
         const isHome = outcome.name === homeTeam;
