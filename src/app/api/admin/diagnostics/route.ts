@@ -51,13 +51,23 @@ export async function POST(request: NextRequest) {
         data = {
           status: response.status,
           eventCount: events.length,
-          events: events.map((e: any) => ({
-            id: e.id,
-            name: e.name,
-            date: e.date,
-            status: e.status?.type?.name,
-            completed: e.status?.type?.completed,
-          })),
+          events: events.map((e: any) => {
+            const comp = e.competitions?.[0]?.competitors || [];
+            return {
+              id: e.id,
+              name: e.name,
+              datetime: e.date,
+              status: e.status?.type?.name,
+              statusDetail: e.status?.type?.shortDetail || e.status?.type?.detail,
+              completed: e.status?.type?.completed,
+              competitors: comp.map((c: any) => ({
+                team: c.team?.displayName || c.team?.name,
+                score: c.score,
+                homeAway: c.homeAway,
+                winner: c.winner,
+              })),
+            };
+          }),
         };
         break;
       }
