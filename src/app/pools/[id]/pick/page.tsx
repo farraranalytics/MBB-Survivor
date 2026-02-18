@@ -595,6 +595,7 @@ export default function PickPage() {
         .select('id, entry_number, entry_label, is_eliminated')
         .eq('pool_id', poolId)
         .eq('user_id', user.id)
+        .eq('entry_deleted', false)
         .order('entry_number', { ascending: true });
 
       if (allEntries) setEntries(allEntries.map(e => ({ ...e, has_picked: false })));

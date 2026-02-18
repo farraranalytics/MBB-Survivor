@@ -73,11 +73,11 @@ export async function POST(request: NextRequest) {
         .eq('entry_deleted', false)
         .select('id');
 
-      // Revert pools
+      // Revert pools back to open (full reset = pre-tournament)
       await supabaseAdmin
         .from('pools')
-        .update({ status: 'active', winner_id: null })
-        .eq('status', 'complete');
+        .update({ status: 'open', winner_id: null })
+        .in('status', ['active', 'complete']);
 
       // Reset test mode clock
       await supabaseAdmin
