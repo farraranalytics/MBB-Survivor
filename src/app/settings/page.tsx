@@ -39,10 +39,21 @@ export default function SettingsPage() {
       });
       if (updateError) throw updateError;
 
-      await supabase
+      const { data: updatedRows } = await supabase
         .from('pool_players')
         .update({ display_name: newDisplayName.trim() })
-        .eq('user_id', user!.id);
+        .eq('user_id', user!.id)
+        .select('id');
+
+      if (!updatedRows || updatedRows.length === 0) {
+        console.warn('pool_players display_name update returned 0 rows — possible RLS issue');
+      }
+
+      // Also update user_profiles
+      await supabase
+        .from('user_profiles')
+        .update({ display_name: newDisplayName.trim() })
+        .eq('id', user!.id);
 
       await supabase.auth.refreshSession();
       setEditingName(false);

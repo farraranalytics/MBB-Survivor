@@ -404,10 +404,21 @@ export default function PoolSettingsPage() {
       }
 
       // Also update display_name in all pool_players rows for this user
-      await supabase
+      const { data: updatedRows } = await supabase
         .from('pool_players')
         .update({ display_name: newDisplayName.trim() })
-        .eq('user_id', user!.id);
+        .eq('user_id', user!.id)
+        .select('id');
+
+      if (!updatedRows || updatedRows.length === 0) {
+        console.warn('pool_players display_name update returned 0 rows — possible RLS issue');
+      }
+
+      // Also update user_profiles
+      await supabase
+        .from('user_profiles')
+        .update({ display_name: newDisplayName.trim() })
+        .eq('id', user!.id);
 
       // Update local members list if creator
       setMembers(prev => prev.map(m =>
