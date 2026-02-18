@@ -225,6 +225,7 @@ export default function Dashboard() {
                     onActivate={() => setActivePool(pool.pool_id, pool.pool_name)}
                     clickTarget={poolClickTarget}
                     clockOffset={clockOffset}
+                    preTournament={preTournament}
                   />
                 ))}
               </div>

@@ -12,9 +12,10 @@ interface PoolCardProps {
   /** Where to navigate when the card is clicked: 'pick' (pre-round) or 'standings' (round live/complete) */
   clickTarget: 'pick' | 'standings';
   clockOffset?: number;
+  preTournament?: boolean;
 }
 
-export default function PoolCard({ pool, isActive, onActivate, clickTarget, clockOffset = 0 }: PoolCardProps) {
+export default function PoolCard({ pool, isActive, onActivate, clickTarget, clockOffset = 0, preTournament = false }: PoolCardProps) {
   const router = useRouter();
   const { addToast } = useToast();
   const [showCode, setShowCode] = useState(false);
@@ -155,6 +156,19 @@ export default function PoolCard({ pool, isActive, onActivate, clickTarget, cloc
             }
           />
         ))}
+        {preTournament && pool.max_entries_per_user > 1 && pool.your_entries.length < pool.max_entries_per_user && (
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              onActivate();
+              router.push(`/pools/${pool.pool_id}/pick`);
+            }}
+            className="w-full py-1.5 rounded-[6px] text-[0.7rem] font-semibold text-[#FF5722] transition-colors hover:bg-[rgba(255,87,34,0.05)]"
+            style={{ fontFamily: "'DM Sans', sans-serif", border: '1px dashed rgba(255,87,34,0.3)' }}
+          >
+            + Entry
+          </button>
+        )}
       </div>
 
       {/* Join code (subtle, toggleable) */}
