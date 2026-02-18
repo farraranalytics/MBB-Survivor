@@ -5,6 +5,7 @@ import { ActivePoolProvider } from '@/contexts/ActivePoolContext'
 import { ToastProvider } from '@/contexts/ToastContext'
 import Header from '@/components/Header'
 import BottomNav from '@/components/BottomNav'
+import PushPrompt from '@/components/PushPrompt'
 
 export const metadata: Metadata = {
   title: {
@@ -55,6 +56,7 @@ export default function RootLayout({
               <Header />
               {children}
               <BottomNav />
+              <PushPrompt />
             </ToastProvider>
           </ActivePoolProvider>
         </AuthProvider>
