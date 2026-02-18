@@ -4,6 +4,8 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { MyPool, MyPoolEntry } from '@/types/standings';
 import { useToast } from '@/hooks/useToast';
+import { useAuth } from '@/components/auth/AuthProvider';
+import { createBrowserClient } from '@supabase/ssr';
 
 interface PoolCardProps {
   pool: MyPool;
@@ -13,17 +15,64 @@ interface PoolCardProps {
   clickTarget: 'pick' | 'standings';
   clockOffset?: number;
   preTournament?: boolean;
+  onEntryAdded?: () => void;
 }
 
-export default function PoolCard({ pool, isActive, onActivate, clickTarget, clockOffset = 0, preTournament = false }: PoolCardProps) {
+export default function PoolCard({ pool, isActive, onActivate, clickTarget, clockOffset = 0, preTournament = false, onEntryAdded }: PoolCardProps) {
   const router = useRouter();
   const { addToast } = useToast();
+  const { user } = useAuth();
   const [showCode, setShowCode] = useState(false);
+  const [showAddEntry, setShowAddEntry] = useState(false);
+  const [addEntryName, setAddEntryName] = useState('');
+  const [addEntryLoading, setAddEntryLoading] = useState(false);
 
   const survivalRate = pool.total_players > 0
     ? Math.round((pool.alive_players / pool.total_players) * 100)
     : 0;
   const eliminated = pool.total_players - pool.alive_players;
+
+  const canAddEntry = preTournament && pool.max_entries_per_user > 1 && pool.your_entries.length < pool.max_entries_per_user;
+
+  const handleAddEntry = async () => {
+    if (!user) return;
+    setAddEntryLoading(true);
+    try {
+      const supabase = createBrowserClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      );
+      const { data: { user: authUser } } = await supabase.auth.getUser();
+      const baseName = authUser?.user_metadata?.display_name || authUser?.email?.split('@')[0] || 'Player';
+      const maxNum = pool.your_entries.length > 0
+        ? Math.max(...pool.your_entries.map(e => e.entry_number), 0) + 1
+        : 1;
+      const entryLabel = addEntryName.trim() || `${baseName}'s Entry ${maxNum}`;
+      const { error: insertError } = await supabase.from('pool_players').insert({
+        pool_id: pool.pool_id,
+        user_id: user.id,
+        display_name: baseName,
+        entry_number: maxNum,
+        entry_label: entryLabel,
+      });
+
+      if (insertError && insertError.code === '23505') {
+        addToast('info', 'Entry already exists');
+      } else if (insertError) {
+        throw insertError;
+      } else {
+        addToast('success', `Added "${entryLabel}"`);
+      }
+
+      setShowAddEntry(false);
+      setAddEntryName('');
+      onEntryAdded?.();
+    } catch (err: any) {
+      addToast('error', err.message || 'Failed to add entry');
+    } finally {
+      setAddEntryLoading(false);
+    }
+  };
 
   const handleCopy = async (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -156,18 +205,55 @@ export default function PoolCard({ pool, isActive, onActivate, clickTarget, cloc
             }
           />
         ))}
-        {preTournament && pool.max_entries_per_user > 1 && pool.your_entries.length < pool.max_entries_per_user && (
+        {canAddEntry && !showAddEntry && (
           <button
             onClick={(e) => {
               e.stopPropagation();
-              onActivate();
-              router.push(`/pools/${pool.pool_id}/pick`);
+              setShowAddEntry(true);
             }}
             className="w-full py-1.5 rounded-[6px] text-[0.7rem] font-semibold text-[#FF5722] transition-colors hover:bg-[rgba(255,87,34,0.05)]"
             style={{ fontFamily: "'DM Sans', sans-serif", border: '1px dashed rgba(255,87,34,0.3)' }}
           >
             + Entry
           </button>
+        )}
+        {showAddEntry && (
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="mt-1 p-3 bg-[#1B2A3D] border border-[rgba(255,87,34,0.2)] rounded-[10px]"
+          >
+            <p className="text-[10px] text-[#9BA3AE] uppercase tracking-[0.1em] mb-2"
+              style={{ fontFamily: "'Space Mono', monospace" }}>
+              ADD ENTRY ({pool.your_entries.length}/{pool.max_entries_per_user})
+            </p>
+            <input
+              type="text"
+              value={addEntryName}
+              onChange={(e) => setAddEntryName(e.target.value)}
+              maxLength={60}
+              className="w-full px-3 py-1.5 bg-[#111827] border border-[rgba(255,255,255,0.05)] rounded-[8px] text-xs text-[#E8E6E1] placeholder-[#5F6B7A] focus:outline-none focus:ring-1 focus:ring-[#FF5722] mb-2"
+              placeholder={`Entry name (optional)`}
+              style={{ fontFamily: "'DM Sans', sans-serif" }}
+              onKeyDown={(e) => { if (e.key === 'Enter') handleAddEntry(); }}
+            />
+            <div className="flex gap-2">
+              <button
+                onClick={handleAddEntry}
+                disabled={addEntryLoading}
+                className="flex-1 py-1.5 rounded-[8px] text-xs font-semibold btn-orange disabled:opacity-50"
+                style={{ fontFamily: "'DM Sans', sans-serif" }}
+              >
+                {addEntryLoading ? '...' : 'Add'}
+              </button>
+              <button
+                onClick={() => { setShowAddEntry(false); setAddEntryName(''); }}
+                className="px-3 py-1.5 rounded-[8px] text-xs font-semibold text-[#9BA3AE] hover:text-[#E8E6E1] transition-colors"
+                style={{ fontFamily: "'DM Sans', sans-serif" }}
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
         )}
       </div>
 

@@ -129,7 +129,7 @@ function WelcomeHeader({ displayName }: { displayName: string }) {
 
 export default function Dashboard() {
   const { user } = useAuth();
-  const { activePoolId, setActivePool, pools, loadingPools } = useActivePool();
+  const { activePoolId, setActivePool, pools, loadingPools, refreshPools } = useActivePool();
   const router = useRouter();
   const clockOffset = useClockOffset();
   const [tournamentState, setTournamentState] = useState<TournamentState | null>(null);
@@ -226,6 +226,7 @@ export default function Dashboard() {
                     clickTarget={poolClickTarget}
                     clockOffset={clockOffset}
                     preTournament={preTournament}
+                    onEntryAdded={refreshPools}
                   />
                 ))}
               </div>
