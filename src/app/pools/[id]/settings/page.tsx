@@ -292,6 +292,10 @@ export default function PoolSettingsPage() {
   const [testSimulatedTime, setTestSimulatedTime] = useState<string | null>(null);
   const [allRounds, setAllRounds] = useState<any[]>([]);
 
+  // Test notification state
+  const [sendingTestNotif, setSendingTestNotif] = useState(false);
+  const [testNotifResult, setTestNotifResult] = useState('');
+
   // Simulator state
   const [simRound, setSimRound] = useState<any>(null);
   const [simGames, setSimGames] = useState<any[]>([]);
@@ -864,6 +868,61 @@ export default function PoolSettingsPage() {
               </span>
               <div className="flex-1 h-px bg-[rgba(255,87,34,0.2)]" />
             </div>
+
+            {/* ─── TEST NOTIFICATION ────────────────────────────────── */}
+            <section>
+              <SectionHeader label="Test Notification" accent />
+              <div className="bg-[#111827] border border-[rgba(255,255,255,0.05)] rounded-[14px] p-5 space-y-3">
+                <p className="text-xs text-[#9BA3AE]" style={{ fontFamily: "'DM Sans', sans-serif" }}>
+                  Send a test push notification to yourself to verify everything is working.
+                </p>
+                <button
+                  onClick={async () => {
+                    setSendingTestNotif(true);
+                    setTestNotifResult('');
+                    try {
+                      const res = await fetch('/api/notifications/test', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ pool_id: poolId }),
+                      });
+                      const data = await res.json();
+                      if (!res.ok) {
+                        setTestNotifResult(`Error: ${data.error || res.statusText}`);
+                      } else if (data.sent === 0) {
+                        setTestNotifResult('No active push subscriptions found. Enable notifications in settings first.');
+                      } else {
+                        setTestNotifResult(`Sent to ${data.sent} device${data.sent > 1 ? 's' : ''}${data.failed ? ` (${data.failed} failed)` : ''}`);
+                      }
+                    } catch (err: any) {
+                      setTestNotifResult(`Error: ${err.message}`);
+                    } finally {
+                      setSendingTestNotif(false);
+                    }
+                  }}
+                  disabled={sendingTestNotif}
+                  className="w-full py-2.5 rounded-[8px] text-xs font-semibold bg-[#243447] text-[#E8E6E1] hover:bg-[#2D3E52] transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+                  style={{ fontFamily: "'DM Sans', sans-serif" }}
+                >
+                  {sendingTestNotif ? (
+                    <div className="h-3.5 w-3.5 border-2 border-[rgba(255,255,255,0.3)] border-t-white rounded-full animate-spin" />
+                  ) : (
+                    <>
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
+                        <path d="M13.73 21a2 2 0 0 1-3.46 0" />
+                      </svg>
+                      Send Test Notification
+                    </>
+                  )}
+                </button>
+                {testNotifResult && (
+                  <p className={`text-xs ${testNotifResult.startsWith('Error') || testNotifResult.startsWith('No active') ? 'text-[#EF5350]' : 'text-[#4CAF50]'}`} style={{ fontFamily: "'DM Sans', sans-serif" }}>
+                    {testNotifResult}
+                  </p>
+                )}
+              </div>
+            </section>
 
             {/* ─── SECTION 4: POOL SETTINGS (creator form) ─────────── */}
             <section>
