@@ -70,8 +70,8 @@ export default function InstallAppButton() {
     );
   }
 
-  // iOS — show instructions guide
-  if (isIOS) {
+  // iOS or no install prompt available — show instructions guide
+  if (isIOS || !deferredPrompt) {
     return (
       <div>
         <div className="flex items-center justify-between">
@@ -95,31 +95,42 @@ export default function InstallAppButton() {
           <div className="mt-3 bg-[#1B2A3D] rounded-[10px] p-4 space-y-3">
             <div className="flex items-start gap-3">
               <span className="flex-shrink-0 w-6 h-6 rounded-full bg-[#243447] text-[#FF5722] text-xs font-bold flex items-center justify-center" style={{ fontFamily: "'Space Mono', monospace" }}>1</span>
-              <p className="text-xs text-[#E8E6E1]" style={{ fontFamily: "'DM Sans', sans-serif" }}>
-                Tap the <span className="text-[#FF5722] font-semibold">Share</span> button in Safari (square with arrow)
-              </p>
+              <div className="flex items-center gap-1.5 flex-wrap">
+                <p className="text-xs text-[#E8E6E1]" style={{ fontFamily: "'DM Sans', sans-serif" }}>
+                  Tap the <span className="text-[#FF5722] font-semibold">Share</span> button in Safari or Chrome
+                </p>
+                {/* iOS Share icon (square with up arrow) */}
+                <svg className="inline-block flex-shrink-0" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#FF5722" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8" />
+                  <polyline points="16 6 12 2 8 6" />
+                  <line x1="12" y1="2" x2="12" y2="15" />
+                </svg>
+              </div>
             </div>
             <div className="flex items-start gap-3">
               <span className="flex-shrink-0 w-6 h-6 rounded-full bg-[#243447] text-[#FF5722] text-xs font-bold flex items-center justify-center" style={{ fontFamily: "'Space Mono', monospace" }}>2</span>
-              <p className="text-xs text-[#E8E6E1]" style={{ fontFamily: "'DM Sans', sans-serif" }}>
-                Scroll down and tap <span className="text-[#FF5722] font-semibold">Add to Home Screen</span>
-              </p>
+              <div className="flex items-center gap-1.5 flex-wrap">
+                <p className="text-xs text-[#E8E6E1]" style={{ fontFamily: "'DM Sans', sans-serif" }}>
+                  Scroll down and tap <span className="text-[#FF5722] font-semibold">Add to Home Screen</span>
+                </p>
+                {/* Plus in square icon */}
+                <svg className="inline-block flex-shrink-0" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#FF5722" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <rect x="3" y="3" width="18" height="18" rx="2" />
+                  <line x1="12" y1="8" x2="12" y2="16" />
+                  <line x1="8" y1="12" x2="16" y2="12" />
+                </svg>
+              </div>
             </div>
             <div className="flex items-start gap-3">
               <span className="flex-shrink-0 w-6 h-6 rounded-full bg-[#243447] text-[#FF5722] text-xs font-bold flex items-center justify-center" style={{ fontFamily: "'Space Mono', monospace" }}>3</span>
               <p className="text-xs text-[#E8E6E1]" style={{ fontFamily: "'DM Sans', sans-serif" }}>
-                Tap <span className="text-[#FF5722] font-semibold">Add</span> — the app will appear on your home screen
+                Tap <span className="text-[#FF5722] font-semibold">Add</span> to confirm — the app will appear on your home screen
               </p>
             </div>
           </div>
         )}
       </div>
     );
-  }
-
-  // Android/Desktop — show install button (only if prompt is available)
-  if (!deferredPrompt) {
-    return null; // Browser doesn't support install or criteria not met
   }
 
   return (
