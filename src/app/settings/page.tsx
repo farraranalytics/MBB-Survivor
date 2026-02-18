@@ -6,6 +6,7 @@ import { useAuth } from '@/components/auth/AuthProvider';
 import { useActivePool } from '@/hooks/useActivePool';
 import { useToast } from '@/hooks/useToast';
 import { supabase } from '@/lib/supabase/client';
+import NotificationToggle from '@/components/NotificationToggle';
 
 const inputClass = "w-full px-4 py-3 bg-[#1B2A3D] border border-[rgba(255,255,255,0.05)] rounded-[12px] text-[#E8E6E1] placeholder-[#9BA3AE] focus:outline-none focus:ring-2 focus:ring-[#FF5722] focus:border-transparent transition-colors";
 
@@ -130,6 +131,8 @@ export default function SettingsPage() {
                 {user.email}
               </p>
             </div>
+            <div className="border-t border-[rgba(255,255,255,0.05)]" />
+            <NotificationToggle />
           </div>
         </section>
 

@@ -3,6 +3,7 @@
 // - /api/admin/test/* (manual test flow)
 
 import { supabaseAdmin } from '@/lib/supabase/admin';
+import { sendBulkNotifications } from '@/lib/notifications';
 
 export interface ProcessingResults {
   gamesCompleted: number;
@@ -233,9 +234,29 @@ export async function processNoAvailablePicks(
     })
     .in('id', stuckIds)
     .eq('is_eliminated', false)
-    .select('id');
+    .select('id, user_id, pool_id');
 
   results.noAvailablePickEliminations = eliminated?.length || 0;
+
+  // Notify eliminated players
+  if (eliminated && eliminated.length > 0) {
+    const poolIds = [...new Set(eliminated.map(e => e.pool_id))];
+    const { data: pools } = await supabaseAdmin
+      .from('pools')
+      .select('id, name')
+      .in('id', poolIds);
+    const poolMap = new Map(pools?.map(p => [p.id, p.name]) || []);
+
+    const notifs = eliminated.map(e => ({
+      userId: e.user_id,
+      title: 'Ran Out of Teams',
+      message: `You have no remaining teams to pick and have been eliminated from ${poolMap.get(e.pool_id) || 'your pool'}.`,
+      url: `/pools/${e.pool_id}/standings`,
+      type: 'game_result' as const,
+      poolId: e.pool_id,
+    }));
+    sendBulkNotifications(notifs).catch(() => {});
+  }
 }
 
 /**
@@ -250,7 +271,7 @@ export async function checkForChampions(
 ) {
   const { data: activePools } = await supabaseAdmin
     .from('pools')
-    .select('id')
+    .select('id, name')
     .eq('status', 'active');
 
   if (!activePools || activePools.length === 0) return;
@@ -273,6 +294,16 @@ export async function checkForChampions(
         .eq('id', pool.id);
       results.championsDeclared++;
       results.poolsCompleted++;
+
+      // Notify the champion
+      sendBulkNotifications([{
+        userId: aliveEntries![0].user_id,
+        title: 'Champion!',
+        message: `You are the champion of ${pool.name}!`,
+        url: `/pools/${pool.id}/standings`,
+        type: 'pool_event',
+        poolId: pool.id,
+      }]).catch(() => {});
     } else if (aliveCount === 0) {
       // TIE — un-eliminate entries from this round using priority tiers:
       // Tier 1: wrong_pick / no_available_picks (actively playing)
@@ -308,6 +339,17 @@ export async function checkForChampions(
           .eq('id', pool.id);
         results.championsDeclared += tiedEntries.length;
         results.poolsCompleted++;
+
+        // Notify co-champions
+        const coChampNotifs = tiedEntries.map(e => ({
+          userId: e.user_id,
+          title: 'Co-Champion!',
+          message: `You are a co-champion of ${pool.name}!`,
+          url: `/pools/${pool.id}/standings`,
+          type: 'pool_event' as const,
+          poolId: pool.id,
+        }));
+        sendBulkNotifications(coChampNotifs).catch(() => {});
       }
     }
     // aliveCount > 1: tournament continues, no action

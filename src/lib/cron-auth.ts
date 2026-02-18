@@ -1,6 +1,6 @@
 // Verify cron job requests are authorized
-// Vercel Cron sends Authorization header automatically
-// Manual triggers can pass the CRON_SECRET as a query param or header
+// cron-job.org sends Authorization header via custom header config
+// Expects: Authorization: Bearer <CRON_SECRET>
 
 export function verifyCronAuth(request: Request): boolean {
   const authHeader = request.headers.get('Authorization');

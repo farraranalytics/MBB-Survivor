@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase/admin';
 import { verifyCronAuth } from '@/lib/cron-auth';
 import { propagateWinner, processNoAvailablePicks, checkForChampions } from '@/lib/game-processing';
+import { sendBulkNotifications } from '@/lib/notifications';
 
 const ESPN_BASE_URL = 'https://site.api.espn.com/apis/site/v2/sports/basketball/mens-college-basketball';
 
@@ -23,6 +24,7 @@ export async function GET(request: NextRequest) {
       roundsCompleted: 0,
       poolsCompleted: 0,
       roundActivated: null as string | null,
+      notificationsSent: 0,
       errors: [] as string[],
     };
 
@@ -193,8 +195,64 @@ export async function GET(request: NextRequest) {
               })
               .in('id', poolPlayerIds)
               .eq('is_eliminated', false)
-              .select('id');
+              .select('id, user_id, pool_id');
             results.playersEliminated += eliminated?.length || 0;
+
+            // Notify eliminated players
+            if (eliminated && eliminated.length > 0) {
+              const poolIds = [...new Set(eliminated.map(e => e.pool_id))];
+              const { data: pools } = await supabaseAdmin
+                .from('pools')
+                .select('id, name')
+                .in('id', poolIds);
+              const poolMap = new Map(pools?.map(p => [p.id, p.name]) || []);
+
+              const notifs = eliminated.map(e => ({
+                userId: e.user_id,
+                title: 'Eliminated',
+                message: `Your pick lost. You've been eliminated from ${poolMap.get(e.pool_id) || 'your pool'}.`,
+                url: `/pools/${e.pool_id}/standings`,
+                type: 'game_result' as const,
+                poolId: e.pool_id,
+              }));
+              sendBulkNotifications(notifs).then(r => { results.notificationsSent += r.sent; }).catch(() => {});
+            }
+          }
+
+          // Notify players whose pick won
+          if (correctPicks && correctPicks.length > 0) {
+            const correctPickIds = correctPicks.map(p => p.id);
+            const { data: winPicks } = await supabaseAdmin
+              .from('picks')
+              .select('pool_player_id')
+              .in('id', correctPickIds);
+
+            if (winPicks && winPicks.length > 0) {
+              const winPlayerIds = winPicks.map(p => p.pool_player_id);
+              const { data: winPlayers } = await supabaseAdmin
+                .from('pool_players')
+                .select('user_id, pool_id')
+                .in('id', winPlayerIds);
+
+              if (winPlayers && winPlayers.length > 0) {
+                const poolIds = [...new Set(winPlayers.map(e => e.pool_id))];
+                const { data: pools } = await supabaseAdmin
+                  .from('pools')
+                  .select('id, name')
+                  .in('id', poolIds);
+                const poolMap = new Map(pools?.map(p => [p.id, p.name]) || []);
+
+                const notifs = winPlayers.map(e => ({
+                  userId: e.user_id,
+                  title: 'Your Pick Won!',
+                  message: `You advance in ${poolMap.get(e.pool_id) || 'your pool'}!`,
+                  url: `/pools/${e.pool_id}/standings`,
+                  type: 'game_result' as const,
+                  poolId: e.pool_id,
+                }));
+                sendBulkNotifications(notifs).then(r => { results.notificationsSent += r.sent; }).catch(() => {});
+              }
+            }
           }
 
           // 7. Propagate winner to next-round game slot
@@ -274,9 +332,29 @@ async function processMissedPicks(
     })
     .in('id', missedIds)
     .eq('is_eliminated', false)
-    .select('id');
+    .select('id, user_id, pool_id');
 
   results.missedPickEliminations = missedElim?.length || 0;
+
+  // Notify missed-pick eliminations
+  if (missedElim && missedElim.length > 0) {
+    const poolIds = [...new Set(missedElim.map(e => e.pool_id))];
+    const { data: pools } = await supabaseAdmin
+      .from('pools')
+      .select('id, name')
+      .in('id', poolIds);
+    const poolMap = new Map(pools?.map(p => [p.id, p.name]) || []);
+
+    const notifs = missedElim.map(e => ({
+      userId: e.user_id,
+      title: 'Missed Pick',
+      message: `You missed the deadline and have been eliminated from ${poolMap.get(e.pool_id) || 'your pool'}.`,
+      url: `/pools/${e.pool_id}/standings`,
+      type: 'game_result' as const,
+      poolId: e.pool_id,
+    }));
+    sendBulkNotifications(notifs).catch(() => {});
+  }
 }
 
 /**
@@ -343,7 +421,7 @@ async function checkRoundCompletion(
  * Activate today's round if deadline is within 6 hours.
  * Inlined from /api/cron/activate-rounds to stay within Vercel Hobby 2-cron limit.
  */
-async function activateTodaysRound(results: { roundActivated: string | null; errors: string[] }) {
+async function activateTodaysRound(results: { roundActivated: string | null; notificationsSent: number; errors: string[] }) {
   try {
     const now = new Date();
 
@@ -378,13 +456,85 @@ async function activateTodaysRound(results: { roundActivated: string | null; err
           .eq('id', todayRound.id);
         results.roundActivated = todayRound.name;
 
+        // Notify alive players: new round available
+        const deadlineStr = new Date(todayRound.deadline_datetime).toLocaleString('en-US', {
+          timeZone: 'America/New_York',
+          month: 'short', day: 'numeric',
+          hour: 'numeric', minute: '2-digit', hour12: true,
+        });
+        const { data: aliveEntries } = await supabaseAdmin
+          .from('pool_players')
+          .select('user_id, pool_id')
+          .eq('is_eliminated', false)
+          .eq('entry_deleted', false);
+
+        if (aliveEntries && aliveEntries.length > 0) {
+          // Deduplicate by user_id + pool_id
+          const seen = new Set<string>();
+          const uniqueEntries = aliveEntries.filter(e => {
+            const key = `${e.user_id}:${e.pool_id}`;
+            if (seen.has(key)) return false;
+            seen.add(key);
+            return true;
+          });
+
+          const poolIds = [...new Set(uniqueEntries.map(e => e.pool_id))];
+          const { data: pools } = await supabaseAdmin
+            .from('pools')
+            .select('id, name')
+            .in('id', poolIds);
+          const poolMap = new Map(pools?.map(p => [p.id, p.name]) || []);
+
+          const notifs = uniqueEntries.map(e => ({
+            userId: e.user_id,
+            title: 'New Round Available',
+            message: `${todayRound.name} is live in ${poolMap.get(e.pool_id) || 'your pool'}. Pick before ${deadlineStr} ET.`,
+            url: `/pools/${e.pool_id}/pick`,
+            type: 'pool_event' as const,
+            poolId: e.pool_id,
+          }));
+          sendBulkNotifications(notifs).then(r => { results.notificationsSent += r.sent; }).catch(() => {});
+        }
+
         // Pool status: open → active on first round
         const isFirstRound = rounds[0]?.id === todayRound.id;
         if (isFirstRound || !rounds.some(r => r.date < todayStr)) {
-          await supabaseAdmin
+          const { data: activatedPools } = await supabaseAdmin
             .from('pools')
             .update({ status: 'active' })
-            .eq('status', 'open');
+            .eq('status', 'open')
+            .select('id, name');
+
+          // Notify all members of newly activated pools
+          if (activatedPools && activatedPools.length > 0) {
+            const activatedPoolIds = activatedPools.map(p => p.id);
+            const { data: members } = await supabaseAdmin
+              .from('pool_players')
+              .select('user_id, pool_id')
+              .in('pool_id', activatedPoolIds)
+              .eq('entry_deleted', false);
+
+            if (members && members.length > 0) {
+              const activatedPoolMap = new Map(activatedPools.map(p => [p.id, p.name]));
+              const seenMembers = new Set<string>();
+              const uniqueMembers = members.filter(m => {
+                const key = `${m.user_id}:${m.pool_id}`;
+                if (seenMembers.has(key)) return false;
+                seenMembers.add(key);
+                return true;
+              });
+
+              const poolNotifs = uniqueMembers.map(m => ({
+                userId: m.user_id,
+                title: 'Pool is Live!',
+                message: `${activatedPoolMap.get(m.pool_id) || 'Your pool'} is now active. Make your first pick!`,
+                url: `/pools/${m.pool_id}/pick`,
+                type: 'pool_event' as const,
+                poolId: m.pool_id,
+              }));
+              sendBulkNotifications(poolNotifs).then(r => { results.notificationsSent += r.sent; }).catch(() => {});
+            }
+          }
         }
       }
     }

@@ -19,6 +19,7 @@ import {
   PoolMember,
 } from '@/lib/admin';
 import { PageHeader, PoolSelectorBar } from '@/components/pool';
+import NotificationToggle from '@/components/NotificationToggle';
 
 // ─── Section Header ──────────────────────────────────────────────
 
@@ -775,6 +776,8 @@ export default function PoolSettingsPage() {
                 {user?.email}
               </p>
             </div>
+            <div className="border-t border-[rgba(255,255,255,0.05)]" />
+            <NotificationToggle />
           </div>
         </section>
 

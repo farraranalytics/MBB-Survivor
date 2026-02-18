@@ -36,6 +36,11 @@ export default function RootLayout({
   return (
     <html lang="en" className="dark">
       <head>
+        <meta name="theme-color" content="#0D1B2A" />
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+        <meta name="apple-mobile-web-app-title" content="Survive the Dance" />
+        <link rel="apple-touch-icon" href="/icons/apple-touch-icon-180.png" />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link

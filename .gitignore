@@ -14,5 +14,10 @@ secrets.json
 # Local-only scripts (use .env.local for credentials)
 scripts/*.mjs
 
+# Serwist service worker (generated at build time)
+public/sw.js
+public/sw.js.map
+public/swe-worker-*.js
+
 # Accidental files
 nul
