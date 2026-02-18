@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import {
   isPushSupported,
+  isStandalone,
   isIOS,
   getPermissionState,
   subscribeToPush,
@@ -12,6 +13,7 @@ import {
 
 export default function NotificationToggle() {
   const [supported, setSupported] = useState(false);
+  const [standalone, setStandalone] = useState(false);
   const [iosDevice, setIosDevice] = useState(false);
   const [permission, setPermission] = useState<NotificationPermission | 'unsupported'>('unsupported');
   const [subscribed, setSubscribed] = useState(false);
@@ -20,11 +22,13 @@ export default function NotificationToggle() {
   useEffect(() => {
     async function init() {
       const pushSupported = isPushSupported();
+      const isStandaloneMode = isStandalone();
       const ios = isIOS();
       setSupported(pushSupported);
+      setStandalone(isStandaloneMode);
       setIosDevice(ios);
 
-      if (pushSupported && !ios) {
+      if (pushSupported) {
         setPermission(getPermissionState());
         const hasSub = await hasActivePushSubscription();
         setSubscribed(hasSub);
@@ -52,8 +56,8 @@ export default function NotificationToggle() {
     }
   };
 
-  // iOS — show email-only message
-  if (iosDevice) {
+  // iOS in browser (not installed as PWA) — push requires home screen install
+  if (iosDevice && !standalone && !supported) {
     return (
       <div className="flex items-center justify-between">
         <div>
@@ -61,17 +65,14 @@ export default function NotificationToggle() {
             Push Notifications
           </p>
           <p className="text-xs text-[#9BA3AE] mt-0.5" style={{ fontFamily: "'DM Sans', sans-serif" }}>
-            Not available on iOS. Email alerts are enabled.
+            Install the app to your home screen to enable push notifications.
           </p>
         </div>
-        <span className="text-xs text-[#5F6B7A] px-2 py-1 bg-[#1B2A3D] rounded-[6px]" style={{ fontFamily: "'DM Sans', sans-serif" }}>
-          iOS
-        </span>
       </div>
     );
   }
 
-  // Browser doesn't support push
+  // Browser doesn't support push at all
   if (!supported) {
     return (
       <div className="flex items-center justify-between">
@@ -106,7 +107,7 @@ export default function NotificationToggle() {
     );
   }
 
-  // Normal toggle
+  // Normal toggle — works on Android, Desktop, and iOS PWA (16.4+)
   return (
     <div className="flex items-center justify-between">
       <div>

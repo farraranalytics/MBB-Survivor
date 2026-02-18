@@ -29,11 +29,25 @@ export function isPushSupported(): boolean {
 }
 
 /**
- * Check if the user is on iOS (no Web Push support on iOS Safari PWAs)
+ * Check if the user is on iOS.
+ * iOS 16.4+ supports Web Push in installed PWAs (home screen apps).
+ * In Safari browser (not installed), push APIs may not be available.
  */
 export function isIOS(): boolean {
   if (typeof navigator === 'undefined') return false;
   return /iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as any).MSStream;
+}
+
+/**
+ * Check if the app is running in standalone mode (installed PWA).
+ * On iOS, push notifications require the app to be installed to the home screen.
+ */
+export function isStandalone(): boolean {
+  if (typeof window === 'undefined') return false;
+  return (
+    window.matchMedia('(display-mode: standalone)').matches ||
+    (navigator as any).standalone === true // iOS Safari standalone check
+  );
 }
 
 /**

@@ -4,7 +4,7 @@
 Turn Survive the Dance into a Progressive Web App (PWA) so users can:
 - Install it on their homescreen (looks/feels like a native app)
 - Receive push notifications for deadlines, results, and pool events
-- Use email fallback for iOS (no Web Push support on Safari)
+- Use email fallback for users who don't install the PWA (iOS 16.4+ PWAs DO support Web Push)
 
 ---
 
@@ -141,7 +141,7 @@ CREATE INDEX idx_push_subs_user ON push_subscriptions(user_id) WHERE is_active =
 
 ### 2.5 Permission Prompt UI
 - [x] Create notification opt-in component (`NotificationToggle.tsx`)
-- [x] Detect platform: show "Enable notifications" on Android/Desktop, "Email alerts" note on iOS
+- [x] Detect platform: show toggle on all platforms with Web Push support (incl. iOS 16.4+ PWAs), "Install to enable" on iOS browser
 - [x] Settings page: toggle push on/off (both `/settings` and `/pools/[id]/settings`)
 
 ---
@@ -224,11 +224,13 @@ CREATE INDEX idx_push_subs_user ON push_subscriptions(user_id) WHERE is_active =
 
 ---
 
-## iOS Limitations (Important)
-- Safari does NOT support Web Push API
-- PWAs installed on iOS homescreen cannot receive push notifications
-- **Strategy:** Detect iOS → show email-only notification option, hide push toggle
-- Email notifications via Resend are the iOS fallback
+## iOS Support (Updated 2026-02-17)
+- **iOS 16.4+ supports Web Push API** in installed PWAs (home screen apps)
+- Standard VAPID-based Web Push works — no Apple Developer account needed
+- Push is NOT available in Safari browser — user must install PWA to home screen first
+- **Strategy:** Detect iOS + not standalone → show "Install to enable push" message
+- Once installed as PWA, iOS users get the same push toggle as Android/Desktop
+- Email fallback via Resend still available for users who don't install the PWA
 
 ## Testing Checklist
 - [ ] Chrome DevTools → Application → Manifest shows correct data
@@ -239,4 +241,6 @@ CREATE INDEX idx_push_subs_user ON push_subscriptions(user_id) WHERE is_active =
 - [ ] Push notification received on Android/Desktop Chrome
 - [ ] Notification click navigates to correct page
 - [ ] Unsubscribe flow works (settings toggle)
+- [ ] iOS Safari: "Install to enable push" message shown (not standalone)
+- [ ] iOS PWA (home screen): push toggle works, notifications received
 - [ ] Email fallback sends when push is disabled/unavailable
