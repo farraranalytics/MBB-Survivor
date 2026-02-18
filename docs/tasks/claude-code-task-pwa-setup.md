@@ -29,7 +29,7 @@ Turn Survive the Dance into a Progressive Web App (PWA) so users can:
 ### 1.1 Generate PWA Icons
 - [x] Scale `app-store-icon-1024.png` → `public/icons/icon-192.png`, `icon-384.png`, `icon-512.png`
 - [x] Create `public/icons/apple-touch-icon-180.png` for iOS
-- [ ] Optionally create maskable variants (192×192 with safe zone padding)
+- [x] Maskable icon variants created (192×192, 512×512 with 10% safe zone padding, #0D1B2A bg)
 
 ### 1.2 Create Web App Manifest
 - [x] Create `src/app/manifest.ts` (Next.js built-in convention, serves at `/manifest.webmanifest`):
