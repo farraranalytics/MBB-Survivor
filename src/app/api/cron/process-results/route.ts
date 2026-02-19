@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase/admin';
 import { verifyCronAuth } from '@/lib/cron-auth';
-import { propagateWinner, processNoAvailablePicks, checkForChampions } from '@/lib/game-processing';
+import { propagateWinner, processNoAvailablePicks, checkForChampions, deleteFuturePicksForEntries } from '@/lib/game-processing';
 import { sendBulkNotifications } from '@/lib/notifications';
 
 const ESPN_BASE_URL = 'https://site.api.espn.com/apis/site/v2/sports/basketball/mens-college-basketball';
@@ -198,8 +198,11 @@ export async function GET(request: NextRequest) {
               .select('id, user_id, pool_id');
             results.playersEliminated += eliminated?.length || 0;
 
-            // Notify eliminated players
+            // Delete future round picks for eliminated entries
             if (eliminated && eliminated.length > 0) {
+              await deleteFuturePicksForEntries(eliminated.map(e => e.id));
+
+              // Notify eliminated players
               const poolIds = [...new Set(eliminated.map(e => e.pool_id))];
               const { data: pools } = await supabaseAdmin
                 .from('pools')
@@ -335,6 +338,11 @@ async function processMissedPicks(
     .select('id, user_id, pool_id');
 
   results.missedPickEliminations = missedElim?.length || 0;
+
+  // Delete future round picks for eliminated entries
+  if (missedElim && missedElim.length > 0) {
+    await deleteFuturePicksForEntries(missedElim.map(e => e.id));
+  }
 
   // Notify missed-pick eliminations
   if (missedElim && missedElim.length > 0) {

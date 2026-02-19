@@ -135,6 +135,15 @@ export interface PickDeadline {
   first_game_time: string;
 }
 
+export interface PickableRound {
+  id: string;
+  name: string;
+  date: string;
+  deadline: string;        // ISO string (earliest game - 5 min)
+  has_pick: boolean;       // whether this entry already has a pick
+  pick_team_name?: string; // team name if has_pick, for display in selector
+}
+
 export interface PickSubmission {
   pool_player_id: string;
   round_id: string;

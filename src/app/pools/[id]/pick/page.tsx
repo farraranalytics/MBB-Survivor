@@ -10,13 +10,14 @@ import {
   getPickableTeams,
   getPlayerPick,
   getPlayerPicks,
+  getPickableRounds,
   submitPick,
   PickError
 } from '@/lib/picks';
 import { useActivePool } from '@/hooks/useActivePool';
 import { useToast } from '@/hooks/useToast';
 import { supabase } from '@/lib/supabase/client';
-import { PickableTeam, PickDeadline, Round, Pick, Game } from '@/types/picks';
+import { PickableTeam, PickDeadline, Round, Pick, Game, PickableRound } from '@/types/picks';
 import { formatET, formatDateET } from '@/lib/timezone';
 import { mapRoundNameToCode, ROUND_COLORS, getAllGamesWithTeams, getAllRounds, getGamesForDay } from '@/lib/bracket';
 import { TeamLogo, getESPNStatsUrl } from '@/components/TeamLogo';
@@ -205,10 +206,14 @@ function PickTimeline({
   rounds,
   picks,
   currentRoundId,
+  pickableRoundIds,
+  onRoundClick,
 }: {
   rounds: Round[];
   picks: Pick[];
   currentRoundId: string | null;
+  pickableRoundIds?: Set<string>;
+  onRoundClick?: (roundId: string) => void;
 }) {
   const currentIdx = rounds.findIndex(r => r.id === currentRoundId);
 
@@ -223,9 +228,15 @@ function PickTimeline({
         const eliminated = pick?.is_correct === false;
         const roundCode = mapRoundNameToCode(round.name);
         const roundColor = ROUND_COLORS[roundCode] || '#5F6B7A';
+        const isPickable = pickableRoundIds?.has(round.id) ?? false;
+        const isClickable = isPickable && onRoundClick;
 
         return (
-          <div key={round.id} className="flex items-stretch gap-2 sm:gap-3">
+          <div
+            key={round.id}
+            className={`flex items-stretch gap-2 sm:gap-3 ${isClickable ? 'cursor-pointer' : ''}`}
+            onClick={() => isClickable && onRoundClick(round.id)}
+          >
             {/* Timeline line + dot */}
             <div className="flex flex-col items-center w-5 flex-shrink-0">
               {idx > 0 && (
@@ -236,7 +247,7 @@ function PickTimeline({
               <div className={`rounded-full flex-shrink-0 ${
                 isCurrent ? 'w-3 h-3 border-2 border-[#FF5722]' : 'w-2 h-2'
               }`} style={{
-                background: survived ? '#4CAF50' : eliminated ? '#EF5350' : isCurrent ? '#FF5722' : '#243447',
+                background: survived ? '#4CAF50' : eliminated ? '#EF5350' : isCurrent ? '#FF5722' : isPickable ? '#FF5722' : '#243447',
                 boxShadow: isCurrent ? '0 0 8px rgba(255,87,34,0.27)' : 'none',
               }} />
               {idx < rounds.length - 1 && (
@@ -244,10 +255,10 @@ function PickTimeline({
               )}
             </div>
             {/* Content */}
-            <div className={`flex-1 pb-1 ${idx > 0 ? 'pt-0.5' : ''} ${isFuture ? 'opacity-30' : ''}`}>
+            <div className={`flex-1 pb-1 ${idx > 0 ? 'pt-0.5' : ''} ${isFuture && !isPickable ? 'opacity-30' : ''}`}>
               <div className="flex items-center gap-1.5 mb-0.5">
                 <span className="text-[10px] font-bold tracking-[0.1em]"
-                  style={{ fontFamily: "'Space Mono', monospace", color: isCurrent ? '#FF5722' : roundColor }}>
+                  style={{ fontFamily: "'Space Mono', monospace", color: isCurrent ? '#FF5722' : isPickable ? '#FF5722' : roundColor }}>
                   {round.name}
                 </span>
                 <span className="text-[9px] text-[#3D4654] tracking-[0.06em]"
@@ -258,6 +269,12 @@ function PickTimeline({
                   <span className="text-[9px] font-bold text-[#FF5722] bg-[rgba(255,87,34,0.08)] px-1.5 py-px rounded-full tracking-[0.1em] border border-[rgba(255,87,34,0.3)]"
                     style={{ fontFamily: "'Space Mono', monospace" }}>
                     NOW
+                  </span>
+                )}
+                {isPickable && !isCurrent && (
+                  <span className="text-[9px] font-bold text-[#4CAF50] bg-[rgba(76,175,80,0.08)] px-1.5 py-px rounded-full tracking-[0.1em] border border-[rgba(76,175,80,0.3)]"
+                    style={{ fontFamily: "'Space Mono', monospace" }}>
+                    OPEN
                   </span>
                 )}
               </div>
@@ -283,6 +300,11 @@ function PickTimeline({
                 <span className="text-[11px] font-semibold text-[#FF5722] tracking-[0.1em]"
                   style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
                   ↑ PICKING NOW
+                </span>
+              ) : isPickable ? (
+                <span className="text-[11px] font-semibold text-[#FF5722] tracking-[0.1em]"
+                  style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
+                  TAP TO PICK
                 </span>
               ) : (
                 <span className="text-[11px] text-[#3D4654] tracking-[0.1em]"
@@ -503,6 +525,47 @@ function SpectatorGameCard({ game }: { game: Game }) {
   );
 }
 
+// ─── Round Selector (horizontal pills) ───────────────────────────
+
+function RoundSelector({
+  rounds,
+  selectedRoundId,
+  onSelect,
+}: {
+  rounds: PickableRound[];
+  selectedRoundId: string;
+  onSelect: (roundId: string) => void;
+}) {
+  if (rounds.length <= 1) return null;
+
+  return (
+    <div className="flex gap-1.5 overflow-x-auto pb-1 mt-2 scrollbar-hide">
+      {rounds.map((r) => {
+        const isActive = r.id === selectedRoundId;
+        return (
+          <button
+            key={r.id}
+            onClick={() => onSelect(r.id)}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-[6px] text-[0.7rem] font-bold uppercase whitespace-nowrap transition-all flex-shrink-0 ${
+              isActive
+                ? 'bg-[rgba(255,87,34,0.12)] border border-[rgba(255,87,34,0.4)] text-[#FF5722]'
+                : 'bg-[#111827] border border-[rgba(255,255,255,0.05)] text-[#9BA3AE] hover:border-[rgba(255,255,255,0.12)]'
+            }`}
+            style={{ fontFamily: "'Oswald', sans-serif" }}
+          >
+            {r.name}
+            {r.has_pick ? (
+              <span className="text-[9px] text-[#4CAF50]">✓</span>
+            ) : (
+              <span className="w-1.5 h-1.5 rounded-full bg-[#FF5722] animate-pulse" />
+            )}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
 // ─── Main Pick Page ───────────────────────────────────────────────
 
 export default function PickPage() {
@@ -546,6 +609,10 @@ export default function PickPage() {
   const [addEntryLoading, setAddEntryLoading] = useState(false);
   const [addEntryError, setAddEntryError] = useState('');
 
+  // Multi-round picking state
+  const [pickableRounds, setPickableRounds] = useState<PickableRound[]>([]);
+  const [selectedRoundId, setSelectedRoundId] = useState<string | null>(null);
+
   // New state
   const [allRounds, setAllRounds] = useState<Round[]>([]);
   const [expandedRegion, setExpandedRegion] = useState<string | null>(null);
@@ -582,6 +649,42 @@ export default function PickPage() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isMobile, teams]);
+
+  // Load per-round data (teams, deadline, existing pick) without full page reload
+  const loadRoundData = useCallback(async (roundId: string, poolPlayerIdArg: string, isEliminatedArg: boolean) => {
+    try {
+      const allRoundsData = allRounds.length > 0 ? allRounds : await getAllRounds();
+      const roundData = allRoundsData.find(r => r.id === roundId) || null;
+      setRound(roundData);
+
+      const dl = await getPickDeadline(roundId);
+      setDeadline(dl);
+
+      if (isEliminatedArg) {
+        const allGamesData = await getAllGamesWithTeams();
+        const gamesData = getGamesForDay(allGamesData, allRoundsData, roundId);
+        setSpectatorGames(gamesData);
+      } else {
+        setExistingPick(null);
+        setSelectedTeam(null);
+
+        const existing = await getPlayerPick(poolPlayerIdArg, roundId);
+        if (existing) {
+          setExistingPick(existing);
+        }
+
+        const pickable = await getPickableTeams(poolPlayerIdArg, roundId);
+        setTeams(pickable);
+
+        if (existing) {
+          const currentTeam = pickable.find(t => t.id === existing.team_id);
+          if (currentTeam) setSelectedTeam(currentTeam);
+        }
+      }
+    } catch (err) {
+      console.error('Failed to load round data:', err);
+    }
+  }, [allRounds]);
 
   const loadData = useCallback(async () => {
     if (!user) return;
@@ -665,47 +768,90 @@ export default function PickPage() {
         return;
       }
 
-      const activeRound = await getActiveRound();
-      if (!activeRound) {
-        if (poolPlayer.is_eliminated) { setLoading(false); return; }
-        setError('No active round. Check back when the tournament is underway.'); setLoading(false); return;
-      }
-      setRound(activeRound);
+      // Multi-round: get all pickable rounds for this entry
+      const pickable = await getPickableRounds(poolPlayer.id);
+      setPickableRounds(pickable);
 
-      // Fetch pick status for all entries to color-code tabs
+      if (pickable.length === 0) {
+        // Fallback: try to get active round for eliminated/spectator view
+        const activeRound = await getActiveRound();
+        if (!activeRound) {
+          if (poolPlayer.is_eliminated) { setLoading(false); return; }
+          setError('No rounds available. Check back when matchups are set.');
+          setLoading(false);
+          return;
+        }
+        setRound(activeRound);
+        setSelectedRoundId(activeRound.id);
+
+        // Fetch pick status for all entries to color-code tabs
+        if (allEntries && allEntries.length > 0) {
+          const entryIds = allEntries.map(e => e.id);
+          const { data: entryPicks } = await supabase
+            .from('picks')
+            .select('pool_player_id')
+            .in('pool_player_id', entryIds)
+            .eq('round_id', activeRound.id);
+          const pickedIds = new Set(entryPicks?.map(p => p.pool_player_id) || []);
+          setEntries(allEntries.map(e => ({ ...e, has_picked: pickedIds.has(e.id) })));
+        }
+
+        if (poolPlayer.is_eliminated) {
+          const allGamesData = await getAllGamesWithTeams();
+          const gamesData = getGamesForDay(allGamesData, allRoundsData, activeRound.id);
+          setSpectatorGames(gamesData);
+        }
+
+        const dl = await getPickDeadline(activeRound.id);
+        setDeadline(dl);
+        setLoading(false);
+        return;
+      }
+
+      // Default to earliest pickable round without a pick, or earliest overall
+      const defaultRound = pickable.find(r => !r.has_pick) || pickable[0];
+      setSelectedRoundId(defaultRound.id);
+
+      // Fetch pick status for all entries (check across all pickable rounds)
       if (allEntries && allEntries.length > 0) {
         const entryIds = allEntries.map(e => e.id);
+        const pickableRoundIds = pickable.map(r => r.id);
         const { data: entryPicks } = await supabase
           .from('picks')
-          .select('pool_player_id')
+          .select('pool_player_id, round_id')
           .in('pool_player_id', entryIds)
-          .eq('round_id', activeRound.id);
-        const pickedIds = new Set(entryPicks?.map(p => p.pool_player_id) || []);
+          .in('round_id', pickableRoundIds);
+        // Mark as "has_picked" if they have a pick for the default round
+        const pickedIds = new Set(
+          (entryPicks || []).filter(p => p.round_id === defaultRound.id).map(p => p.pool_player_id)
+        );
         setEntries(allEntries.map(e => ({ ...e, has_picked: pickedIds.has(e.id) })));
       }
 
-      const dl = await getPickDeadline(activeRound.id);
+      // Load the default round's data
+      const roundData = allRoundsData.find(r => r.id === defaultRound.id) || null;
+      setRound(roundData);
+
+      const dl = await getPickDeadline(defaultRound.id);
       setDeadline(dl);
 
-      if (poolPlayer.is_eliminated) {
-        // Use bracket-aware game filtering (matches analyze page logic)
-        const allGamesData = await getAllGamesWithTeams();
-        const gamesData = getGamesForDay(allGamesData, allRoundsData, activeRound.id);
-        setSpectatorGames(gamesData);
-      } else {
-        const existing = await getPlayerPick(poolPlayer.id, activeRound.id);
+      if (!poolPlayer.is_eliminated) {
+        const existing = await getPlayerPick(poolPlayer.id, defaultRound.id);
         if (existing) {
           setExistingPick(existing);
         }
 
-        // Same bracket logic as analyze page (getGamesForDay: actualGameIndices, r32DayMapping, etc.)
-        const pickable = await getPickableTeams(poolPlayer.id, activeRound.id);
-        setTeams(pickable);
+        const pickableTeams = await getPickableTeams(poolPlayer.id, defaultRound.id);
+        setTeams(pickableTeams);
 
         if (existing) {
-          const currentTeam = pickable.find(t => t.id === existing.team_id);
+          const currentTeam = pickableTeams.find(t => t.id === existing.team_id);
           if (currentTeam) setSelectedTeam(currentTeam);
         }
+      } else {
+        const allGamesData = await getAllGamesWithTeams();
+        const gamesData = getGamesForDay(allGamesData, allRoundsData, defaultRound.id);
+        setSpectatorGames(gamesData);
       }
     } catch (err) {
       console.error('Failed to load pick data:', err);
@@ -724,23 +870,31 @@ export default function PickPage() {
   }, [loadData, user]);
 
   const handleConfirm = async () => {
-    if (!selectedTeam || !poolPlayerId || !round) return;
+    if (!selectedTeam || !poolPlayerId || !selectedRoundId) return;
     setSubmitting(true);
     const teamForRetry = selectedTeam;
+    const roundIdForRetry = selectedRoundId;
     try {
-      const pick = await submitPick({ pool_player_id: poolPlayerId, round_id: round.id, team_id: selectedTeam.id });
+      const pick = await submitPick({ pool_player_id: poolPlayerId, round_id: selectedRoundId, team_id: selectedTeam.id });
       setExistingPick(pick);
       setShowConfirm(false);
       setEntries(prev => prev.map(e => e.id === poolPlayerId ? { ...e, has_picked: true } : e));
+      // Update pickableRounds to reflect the new pick
+      setPickableRounds(prev => prev.map(r =>
+        r.id === selectedRoundId ? { ...r, has_pick: true, pick_team_name: selectedTeam.name } : r
+      ));
       addToast('success', `Pick locked in — (${selectedTeam.seed}) ${selectedTeam.name}`);
       refreshPools();
     } catch (err) {
       setShowConfirm(false);
       setTimeout(async () => {
         try {
-          const pick = await submitPick({ pool_player_id: poolPlayerId, round_id: round.id, team_id: teamForRetry.id });
+          const pick = await submitPick({ pool_player_id: poolPlayerId, round_id: roundIdForRetry, team_id: teamForRetry.id });
           setExistingPick(pick);
           setEntries(prev => prev.map(e => e.id === poolPlayerId ? { ...e, has_picked: true } : e));
+          setPickableRounds(prev => prev.map(r =>
+            r.id === roundIdForRetry ? { ...r, has_pick: true, pick_team_name: teamForRetry.name } : r
+          ));
           addToast('success', `Pick locked in — (${teamForRetry.seed}) ${teamForRetry.name}`);
           refreshPools();
         } catch (retryErr) {
@@ -860,7 +1014,7 @@ export default function PickPage() {
     );
   }
 
-  if (deadline?.is_expired && !isEliminated) {
+  if (deadline?.is_expired && !isEliminated && pickableRounds.length === 0) {
     return (
       <div className="min-h-screen bg-[#0D1B2A] flex items-center justify-center px-5">
         <div className="text-center max-w-sm">
@@ -884,7 +1038,7 @@ export default function PickPage() {
 
   const gameCount = teams.length > 0 ? Math.floor(teams.length / 2) : 0;
 
-  const currentDayIdx = allRounds.findIndex(r => r.id === round?.id);
+  const currentDayIdx = allRounds.findIndex(r => r.id === selectedRoundId);
   const dayStr = currentDayIdx >= 0 ? `DAY ${currentDayIdx + 1} OF ${allRounds.length}` : '';
 
   const pickStr = existingPick && existingPick.team
@@ -946,6 +1100,8 @@ export default function PickPage() {
               setSpectatorGames([]);
               setShowAddEntry(false);
               setExpandedRegion(null);
+              setPickableRounds([]);
+              setSelectedRoundId(null);
               router.replace(`/pools/${poolId}/pick?entry=${id}`);
             }}
             addEntrySlot={canAddEntry ? (
@@ -958,6 +1114,32 @@ export default function PickPage() {
               </button>
             ) : undefined}
           />
+
+          {/* Round Selector for multi-round picking */}
+          {pickableRounds.length > 1 && selectedRoundId && (
+            <RoundSelector
+              rounds={pickableRounds}
+              selectedRoundId={selectedRoundId}
+              onSelect={async (roundId) => {
+                if (roundId === selectedRoundId) return;
+                setSelectedRoundId(roundId);
+                setExpandedRegion(null);
+                if (poolPlayerId) {
+                  await loadRoundData(roundId, poolPlayerId, isEliminated);
+                  // Update entry tab pick status for the new round
+                  if (entries.length > 0) {
+                    const { data: entryPicks } = await supabase
+                      .from('picks')
+                      .select('pool_player_id')
+                      .in('pool_player_id', entries.map(e => e.id))
+                      .eq('round_id', roundId);
+                    const pickedIds = new Set(entryPicks?.map(p => p.pool_player_id) || []);
+                    setEntries(prev => prev.map(e => ({ ...e, has_picked: pickedIds.has(e.id) })));
+                  }
+                }
+              }}
+            />
+          )}
 
           {/* Add Entry Form */}
           {showAddEntry && (
@@ -1183,7 +1365,25 @@ export default function PickPage() {
             <PickTimeline
               rounds={allRounds}
               picks={pickHistory}
-              currentRoundId={round?.id || null}
+              currentRoundId={selectedRoundId}
+              pickableRoundIds={new Set(pickableRounds.map(r => r.id))}
+              onRoundClick={async (roundId) => {
+                if (roundId === selectedRoundId) return;
+                setSelectedRoundId(roundId);
+                setExpandedRegion(null);
+                if (poolPlayerId) {
+                  await loadRoundData(roundId, poolPlayerId, isEliminated);
+                  if (entries.length > 0) {
+                    const { data: entryPicks } = await supabase
+                      .from('picks')
+                      .select('pool_player_id')
+                      .in('pool_player_id', entries.map(e => e.id))
+                      .eq('round_id', roundId);
+                    const pickedIds = new Set(entryPicks?.map(p => p.pool_player_id) || []);
+                    setEntries(prev => prev.map(e => ({ ...e, has_picked: pickedIds.has(e.id) })));
+                  }
+                }
+              }}
             />
           </div>
         )}

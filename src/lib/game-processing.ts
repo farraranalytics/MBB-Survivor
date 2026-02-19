@@ -34,6 +34,54 @@ export function createEmptyResults(): ProcessingResults {
 }
 
 /**
+ * Delete picks for future unlocked rounds when entries are eliminated.
+ * Safe to delete picks — they are leaf records with no FK dependencies.
+ */
+export async function deleteFuturePicksForEntries(
+  poolPlayerIds: string[]
+): Promise<number> {
+  if (poolPlayerIds.length === 0) return 0;
+
+  // Find rounds where earliest game deadline > now (still unlocked)
+  const { data: allRounds } = await supabaseAdmin
+    .from('rounds')
+    .select('id');
+
+  if (!allRounds || allRounds.length === 0) return 0;
+
+  const now = Date.now();
+  const futureRoundIds: string[] = [];
+
+  for (const round of allRounds) {
+    const { data: games } = await supabaseAdmin
+      .from('games')
+      .select('game_datetime')
+      .eq('round_id', round.id)
+      .not('game_datetime', 'is', null)
+      .order('game_datetime', { ascending: true })
+      .limit(1);
+
+    if (games && games.length > 0) {
+      const deadline = new Date(games[0].game_datetime).getTime() - 5 * 60 * 1000;
+      if (now < deadline) {
+        futureRoundIds.push(round.id);
+      }
+    }
+  }
+
+  if (futureRoundIds.length === 0) return 0;
+
+  const { data: deleted } = await supabaseAdmin
+    .from('picks')
+    .delete()
+    .in('pool_player_id', poolPlayerIds)
+    .in('round_id', futureRoundIds)
+    .select('id');
+
+  return deleted?.length || 0;
+}
+
+/**
  * Process a single completed game: mark picks correct/incorrect, eliminate losers.
  * Called after a game is set to 'final' with a winner_id.
  */
@@ -86,6 +134,11 @@ export async function processCompletedGame(
       .eq('is_eliminated', false)
       .select('id');
     results.playersEliminated += eliminated?.length || 0;
+
+    // Delete future round picks for eliminated entries
+    if (eliminated && eliminated.length > 0) {
+      await deleteFuturePicksForEntries(eliminated.map(e => e.id));
+    }
   }
 }
 
@@ -140,6 +193,11 @@ export async function processMissedPicks(
     .select('id');
 
   results.missedPickEliminations = missedEliminated?.length || 0;
+
+  // Delete future round picks for eliminated entries
+  if (missedEliminated && missedEliminated.length > 0) {
+    await deleteFuturePicksForEntries(missedEliminated.map(e => e.id));
+  }
 }
 
 /**
@@ -237,6 +295,11 @@ export async function processNoAvailablePicks(
     .select('id, user_id, pool_id');
 
   results.noAvailablePickEliminations = eliminated?.length || 0;
+
+  // Delete future round picks for eliminated entries
+  if (eliminated && eliminated.length > 0) {
+    await deleteFuturePicksForEntries(eliminated.map(e => e.id));
+  }
 
   // Notify eliminated players
   if (eliminated && eliminated.length > 0) {

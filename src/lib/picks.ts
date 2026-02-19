@@ -11,6 +11,7 @@ import {
   Game,
   TeamInfo,
   PickableTeam,
+  PickableRound,
   PlayerStatus,
   PickDeadline,
   PickSubmission,
@@ -42,6 +43,65 @@ export async function getActiveRound(): Promise<Round | null> {
 
   if (error) return null;
   return data;
+}
+
+/**
+ * Get all rounds where matchups are known and deadline hasn't passed.
+ * Used for multi-round advance picking.
+ */
+export async function getPickableRounds(poolPlayerId: string): Promise<PickableRound[]> {
+  const [allGames, allRounds, effectiveNow] = await Promise.all([
+    getAllGamesWithTeams(),
+    getAllRounds(),
+    getEffectiveNow(),
+  ]);
+
+  const now = effectiveNow.getTime();
+
+  // Fetch existing picks for this entry (with team name for display)
+  const { data: existingPicks } = await supabase
+    .from('picks')
+    .select('round_id, team:team_id(name)')
+    .eq('pool_player_id', poolPlayerId);
+
+  const picksByRound = new Map<string, string>();
+  for (const p of existingPicks || []) {
+    const teamName = (p.team as any)?.name || '';
+    picksByRound.set(p.round_id, teamName);
+  }
+
+  const pickableRounds: PickableRound[] = [];
+
+  for (const round of allRounds) {
+    // Find games in this round with both teams populated (matchups known)
+    const gamesWithMatchups = allGames.filter(
+      g => g.round_id === round.id && g.team1_id && g.team2_id
+    );
+    if (gamesWithMatchups.length === 0) continue;
+
+    // Compute deadline = earliest game_datetime - 5 minutes
+    const gameTimes = gamesWithMatchups
+      .map(g => g.game_datetime ? new Date(g.game_datetime).getTime() : Infinity)
+      .filter(t => t !== Infinity);
+    if (gameTimes.length === 0) continue;
+
+    const earliestGame = Math.min(...gameTimes);
+    const deadline = earliestGame - 5 * 60 * 1000;
+    if (now >= deadline) continue; // Deadline passed
+
+    const hasPick = picksByRound.has(round.id);
+    pickableRounds.push({
+      id: round.id,
+      name: round.name,
+      date: round.date,
+      deadline: new Date(deadline).toISOString(),
+      has_pick: hasPick,
+      pick_team_name: hasPick ? picksByRound.get(round.id) : undefined,
+    });
+  }
+
+  // Sort by date ascending (allRounds should already be sorted, but ensure)
+  return pickableRounds.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 }
 
 // ─── Game Queries ─────────────────────────────────────────────────

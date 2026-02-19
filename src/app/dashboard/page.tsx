@@ -152,11 +152,11 @@ export default function Dashboard() {
 
   const preTournament = !tournamentState || canJoinOrCreate(tournamentState);
 
-  // Pre-round (picks open) → click pool goes to Pick; otherwise → Standings (The Field)
-  const poolClickTarget =
-    tournamentState?.currentRound?.status === 'pre_round' && !tournamentState?.currentRound?.isDeadlinePassed
-      ? 'pick'
-      : 'standings';
+  // Any round with picks open → click pool goes to Pick; otherwise → Standings (The Field)
+  const hasPickableRound = tournamentState?.rounds.some(
+    r => r.status === 'pre_round' && !r.isDeadlinePassed
+  );
+  const poolClickTarget = hasPickableRound ? 'pick' : 'standings';
 
   // User display name
   const displayName = user?.user_metadata?.display_name
