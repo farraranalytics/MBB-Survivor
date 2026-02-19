@@ -3,6 +3,7 @@
 // - /api/admin/test/* (manual test flow)
 
 import { supabaseAdmin } from '@/lib/supabase/admin';
+import { getEffectiveNowServer } from '@/lib/clock-server';
 import { sendBulkNotifications } from '@/lib/notifications';
 
 export interface ProcessingResults {
@@ -49,7 +50,8 @@ export async function deleteFuturePicksForEntries(
 
   if (!allRounds || allRounds.length === 0) return 0;
 
-  const now = Date.now();
+  const effectiveNow = await getEffectiveNowServer();
+  const now = effectiveNow.getTime();
   const futureRoundIds: string[] = [];
 
   for (const round of allRounds) {
